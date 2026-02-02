@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>בדיקות בסיסיות | ליתאי פנדה טק</title>
+    <link rel="stylesheet" href="assets/css/payroll-dashboard-styles.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f5f7fa;
+            direction: rtl;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .back-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .search-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .search-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .search-input, .filter-select {
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: #f8f9fb;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .employees-list {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .employee-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #e1e8ed;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .employee-item:hover {
+            background: #f8f9fb;
+            transform: translateX(-5px);
+        }
+
+        .employee-item:last-child {
+            border-bottom: none;
+        }
+
+        .employee-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .employee-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .employee-details h4 {
+            margin: 0 0 5px 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .employee-details p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .employee-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-ok {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-new {
+            background: #cce7ff;
+            color: #0066cc;
+        }
+
+        .status-info {
+            background: #e7f3ff;
+            color: #0066cc;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Employee Details Modal */
+        .employee-details-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 100%;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e1e8ed;
+            padding-bottom: 15px;
+        }
+
+        .close-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .close-btn:hover {
+            background: #545b62;
+        }
+
+        .checks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .check-box {
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f8f9fb;
+            transition: all 0.3s ease;
+        }
+
+        .check-box.success {
+            border-color: #c3e6cb;
+            background: #f8fff9;
+        }
+
+        .check-box.warning {
+            border-color: #ffeaa7;
+            background: #fffef7;
+        }
+
+        .check-box.error {
+            border-color: #f5c6cb;
+            background: #fdfdfe;
+        }
+
+        .check-box.info {
+            border-color: #bee5eb;
+            background: #f7fdfe;
+        }
+
+        .check-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+        }
+
+        .data-grid {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .data-label {
+            font-weight: 500;
+            color: #666;
+        }
+
+        .data-value {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .data-source {
+            font-size: 11px;
+            color: #999;
+            font-style: italic;
+            margin-top: 10px;
+            padding: 8px;
+            background: #f1f3f4;
+            border-radius: 4px;
+        }
+
+        .check-result {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .result-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .result-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .result-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .result-info {
+            background: #e7f3ff;
+            color: #0066cc;
+            border: 1px solid #bee5eb;
+        }
+
+        .export-section {
+            margin-top: 30px;
+            text-align: center;
+            border-top: 2px solid #e1e8ed;
+            padding-top: 20px;
+        }
+
+        .export-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .search-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .checks-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .employee-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            
+            .employee-status {
+                justify-content: center;
+            }
+
+            .modal-content {
+                margin: 10px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">⬅️ חזרה לדף הבית</a>
+        <a href="summary_report.html" class="back-btn" style="background: #fbbf24;">&#128202; דוח סיכום</a>
+        
+        <div class="header">
+            <h1 id="basicChecksTitle">בדיקות בסיסיות מעודכנות</h1>
+            <p>8 בדיקות מתקדמות | 37 עובדים | לוגיקה מעודכנת לפי דרישות חדשות</p>
+        </div>
+
+        <!-- Month Picker -->
+        <div id="moduleMonthPicker"></div>
+
+        <!-- Search and Filter Section -->
+        <div class="search-section">
+            <div class="search-grid">
+                <input type="text" class="search-input" id="searchEmployee" placeholder="🔍 חיפוש עובד לפי שם...">
+                <select class="filter-select" id="filterDepartment">
+                    <option value="">כל המחלקות</option>
+                    <option value="בעלי מניות">בעלי מניות</option>
+                    <option value="מל&quot;מ">מל"מ</option>
+                    <option value="פרויקט דרום">פרויקט דרום</option>
+                    <option value="רפאל ב'">רפאל ב'</option>
+                    <option value="משרד">משרד</option>
+                </select>
+                <select class="filter-select" id="filterStatus">
+                    <option value="">כל הסטטוסים</option>
+                    <option value="ok">תקין</option>
+                    <option value="warning">אזהרה</option>
+                    <option value="error">בעיה</option>
+                    <option value="new">עובד חדש</option>
+                </select>
+                <button class="export-btn" onclick="exportFullReport()">📊 ייצא דוח</button>
+            </div>
+
+            <div class="summary-stats">
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #667eea;" id="countTotal">0</div>
+                    <div class="stat-label">סה"כ עובדים</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #10b981;" id="countOk">0</div>
+                    <div class="stat-label">תקינים</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #f59e0b;" id="countWarning">0</div>
+                    <div class="stat-label">אזהרות</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #ef4444;" id="countError">0</div>
+                    <div class="stat-label">בעיות</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #0066cc;" id="countNew">0</div>
+                    <div class="stat-label">עובדים חדשים</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employees List -->
+        <div class="employees-list" id="employeesList">
+            <!-- יתמלא דינמית -->
+        </div>
+
+        <!-- Employee Details Modal -->
+        <div class="employee-details-modal hidden" id="employeeModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalEmployeeName">פרטי עובד</h2>
+                    <button class="close-btn" onclick="closeEmployeeModal()">✖️ סגור</button>
+                </div>
+                <div class="checks-grid" id="checksGrid">
+                    <!-- יתמלא דינמית -->
+                </div>
+                <div class="export-section">
+                    <button class="export-btn" onclick="exportEmployeeReport()">📄 ייצא דוח עובד</button>
+                    <button class="export-btn" onclick="printEmployeeReport()" style="background: #17a2b8;">🖨️ הדפס</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../payrollchecker/shared/month_config.js"></script>
+    <script src="../payrollchecker/shared/data_bus.js"></script>
+    <script>
+        // ========== EMPLOYEES DATA ==========
+        const employeesData = {
+            // בעלי מניות
+            1: { 
+                name: "בנימין זהר", 
+                dept: "בעלי מניות", 
+                id: "317607316", 
+                hasPayslip: true,
+                startDate: "01/12/2006",
+                isShareholder: true,
+                
+                workDaysActual: 20,
+                vacationDaysUsed: 1,
+                sickDaysUnpaid: 0,
+                sickDaysPaid: 0,
+                reserveDays: 0,
+                holidaysPaid: 1,
+                eveHolidays: 0,
+                
+                workDaysPaid: 21,
+                hoursInPayslip: 182,
+                paidHoursInMecano: 180,
+                mealAllowance: 800,
+                
+                hasIntensiveWork: false,
+                hasGlobalBonus: true,
+                intensiveHours: 0,
+                overtime125: 2.25,
+                overtime150: 0,
+                
+                sickLeavePayment: 0,
+                isHourlyEmployee: false,
+                
+                isEligibleForRecovery: true,
+                recoveryBalance: 2500,
+                recoveryUsed: 500,
+                recoveryReset: 0,
+                
+                reserveWorkSameDayHours: 0,
+                reserveDoublePayComponent: 0,
+                
+                baseSalary: 35000,
+                pensionEmployer: 2275,
+                pensionRequired: 2275,
+                compensationEmployer: 2916,
+                compensationRequired: 2916,
+                advancedStudyEmployer: 0,
+                advancedStudyRequired: 0,
+                hasAdvancedStudyInContract: false,
+                
+                exceptionsReport: "אין",
+                exceptionCategory: "",
+                exceptionAmount: 0,
+                
+                specialNotes: "בעל מניות - הפרשות לפי סוכן ביטוח"
+            },
+
+            2: { 
+                name: "אבישי לייבנזון", 
+                dept: "בעלי מניות", 
+                id: "120831804", 
+                hasPayslip: true,
+                startDate: "01/01/2014",
+                isShareholder: true,
+                
+                workDaysActual: 4,
+                vacationDaysUsed: 0,
+                sickDaysUnpaid: 0,
+                sickDaysPaid: 0,
+                reserveDays: 0,
+                holidaysPaid: 0,
+                eveHolidays: 0,
+                
+                workDaysPaid: 4,
+                hoursInPayslip: 32,
+                paidHoursInMecano: 32,
+                mealAllowance: 160,
+                
+                hasIntensiveWork: false,
+                hasGlobalBonus: true,
+                intensiveHours: 0,
+                overtime125: 3.25,
+                overtime150: 0,
+                
+                sickLeavePayment: 0,
+                isHourlyEmployee: false,
+                
+                isEligibleForRecovery: true,
+                recoveryBalance: 3000,
+                recoveryUsed: 0,
+                recoveryReset: 0,
+                
+                reserveWorkSameDayHours: 0,
+                reserveDoublePayComponent: 0,
+                
+                baseSalary: 35000,
+                pensionEmployer: 2275,
+                pensionRequired: 2275,
+                compensationEmployer: 2916,
+                compensationRequired: 2916,
+                advancedStudyEmployer: 2625,
+                advancedStudyRequired: 2625,
+                hasAdvancedStudyInContract: true,
+                
+                exceptionsReport: "קיזוז בגין דמי חנוכה - 500₪",
+                exceptionCategory: "קיזוז",
+                exceptionAmount: -500,
+                
+                specialNotes: "בעל מניות - הפרשות לפי סוכן ביטוח"
+            },
+
+            // מל"מ
+            3: { 
+                name: "חיים ראש", 
+                dept: "מל\"מ", 
+                id: "058273851", 
+                hasPayslip: true,
+                startDate: "02/10/2012",
+                isShareholder: false,
+                
+                workDaysActual: 15,
+                vacationDaysUsed: 0,
+                sickDaysUnpaid: 0,
+                sickDaysPaid: 4,
+                reserveDays: 0,
+                holidaysPaid: 1,
+                eveHolidays: 0,
+                
+                workDaysPaid: 20,
+                hoursInPayslip: 146,
+                paidHoursInMecano: 152,
+                mealAllowance: 600,
+                
+                hasIntensiveWork: false,
+                hasGlobalBonus: false,
+                intensiveHours: 0,
+                overtime125: 15.55,
+                overtime150: 8.20,
+                
+                sickLeavePayment: 320,
+                isHourlyEmployee: true,
+                
+                isEligibleForRecovery: true,
+                recoveryBalance: 1800,
+                recoveryUsed: 200,
+                recoveryReset: 0,
+                
+                reserveWorkSameDayHours: 0,
+                reserveDoublePayComponent: 0,
+                
+                baseSalary: 20586,
+                pensionEmployer: 1338,
+                pensionRequired: 1338,
+                compensationEmployer: 1715,
+                compensationRequired: 1715,
+                advancedStudyEmployer: 1544,
+                advancedStudyRequired: 1544,
+                hasAdvancedStudyInContract: true,
+                
+                exceptionsReport: "שעות נוספות מיוחדות - אישור מנהל",
+                exceptionCategory: "שעות",
+                exceptionAmount: 0,
+                
+                specialNotes: ""
+            },
+
+            4: { 
+                name: "דוד אחדות", 
+                dept: "מל\"מ", 
+                id: "148548141", 
+                hasPayslip: true,
+                startDate: "15/03/2015",
+                isShareholder: false,
+                
+                workDaysActual: 20,
+                vacationDaysUsed: 1,
+                sickDaysUnpaid: 0,
+                sickDaysPaid: 0,
+                reserveDays: 0,
+                holidaysPaid: 1,
+                eveHolidays: 0,
+                
+                workDaysPaid: 20,
+                hoursInPayslip: 160,
+                paidHoursInMecano: 160,
+                mealAllowance: 800,
+                
+                hasIntensiveWork: false,
+                hasGlobalBonus: false,
+                intensiveHours: 0,
+                overtime125: 5.0,
+                overtime150: 0,
+                
+                sickLeavePayment: 0,
+                isHourlyEmployee: true,
+                
+                isEligibleForRecovery: true,
+                recoveryBalance: 2200,
+                recoveryUsed: 400,
+                recoveryReset: 0,
+                
+                reserveWorkSameDayHours: 0,
+                reserveDoublePayComponent: 0,
+                
+                baseSalary: 22000,
+                pensionEmployer: 1430,
+                pensionRequired: 1430,
+                compensationEmployer: 1833,
+                compensationRequired: 1833,
+                advancedStudyEmployer: 1650,
+                advancedStudyRequired: 1650,
+                hasAdvancedStudyInContract: true,
+                
+                exceptionsReport: "אין",
+                exceptionCategory: "",
+                exceptionAmount: 0,
+                
+                specialNotes: ""
+            },
+
+            5: { 
+                name: "לוי דביש", 
+                dept: "מל\"מ", 
+                id: "144217130", 
+                hasPayslip: true,
+                startDate: "10/06/2018",
+                isShareholder: false,
+                
+                workDaysActual: 21,
+                vacationDaysUsed: 0,
+                sickDaysUnpaid: 0,
+                sickDaysPaid: 0,
+                reserveDays: 0,
+                holidaysPaid: 1,
+                eveHolidays: 0,
+                
+                workDaysPaid: 21,
+                hoursInPayslip: 168,
+                paidHoursInMecano: 169,
+                mealAllowance: 840,
+                
+                hasIntensiveWork: false,
+                hasGlobalBonus: false,
+                intensiveHours: 0,
+                overtime125: 2.0,
+                overtime150: 0,
+                
+                sickLeavePayment: 0,
+                isHourlyEmployee: true,
+                
+                isEligibleForRecovery: true,
+                recoveryBalance: 1600,
+                recoveryUsed: 0,
+                recoveryReset: 0,
+                
+                reserveWorkSameDayHours: 0,
+                reserveDoublePayComponent: 0,
+                
+                baseSalary: 18500,
+                pensionEmployer: 1203,
+                pensionRequired: 1203,
+                compensationEmployer: 1541,
+                compensationRequired: 1541,
+                advancedStudyEmployer: 0,
+                advancedStudyRequired: 1388,
+                hasAdvancedStudyInContract: true,
+                
+                exceptionsReport: "אין",
+                exceptionCategory: "",
+                exceptionAmount: 0,
+                
+                specialNotes: "חסר הפרשה לקה\"ש למרות שבחוזה"
+            },
+
+            // פרויקט דרום
+            13: { 
+                name: "יורם שלמה", 
+                dept: "פרויקט דרום", 
+                id: "111110236", 
+                hasPayslip: true,
+                startDate: "12/02/2017",
+                isShareholder: false,
+                
+                workDaysActual: 20,
+                vacationDaysUsed: 1,
+                sickDaysUnpaid: 0,
+                sickDaysPaid: 0,
+                reserveDays: 0,
+                holidaysPaid: 1,
+                eveHolidays: 0,
+                
+                workDaysPaid: 20,
+                hoursInPayslip: 160,
+                paidHoursInMecano: 160,
+                mealAllowance: 0,
+                hasAshel: true,
+                ashelAmount: 300,
+                
+                hasIntensiveWork: false,
+                hasGlobalBonus: false,
+                intensiveHours: 0,
+                overtime125: 10.0,
+                overtime150: 5.0,
+                
+                sickLeavePayment: 0,
+                isHourlyEmployee: true,
+                
+                isEligibleForRecovery: true,
+                recoveryBalance: 1900,
+                recoveryUsed: 300,
+                recoveryReset: 0,
+                
+                reserveWorkSameDayHours: 0,
+                reserveDoublePayComponent: 0,
+                
+                baseSalary: 17500,
+                pensionEmployer: 1138,
+                pensionRequired: 1138,
+                compensationEmployer: 1458,
+                compensationRequired: 1458,
+                advancedStudyEmployer: 1313,
+                advancedStudyRequired: 1313,
+                hasAdvancedStudyInContract: true,
+                
+                exceptionsReport: "ללא ארוחות - לא אוכל בעבודה",
+                exceptionCategory: "חריג קבוע",
+                exceptionAmount: 0,
+                
+                specialNotes: "ללא חיוב ארוחות + רכיב אשל"
+            },
+
+            // משרד - חריגים מיוחדים בארוחות
+            29: { 
+                name: "ירדן אפל", 
+                dept: "משרד", 
+                id: "202343718", 
+                hasPayslip: true,
+                startDate: "12/04/2020",
+                isShareholder: false,
+                
+                workDaysActual: 20,
+                vacationDaysUsed: 1,
+                sickDaysUnpaid: 0,
+                sickDaysPaid: 0,
+                reserveDays: 0,
+                holidaysPaid: 1,
+                eveHolidays: 0,
+                
+                workDaysPaid: 20,
+                hoursInPayslip: 160,
+                paidHoursInMecano: 160,
+                mealAllowance: 850,
+                isOfficeSpecialException: true,
+                
+                hasIntensiveWork: false,
+                hasGlobalBonus: false,
+                intensiveHours: 0,
+                overtime125: 2.0,
+                overtime150: 0,
+                
+                sickLeavePayment: 0,
+                isHourlyEmployee: false,
+                
+                isEligibleForRecovery: true,
+                recoveryBalance: 1800,
+                recoveryUsed: 200,
+                recoveryReset: 0,
+                
+                reserveWorkSameDayHours: 0,
+                reserveDoublePayComponent: 0,
+                
+                baseSalary: 19500,
+                pensionEmployer: 1268,
+                pensionRequired: 1268,
+                compensationEmployer: 1624,
+                compensationRequired: 1624,
+                advancedStudyEmployer: 1463,
+                advancedStudyRequired: 1463,
+                hasAdvancedStudyInContract: true,
+                
+                exceptionsReport: "חריג ארוחות מיוחד - 850₪",
+                exceptionCategory: "חריג מיוחד",
+                exceptionAmount: 850,
+                
+                specialNotes: "עובד משרד - חריג מיוחד בארוחות"
+            },
+
+            // עובדים חדשים ללא תלושים
+            "new1": {
+                name: "אורי אשתר", 
+                dept: "לא ידוע", 
+                id: "NEW1", 
+                hasPayslip: false,
+                startDate: "01/05/2025",
+                isShareholder: false,
+                
+                reason: "עובד חדש - אין תלוש", 
+                inMecano: true, 
+                inPayslips: false,
+                
+                exceptionsReport: "עובד חדש", 
+                exceptionCategory: "עובד חדש",
+                exceptionAmount: 0,
+                
+                specialNotes: "נדרש הכנת מסמכי קליטה"
+            },
+
+            "new2": {
+                name: "איילה שירזי", 
+                dept: "לא ידוע", 
+                id: "NEW2", 
+                hasPayslip: false,
+                startDate: "15/05/2025",
+                isShareholder: false,
+                
+                reason: "עובדת חדשה - אין תלוש", 
+                inMecano: true, 
+                inPayslips: false,
+                
+                exceptionsReport: "עובדת חדשה", 
+                exceptionCategory: "עובד חדש",
+                exceptionAmount: 0,
+                
+                specialNotes: "נדרש הכנת מסמכי קליטה"
+            }
+        };
+
+        // ========== CHECKS LOGIC ==========
+        class PayrollChecker {
+            constructor() {
+                this.maxWorkDays = 21;
+                this.mealPricePerDay = 40;
+                this.pensionRate = 0.065;
+                this.compensationRate = 0.0833;
+                this.advancedStudyRate = 0.075;
+            }
+
+            checkWorkDaysAndAbsences(employee) {
+                const totalPaidDays = employee.workDaysActual + 
+                                     employee.vacationDaysUsed + 
+                                     employee.sickDaysPaid + 
+                                     employee.reserveDays + 
+                                     employee.holidaysPaid + 
+                                     (employee.eveHolidays * 0.5);
+
+                const isValid = employee.workDaysPaid <= this.maxWorkDays;
+                const calculatedDays = Math.ceil(totalPaidDays);
+                const difference = employee.workDaysPaid - calculatedDays;
+
+                return {
+                    type: "workDays",
+                    title: "ימי עבודה ויעדרויות",
+                    isValid: isValid,
+                    severity: isValid ? (difference === 0 ? 'success' : 'warning') : 'error',
+                    data: {
+                        actualWorkDays: employee.workDaysActual,
+                        vacationUsed: employee.vacationDaysUsed,
+                        sickPaid: employee.sickDaysPaid,
+                        sickUnpaid: employee.sickDaysUnpaid,
+                        reserveDays: employee.reserveDays,
+                        holidaysPaid: employee.holidaysPaid,
+                        eveHolidays: employee.eveHolidays,
+                        totalCalculated: calculatedDays,
+                        paidInPayslip: employee.workDaysPaid,
+                        maxAllowed: this.maxWorkDays,
+                        difference: difference
+                    },
+                    message: isValid ? 
+                        (difference === 0 ? "✅ תקין - ימי עבודה תואמים" : `⚠️ הפרש: ${difference} ימים`) :
+                        `❌ חריגה: ${employee.workDaysPaid} > ${this.maxWorkDays} ימים`,
+                    source: "מקור: דוח מקאנו (נוכחות + היעדרויות) vs תלוש"
+                };
+            }
+
+            checkWorkHours(employee) {
+                const hoursDiff = Math.abs(employee.hoursInPayslip - employee.paidHoursInMecano);
+                const isValid = hoursDiff <= 1;
+
+                return {
+                    type: "workHours",
+                    title: "שעות עבודה",
+                    isValid: isValid,
+                    severity: isValid ? 'success' : 'warning',
+                    data: {
+                        hoursInPayslip: employee.hoursInPayslip,
+                        hoursInMecano: employee.paidHoursInMecano,
+                        difference: hoursDiff,
+                        allowedRange: "±1 שעה"
+                    },
+                    message: isValid ? 
+                        "✅ תקין - הפרש שעות ±1" : 
+                        `⚠️ הפרש: ${hoursDiff} שעות (מעל המותר)`,
+                    source: "מקור: תלוש vs דוח מקאנו"
+                };
+            }
+
+            checkOvertimeHours(employee) {
+                let message, isValid = true, severity = 'success';
+                let data = {
+                    hasIntensiveWork: employee.hasIntensiveWork,
+                    hasGlobalBonus: employee.hasGlobalBonus,
+                    intensiveHours: employee.intensiveHours || 0,
+                    overtime125: employee.overtime125,
+                    overtime150: employee.overtime150,
+                    totalOvertime: employee.overtime125 + employee.overtime150
+                };
+
+                if (employee.hasIntensiveWork || employee.hasGlobalBonus) {
+                    data.type = "עובד עם רכיב מיוחד";
+                    message = employee.hasIntensiveWork ? 
+                        "✅ תקין - יש רכיב עבודה מאומצת" : 
+                        "✅ תקין - יש תוספת גלובלית";
+                } else {
+                    data.type = "עובד רגיל";
+                    const totalOvertime = employee.overtime125 + employee.overtime150;
+                    if (totalOvertime > 50) {
+                        isValid = false;
+                        severity = 'warning';
+                        message = `⚠️ שעות נוספות גבוהות: ${totalOvertime} שעות`;
+                    } else {
+                        message = "✅ תקין - שעות נוספות במסגרת";
+                    }
+                }
+
+                return {
+                    type: "overtime",
+                    title: "שעות נוספות",
+                    isValid: isValid,
+                    severity: severity,
+                    data: data,
+                    message: message,
+                    source: "מקור: תלוש vs דיווח שעות נוספות במקאנו"
+                };
+            }
+
+            checkMeals(employee) {
+                let isValid = true, severity = 'success', message = "";
+                let expectedMeals = 0, actualMeals = employee.mealAllowance;
+                let checkType = "";
+
+                if (employee.name === "יורם שלמה") {
+                    checkType = "ללא חיוב ארוחות";
+                    expectedMeals = 0;
+                    const hasAshel = employee.hasAshel || false;
+                    const ashelAmount = employee.ashelAmount || 0;
+                    
+                    if (actualMeals === 0 && hasAshel) {
+                        message = `✅ תקין - ללא חיוב ארוחות + רכיב אשל ${ashelAmount}₪`;
+                    } else if (actualMeals > 0) {
+                        isValid = false;
+                        severity = 'error';
+                        message = `❌ שגיאה - יש חיוב ארוחות ${actualMeals}₪ למרות שלא אמור`;
+                    } else {
+                        message = "✅ תקין - ללא חיוב ארוחות";
+                    }
+                } else if (employee.isOfficeSpecialException) {
+                    checkType = "חריג מיוחד - עובד משרד";
+                    expectedMeals = "לפי דוח חריגים";
+                    message = `⚠️ חריג מיוחד - בדוק התאמה לדוח חריגים: ${actualMeals}₪`;
+                    severity = 'warning';
+                } else {
+                    checkType = "עובד רגיל";
+                    expectedMeals = employee.workDaysActual * this.mealPricePerDay;
+                    const difference = Math.abs(actualMeals - expectedMeals);
+                    
+                    if (difference <= 40) {
+                        message = "✅ תקין - ארוחות תואמות נוסחה";
+                    } else {
+                        isValid = false;
+                        severity = 'warning';
+                        message = `⚠️ הפרש: ${difference}₪ (מעל ±40₪)`;
+                    }
+                }
+
+                return {
+                    type: "meals",
+                    title: "ארוחות",
+                    isValid: isValid,
+                    severity: severity,
+                    data: {
+                        checkType: checkType,
+                        actualMeals: actualMeals,
+                        expectedMeals: expectedMeals,
+                        workDaysActual: employee.workDaysActual,
+                        pricePerDay: this.mealPricePerDay,
+                        difference: typeof expectedMeals === 'number' ? Math.abs(actualMeals - expectedMeals) : 0,
+                        hasAshel: employee.hasAshel || false,
+                        ashelAmount: employee.ashelAmount || 0
+                    },
+                    message: message,
+                    source: "מקור: תלוש vs חישוב או דוח חריגים"
+                };
+            }
+
+            checkSickLeave(employee) {
+                const hasSickDays = employee.sickDaysPaid > 0;
+                const hasSickPayment = employee.sickLeavePayment > 0;
+                let isValid = true, severity = 'success', message = "";
+
+                if (!hasSickDays && !hasSickPayment) {
+                    message = "✅ תקין - אין ימי מחלה";
+                } else if (hasSickDays && hasSickPayment) {
+                    const expectedBehavior = employee.isHourlyEmployee ? "תוספת" : "חיוב";
+                    message = `✅ יש ימי מחלה: ${employee.sickDaysPaid} ימים, ${expectedBehavior}: ${employee.sickLeavePayment}₪`;
+                } else if (hasSickDays && !hasSickPayment) {
+                    isValid = false;
+                    severity = 'warning';
+                    message = `⚠️ יש ${employee.sickDaysPaid} ימי מחלה אבל אין רכיב בתלוש`;
+                } else {
+                    isValid = false;
+                    severity = 'warning';
+                    message = `⚠️ יש רכיב מחלה ${employee.sickLeavePayment}₪ אבל אין ימי מחלה במקאנו`;
+                }
+
+                return {
+                    type: "sickLeave",
+                    title: "ימי מחלה - תשלום וחיוב",
+                    isValid: isValid,
+                    severity: severity,
+                    data: {
+                        sickDaysPaid: employee.sickDaysPaid,
+                        sickLeavePayment: employee.sickLeavePayment,
+                        isHourlyEmployee: employee.isHourlyEmployee,
+                        expectedBehavior: employee.isHourlyEmployee ? "תוספת" : "חיוב"
+                    },
+                    message: message,
+                    source: "מקור: היעדרויות מקאנו vs רכיבי תלוש"
+                };
+            }
+
+            checkRecoveryBenefit(employee) {
+                const isEligible = employee.isEligibleForRecovery;
+                let isValid = true, severity = 'success', message = "";
+
+                if (!isEligible) {
+                    message = "✅ לא זכאי להבראה - עובד שעתי מתחת לשנה";
+                } else {
+                    const hasBalance = employee.recoveryBalance > 0;
+                    const hasUsage = employee.recoveryUsed > 0;
+                    
+                    if (hasBalance || hasUsage) {
+                        message = `✅ זכאי להבראה - יתרה: ${employee.recoveryBalance}₪, ניצול: ${employee.recoveryUsed}₪`;
+                    } else {
+                        severity = 'warning';
+                        message = "⚠️ זכאי להבראה אבל אין נתונים";
+                    }
+                }
+
+                return {
+                    type: "recovery",
+                    title: "הבראה וניצול",
+                    isValid: isValid,
+                    severity: severity,
+                    data: {
+                        isEligible: isEligible,
+                        startDate: employee.startDate,
+                        recoveryBalance: employee.recoveryBalance || 0,
+                        recoveryUsed: employee.recoveryUsed || 0,
+                        recoveryReset: employee.recoveryReset || 0
+                    },
+                    message: message,
+                    source: "מקור: תלוש (תאריך תחילה + רכיבי הבראה)"
+                };
+            }
+
+            checkReserveService(employee) {
+                const hasReserveDays = employee.reserveDays > 0;
+                const hasReserveWork = employee.reserveWorkSameDayHours > 0;
+                const hasDoublePayComponent = employee.reserveDoublePayComponent > 0;
+                let isValid = true, severity = 'success', message = "";
+
+                if (!hasReserveDays) {
+                    message = "✅ אין ימי מילואים";
+                } else if (hasReserveWork && hasDoublePayComponent) {
+                    message = `✅ תקין - עבד ביום מילואים: ${employee.reserveWorkSameDayHours} שעות, תשלום כפול: ${employee.reserveDoublePayComponent}₪`;
+                } else if (hasReserveWork && !hasDoublePayComponent) {
+                    isValid = false;
+                    severity = 'warning';
+                    message = `⚠️ עבד ביום מילואים אבל אין רכיב תשלום כפול`;
+                } else {
+                    message = `✅ מילואים רגיל - ${employee.reserveDays} ימים`;
+                }
+
+                return {
+                    type: "reserve",
+                    title: "מילואים מיוחד",
+                    isValid: isValid,
+                    severity: severity,
+                    data: {
+                        reserveDays: employee.reserveDays,
+                        reserveWorkSameDayHours: employee.reserveWorkSameDayHours || 0,
+                        reserveDoublePayComponent: employee.reserveDoublePayComponent || 0
+                    },
+                    message: message,
+                    source: "מקור: דוח מקאנו + תלוש"
+                };
+            }
+
+            checkExceptionsReport(employee) {
+                const hasExceptions = employee.exceptionsReport !== "אין";
+                let severity = hasExceptions ? 'warning' : 'success';
+                let message = hasExceptions ? 
+                    `⚠️ יש בקשות: ${employee.exceptionsReport}` : 
+                    "✅ אין בקשות בדוח חריגים";
+
+                return {
+                    type: "exceptions",
+                    title: "דוח חריגים",
+                    isValid: true,
+                    severity: severity,
+                    data: {
+                        exceptionsReport: employee.exceptionsReport,
+                        exceptionCategory: employee.exceptionCategory || "",
+                        exceptionAmount: employee.exceptionAmount || 0
+                    },
+                    message: message,
+                    source: "מקור: דוח חריגים חודשי"
+                };
+            }
+
+            runAllChecks(employee) {
+                if (!employee.hasPayslip) {
+                    return [{
+                        type: "newEmployee",
+                        title: "עובד חדש",
+                        isValid: false,
+                        severity: 'info',
+                        data: {
+                            name: employee.name,
+                            startDate: employee.startDate,
+                            inMecano: employee.inMecano,
+                            inPayslips: employee.inPayslips
+                        },
+                        message: "⚠️ עובד חדש - נדרש מעקב",
+                        source: "מקור: השוואת רשימות"
+                    }];
+                }
+
+                return [
+                    this.checkWorkDaysAndAbsences(employee),
+                    this.checkWorkHours(employee),
+                    this.checkOvertimeHours(employee),
+                    this.checkMeals(employee),
+                    this.checkSickLeave(employee),
+                    this.checkRecoveryBenefit(employee),
+                    this.checkReserveService(employee),
+                    this.checkExceptionsReport(employee)
+                ];
+            }
+
+            calculateEmployeeStatus(employee) {
+                if (!employee.hasPayslip) return 'new';
+                
+                const checks = this.runAllChecks(employee);
+                const errors = checks.filter(c => c.severity === 'error').length;
+                const warnings = checks.filter(c => c.severity === 'warning').length;
+                
+                if (errors > 0) return 'error';
+                if (warnings > 0) return 'warning';
+                return 'ok';
+            }
+        }
+
+        // ========== MAIN APPLICATION ==========
+        // Global variables
+        let filteredEmployees = [];
+        let currentEmployee = null;
+        let checker = new PayrollChecker();
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // אתחול בורר חודש
+            const pickerContainer = document.getElementById('moduleMonthPicker');
+            if (pickerContainer && typeof MonthConfig !== 'undefined') {
+                pickerContainer.innerHTML = MonthConfig.createMonthPickerHTML('monthPicker');
+                MonthConfig.initMonthPicker();
+                const config = MonthConfig.loadSelectedMonth();
+                const title = document.getElementById('basicChecksTitle');
+                if (title) title.textContent = `בדיקות בסיסיות - ${config.periodDisplay}`;
+            }
+            window.addEventListener('monthChanged', function(e) {
+                const title = document.getElementById('basicChecksTitle');
+                if (title) title.textContent = `בדיקות בסיסיות - ${e.detail.periodDisplay}`;
+            });
+
+            initializeEmployeesList();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('searchEmployee').addEventListener('input', filterEmployees);
+            document.getElementById('filterDepartment').addEventListener('change', filterEmployees);
+            document.getElementById('filterStatus').addEventListener('change', filterEmployees);
+            
+            // Close modal on outside click
+            document.getElementById('employeeModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeEmployeeModal();
+                }
+            });
+
+            // Keyboard navigation
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && !document.getElementById('employeeModal').classList.contains('hidden')) {
+                    closeEmployeeModal();
+                }
+            });
+        }
+
+        function initializeEmployeesList() {
+            filteredEmployees = Object.keys(employeesData);
+            renderEmployeesList();
+            updateStats();
+        }
+
+        function renderEmployeesList() {
+            const container = document.getElementById('employeesList');
+            container.innerHTML = '';
+
+            filteredEmployees.forEach(empId => {
+                const emp = employeesData[empId];
+                const status = checker.calculateEmployeeStatus(emp);
+                const statusClass = getStatusClass(status);
+                const statusText = getStatusText(status);
+
+                const employeeItem = document.createElement('div');
+                employeeItem.className = 'employee-item';
+                employeeItem.onclick = () => showEmployeeDetails(empId);
+
+                employeeItem.innerHTML = `
+                    <div class="employee-info">
+                        <div class="employee-avatar">${emp.name.charAt(0)}</div>
+                        <div class="employee-details">
+                            <h4>${emp.name}</h4>
+                            <p>${emp.dept} | ת.ז: ${emp.id} | ${emp.startDate}</p>
+                        </div>
+                    </div>
+                    <div class="employee-status">
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                        <span style="font-size: 20px;">➡️</span>
+                    </div>
+                `;
+
+                container.appendChild(employeeItem);
+            });
+        }
+
+        function getStatusClass(status) {
+            const classes = {
+                'ok': 'status-ok',
+                'warning': 'status-warning', 
+                'error': 'status-error',
+                'new': 'status-new',
+                'info': 'status-info'
+            };
+            return classes[status] || 'status-info';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'ok': 'תקין ✓',
+                'warning': 'אזהרה ⚠️',
+                'error': 'בעיה ❌',
+                'new': 'עובד חדש 👤',
+                'info': 'מידע ℹ️'
+            };
+            return texts[status] || 'לא ידוע';
+        }
+
+        function filterEmployees() {
+            const searchTerm = document.getElementById('searchEmployee').value.toLowerCase();
+            const deptFilter = document.getElementById('filterDepartment').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+
+            filteredEmployees = Object.keys(employeesData).filter(empId => {
+                const emp = employeesData[empId];
+                const status = checker.calculateEmployeeStatus(emp);
+
+                const matchesSearch = emp.name.toLowerCase().includes(searchTerm);
+                const matchesDept = !deptFilter || emp.dept === deptFilter;
+                const matchesStatus = !statusFilter || status === statusFilter;
+
+                return matchesSearch && matchesDept && matchesStatus;
+            });
+
+            renderEmployeesList();
+            updateStats();
+        }
+
+        function updateStats() {
+            const stats = { total: 0, ok: 0, warning: 0, error: 0, new: 0 };
+            
+            filteredEmployees.forEach(empId => {
+                const emp = employeesData[empId];
+                const status = checker.calculateEmployeeStatus(emp);
+                stats.total++;
+                stats[status] = (stats[status] || 0) + 1;
+            });
+
+            document.getElementById('countTotal').textContent = stats.total;
+            document.getElementById('countOk').textContent = stats.ok || 0;
+            document.getElementById('countWarning').textContent = stats.warning || 0;
+            document.getElementById('countError').textContent = stats.error || 0;
+            document.getElementById('countNew').textContent = stats.new || 0;
+
+            // שמירת תוצאות בדיקה ב-DataBus
+            if (typeof DataBus !== 'undefined') {
+                const config = (typeof MonthConfig !== 'undefined') ? MonthConfig.loadSelectedMonth() : null;
+                const periodKey = config ? config.periodKey : 'unknown';
+                DataBus.saveCheckResults(periodKey, stats);
+            }
+        }
+
+        function showEmployeeDetails(empId) {
+            const emp = employeesData[empId];
+            currentEmployee = empId;
+            
+            document.getElementById('modalEmployeeName').textContent = `בדיקת ${emp.name} - ${emp.dept}`;
+            
+            const checks = checker.runAllChecks(emp);
+            renderChecks(checks);
+            
+            document.getElementById('employeeModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function renderChecks(checks) {
+            const checksGrid = document.getElementById('checksGrid');
+            checksGrid.innerHTML = '';
+
+            checks.forEach(check => {
+                const checkBox = document.createElement('div');
+                checkBox.className = `check-box ${check.severity}`;
+
+                checkBox.innerHTML = `
+                    <div class="check-title">${getCheckIcon(check.type)} ${check.title}</div>
+                    <div class="data-grid">
+                        ${renderCheckData(check)}
+                    </div>
+                    <div class="data-source">${check.source}</div>
+                    <div class="check-result result-${check.severity}">
+                        ${check.message}
+                    </div>
+                `;
+
+                checksGrid.appendChild(checkBox);
+            });
+        }
+
+        function getCheckIcon(type) {
+            const icons = {
+                'workDays': '📅',
+                'workHours': '🕐',
+                'overtime': '⏰',
+                'meals': '🍽️',
+                'sickLeave': '🏥',
+                'recovery': '🌴',
+                'reserve': '🎖️',
+                'exceptions': '📋',
+                'newEmployee': '👤'
+            };
+            return icons[type] || '📊';
+        }
+
+        function renderCheckData(check) {
+            const data = check.data;
+            let html = '';
+
+            switch (check.type) {
+                case 'workDays':
+                    html = `
+                        <div class="data-row">
+                            <span class="data-label">ימי עבודה בפועל:</span>
+                            <span class="data-value">${data.actualWorkDays} ימים</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">חופש שנוצל:</span>
+                            <span class="data-value">${data.vacationUsed} ימים</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">מחלה בתשלום:</span>
+                            <span class="data-value">${data.sickPaid} ימים</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">מחלה ללא תשלום:</span>
+                            <span class="data-value">${data.sickUnpaid} ימים</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">מילואים:</span>
+                            <span class="data-value">${data.reserveDays} ימים</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">חגים בתשלום:</span>
+                            <span class="data-value">${data.holidaysPaid} ימים</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">ערבי חג:</span>
+                            <span class="data-value">${data.eveHolidays} ימים</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">סה"כ מחושב:</span>
+                            <span class="data-value">${data.totalCalculated} ימים</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">משולם בתלוש:</span>
+                            <span class="data-value">${data.paidInPayslip} ימים</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">מקסימום מותר:</span>
+                            <span class="data-value">${data.maxAllowed} ימים</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">הפרש:</span>
+                            <span class="data-value" style="color: ${data.difference > 0 ? 'red' : 'green'}">${data.difference} ימים</span>
+                        </div>
+                    `;
+                    break;
+
+                case 'workHours':
+                    html = `
+                        <div class="data-row">
+                            <span class="data-label">שעות בתלוש:</span>
+                            <span class="data-value">${data.hoursInPayslip} שעות</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">שעות במקאנו:</span>
+                            <span class="data-value">${data.hoursInMecano} שעות</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">הפרש:</span>
+                            <span class="data-value" style="color: ${data.difference > 1 ? 'orange' : 'green'}">${data.difference} שעות</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">טווח מותר:</span>
+                            <span class="data-value">${data.allowedRange}</span>
+                        </div>
+                    `;
+                    break;
+
+                case 'overtime':
+                    html = `
+                        <div class="data-row">
+                            <span class="data-label">סוג עובד:</span>
+                            <span class="data-value">${data.type}</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">שעות נוספות 125%:</span>
+                            <span class="data-value">${data.overtime125} שעות</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">שעות נוספות 150%:</span>
+                            <span class="data-value">${data.overtime150} שעות</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">סה"כ נוספות:</span>
+                            <span class="data-value">${data.totalOvertime} שעות</span>
+                        </div>
+                        ${data.hasIntensiveWork ? `
+                        <div class="data-row">
+                            <span class="data-label">שעות מאומצות:</span>
+                            <span class="data-value">${data.intensiveHours} שעות</span>
+                        </div>` : ''}
+                    `;
+                    break;
+
+                case 'meals':
+                    html = `
+                        <div class="data-row">
+                            <span class="data-label">סוג בדיקה:</span>
+                            <span class="data-value">${data.checkType}</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">ארוחות בתלוש:</span>
+                            <span class="data-value">${data.actualMeals}₪</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">חישוב נכון:</span>
+                            <span class="data-value">${typeof data.expectedMeals === 'number' ? data.expectedMeals + '₪' : data.expectedMeals}</span>
+                        </div>
+                        ${typeof data.expectedMeals === 'number' ? `
+                        <div class="data-row">
+                            <span class="data-label">ימי עבודה בפועל:</span>
+                            <span class="data-value">${data.workDaysActual} × ${data.pricePerDay}₪</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">הפרש:</span>
+                            <span class="data-value" style="color: ${data.difference > 40 ? 'orange' : 'green'}">${data.difference}₪</span>
+                        </div>` : ''}
+                        ${data.hasAshel ? `
+                        <div class="data-row">
+                            <span class="data-label">רכיב אשל:</span>
+                            <span class="data-value">${data.ashelAmount}₪</span>
+                        </div>` : ''}
+                    `;
+                    break;
+
+                case 'sickLeave':
+                    html = `
+                        <div class="data-row">
+                            <span class="data-label">ימי מחלה בתשלום:</span>
+                            <span class="data-value">${data.sickDaysPaid} ימים</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">רכיב בתלוש:</span>
+                            <span class="data-value">${data.sickLeavePayment}₪</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">סוג עובד:</span>
+                            <span class="data-value">${data.isHourlyEmployee ? 'שעתי' : 'גלובלי'}</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">התנהגות צפויה:</span>
+                            <span class="data-value">${data.expectedBehavior}</span>
+                        </div>
+                    `;
+                    break;
+
+                case 'recovery':
+                    html = `
+                        <div class="data-row">
+                            <span class="data-label">זכאי להבראה:</span>
+                            <span class="data-value">${data.isEligible ? 'כן' : 'לא'}</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">תאריך תחילה:</span>
+                            <span class="data-value">${data.startDate}</span>
+                        </div>
+                        ${data.isEligible ? `
+                        <div class="data-row">
+                            <span class="data-label">יתרה צבורה:</span>
+                            <span class="data-value">${data.recoveryBalance}₪</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">ניצול:</span>
+                            <span class="data-value">${data.recoveryUsed}₪</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">איפוס:</span>
+                            <span class="data-value">${data.recoveryReset}₪</span>
+                        </div>` : ''}
+                    `;
+                    break;
+
+                case 'reserve':
+                    html = `
+                        <div class="data-row">
+                            <span class="data-label">ימי מילואים:</span>
+                            <span class="data-value">${data.reserveDays} ימים</span>
+                        </div>
+                        ${data.reserveWorkSameDayHours > 0 ? `
+                        <div class="data-row">
+                            <span class="data-label">שעות עבודה ביום מילואים:</span>
+                            <span class="data-value">${data.reserveWorkSameDayHours} שעות</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">רכיב תשלום כפול:</span>
+                            <span class="data-value">${data.reserveDoublePayComponent}₪</span>
+                        </div>` : ''}
+                    `;
+                    break;
+
+                case 'exceptions':
+                    html = `
+                        <div class="data-row">
+                            <span class="data-label">בקשות בדוח:</span>
+                            <span class="data-value">${data.exceptionsReport}</span>
+                        </div>
+                        ${data.exceptionCategory ? `
+                        <div class="data-row">
+                            <span class="data-label">קטגוריה:</span>
+                            <span class="data-value">${data.exceptionCategory}</span>
+                        </div>` : ''}
+                        ${data.exceptionAmount !== 0 ? `
+                        <div class="data-row">
+                            <span class="data-label">סכום:</span>
+                            <span class="data-value">${data.exceptionAmount}₪</span>
+                        </div>` : ''}
+                    `;
+                    break;
+
+                case 'newEmployee':
+                    html = `
+                        <div class="data-row">
+                            <span class="data-label">שם:</span>
+                            <span class="data-value">${data.name}</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">תאריך תחילה:</span>
+                            <span class="data-value">${data.startDate}</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">במקאנו:</span>
+                            <span class="data-value">${data.inMecano ? 'כן' : 'לא'}</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">בתלושים:</span>
+                            <span class="data-value">${data.inPayslips ? 'כן' : 'לא'}</span>
+                        </div>
+                    `;
+                    break;
+
+                default:
+                    html = '<div class="data-row"><span class="data-label">נתונים לא זמינים</span></div>';
+            }
+
+            return html;
+        }
+
+        function closeEmployeeModal() {
+            document.getElementById('employeeModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            currentEmployee = null;
+        }
+
+        function exportEmployeeReport() {
+            if (!currentEmployee) return;
+            
+            const emp = employeesData[currentEmployee];
+            const checks = checker.runAllChecks(emp);
+            
+            let csv = 'דוח עובד מפורט\n';
+            csv += `שם עובד: ${emp.name}\n`;
+            csv += `מחלקה: ${emp.dept}\n`;
+            csv += `ת.ז: ${emp.id}\n`;
+            csv += `תאריך תחילת עבודה: ${emp.startDate}\n\n`;
+            
+            csv += 'בדיקה,תוצאה,הערות\n';
+            checks.forEach(check => {
+                csv += `${check.title},${check.message.replace(/[✅⚠️❌]/g, '')},${check.source}\n`;
+            });
+            
+            downloadCSV(csv, `דוח_עובד_${emp.name}_${new Date().toISOString().slice(0,10)}.csv`);
+        }
+
+        function exportFullReport() {
+            let csv = 'דוח כללי - בדיקות בסיסיות מאי 2025\n';
+            csv += `תאריך הפקה: ${new Date().toLocaleDateString('he-IL')}\n`;
+            csv += `סה"כ עובדים נבדקו: ${Object.keys(employeesData).length}\n\n`;
+            
+            csv += 'שם עובד,מחלקה,ת.ז,סטטוס כללי,ימי עבודה,שעות,ארוחות,מחלה,הבראה,מילואים,חריגים\n';
+            
+            Object.keys(employeesData).forEach(empId => {
+                const emp = employeesData[empId];
+                const status = checker.calculateEmployeeStatus(emp);
+                const checks = checker.runAllChecks(emp);
+                
+                csv += `${emp.name},${emp.dept},${emp.id},${getStatusText(status)},`;
+                
+                if (emp.hasPayslip) {
+                    checks.forEach(check => {
+                        const result = check.isValid ? 'תקין' : 'בעיה';
+                        csv += `${result},`;
+                    });
+                } else {
+                    csv += 'עובד חדש,עובד חדש,עובד חדש,עובד חדש,עובד חדש,עובד חדש,עובד חדש,';
+                }
+                
+                csv += '\n';
+            });
+            
+            downloadCSV(csv, `דוח_בדיקות_בסיסיות_${new Date().toISOString().slice(0,10)}.csv`);
+        }
+
+        function printEmployeeReport() {
+            if (!currentEmployee) return;
+            
+            const emp = employeesData[currentEmployee];
+            const printWindow = window.open('', '_blank');
+            
+            printWindow.document.write(`
+                <html dir="rtl">
+                <head>
+                    <title>דוח עובד - ${emp.name}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; direction: rtl; }
+                        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; }
+                        .check-section { margin: 20px 0; border: 1px solid #ccc; padding: 15px; }
+                        .check-title { font-weight: bold; color: #333; margin-bottom: 10px; }
+                        @media print { .no-print { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>דוח בדיקות בסיסיות</h1>
+                        <h2>${emp.name} - ${emp.dept}</h2>
+                        <p>תאריך: ${new Date().toLocaleDateString('he-IL')}</p>
+                    </div>
+                    ${document.getElementById('checksGrid').innerHTML}
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function downloadCSV(csv, filename) {
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+    </script>
+</body>
+</html>

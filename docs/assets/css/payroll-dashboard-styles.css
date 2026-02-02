@@ -1,0 +1,476 @@
+/* עיצוב מערכת ראשית - מותאם למסך 27" Full HD */
+/* מבוסס על עיצוב mecanochecker */
+
+body {
+  font-family: 'Segoe UI', 'Heebo', Arial, sans-serif;
+  background: #e9eef3;
+  color: #2b486a;
+  direction: rtl;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Container מותאם למסך 27" */
+.container { 
+  max-width: 1600px; 
+  margin: 0 auto; 
+  padding: 30px 40px; 
+}
+
+/* Header & Footer - סגנון mecanochecker */
+.header-hitech-balance, .footer-hitech-balance {
+  background: linear-gradient(90deg, #30bced 0%, #528163 100%);
+  color: #fff;
+  border-radius: 18px;
+  box-shadow: 0 6px 18px rgba(82,129,99,0.09);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 110px;
+  padding: 0 40px;
+  margin-bottom: 40px;
+  gap: 0;
+}
+
+.footer-hitech-balance { 
+  margin: 80px 0 30px 0; 
+  min-height: 90px; 
+}
+
+.logo-box {
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  background: #fff; 
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(48,188,237,0.08);
+  min-width: 90px; 
+  min-height: 70px; 
+  margin: 0 20px; 
+  padding: 0 15px;
+  border: 2.2px solid #e4e5e9;
+}
+
+.header-logo, .footer-logo {
+  height: 50px; 
+  width: auto; 
+  border-radius: 8px; 
+  object-fit: contain;
+  display: block; 
+  margin: 0 auto;
+}
+
+.header-center-balance, .footer-center-balance {
+  flex: 1; 
+  text-align: center; 
+  display: flex; 
+  flex-direction: column;
+  align-items: center; 
+  gap: 5px;
+}
+
+.header-center-balance h1 { 
+  font-size: 2.4rem; 
+  font-weight: 700; 
+  margin: 0 0 5px 0; 
+  letter-spacing: -1px; 
+}
+
+.header-center-desc, .footer-main {
+  font-size: 1.1rem; 
+  opacity: 0.96; 
+  font-weight: 400; 
+  margin-bottom: 0; 
+  color: #e7f9f3;
+}
+
+.header-slogan-branded, .footer-slogan-branded {
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 12px;
+  font-size: 1.2rem; 
+  margin-top: 5px; 
+  margin-bottom: 3px;
+  font-family: 'Segoe UI', 'Heebo', Arial, sans-serif; 
+  font-weight: bold;
+  letter-spacing: 0.03em;
+  background: linear-gradient(90deg, #fff 10%, #c7f6ea 90%);
+  color: #295c42; 
+  border-radius: 8px; 
+  padding: 8px 24px;
+  box-shadow: 0 2px 16px rgba(48,188,237,0.10); 
+  width: fit-content;
+  margin-left: auto; 
+  margin-right: auto;
+}
+
+.slogan-brand {
+  color: #1874be; 
+  font-weight: bold; 
+  letter-spacing: 0.04em; 
+  font-size: 1.25em;
+  font-family: 'Segoe UI', 'Heebo', Arial, sans-serif;
+}
+
+.slogan-sep {
+  color: #528163; 
+  font-size: 1.2em; 
+  font-weight: bold; 
+  opacity: 0.82; 
+  margin: 0 8px;
+}
+
+/* Main Content Area */
+.main-content {
+  background: #fff;
+  border-radius: 24px;
+  padding: 50px 60px;
+  min-height: 600px;
+  box-shadow: 0 8px 40px rgba(48, 188, 237, 0.08);
+  margin-bottom: 40px;
+}
+
+/* Welcome Section */
+.welcome-section {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.welcome-title {
+  font-size: 2.8rem;
+  color: #2b486a;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  font-weight: 700;
+}
+
+.welcome-desc {
+  font-size: 1.3rem;
+  color: #4482cb;
+  margin-bottom: 40px;
+  line-height: 1.6;
+  opacity: 0.92;
+}
+
+/* System Status Grid */
+.system-status {
+  background: #f8fbfe;
+  border-radius: 20px;
+  padding: 35px;
+  margin-bottom: 50px;
+  border: 2px solid #e1e8ed;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 25px;
+}
+
+.status-card {
+  background: white;
+  padding: 25px;
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.status-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(48, 188, 237, 0.15);
+  border-color: #30bced;
+}
+
+.status-number {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.status-label {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.status-time {
+  font-size: 0.95rem;
+  color: #999;
+}
+
+/* Modules Section */
+.modules-section h2 {
+  font-size: 2.3rem;
+  color: #2b486a;
+  margin-bottom: 40px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  font-weight: 700;
+}
+
+/* Module Cards Grid - מותאם למסך רחב */
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 30px;
+  margin-bottom: 50px;
+}
+
+.module-card {
+  background: white;
+  border-radius: 18px;
+  padding: 35px;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.module-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(48, 188, 237, 0.2);
+  border-color: #30bced;
+}
+
+.module-card.active {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #f0fff4 0%, #ecfdf5 100%);
+}
+
+.module-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 25px;
+}
+
+.module-icon {
+  width: 65px;
+  height: 65px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  background: linear-gradient(135deg, #30bced, #528163);
+  color: white;
+  box-shadow: 0 5px 20px rgba(48, 188, 237, 0.3);
+}
+
+.module-info h3 {
+  font-size: 1.5rem;
+  color: #2b486a;
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+
+.module-status {
+  font-size: 0.95rem;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.status-active {
+  background: #d1fae5;
+  color: #10b981;
+}
+
+.module-desc {
+  color: #666;
+  line-height: 1.7;
+  margin-bottom: 25px;
+  font-size: 1.05rem;
+}
+
+.module-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.module-features li {
+  padding: 8px 0;
+  font-size: 1rem;
+  color: #555;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.module-features li:before {
+  content: "✓";
+  color: #10b981;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+/* Quick Actions - מותאם למסך רחב */
+.quick-actions {
+  background: #f0f7ff;
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+}
+
+.quick-actions h3 {
+  font-size: 1.8rem;
+  color: #2b486a;
+  margin-bottom: 30px;
+  font-weight: 600;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* Buttons - סגנון mecanochecker משופר */
+.btn {
+  padding: 16px 45px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  letter-spacing: 0.5px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #528163, #30bced);
+  color: white;
+  box-shadow: 0 5px 20px rgba(82,129,99,0.25);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #30bced, #528163);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(82,129,99,0.35);
+}
+
+.btn-secondary {
+  background: white;
+  color: #528163;
+  border: 2.5px solid #528163;
+  box-shadow: 0 3px 15px rgba(82,129,99,0.1);
+}
+
+.btn-secondary:hover {
+  background: #f0f9f4;
+  transform: translateY(-3px);
+  border-color: #30bced;
+  color: #30bced;
+}
+
+/* Tables - כשרלוונטי */
+.table-wrapper {
+  overflow-x: auto;
+  margin-top: 25px;
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  font-size: 1.05rem;
+}
+
+.table th {
+  background: #e6f0fa;
+  color: #2b486a;
+  font-size: 1.1rem;
+  font-weight: bold;
+  padding: 14px 12px;
+  border-bottom: 2px solid #c5e0f9;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 12px;
+  border-bottom: 1px solid #e4e5e9;
+  color: #3b537a;
+  text-align: right;
+}
+
+.table tr:hover {
+  background: #f8fbfe;
+}
+
+/* Main Card Centered - למודולים */
+.main-card-centered {
+  max-width: 100%;
+  margin: 40px 0;
+  padding: 60px 80px 50px 80px;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 8px 40px rgba(48, 188, 237, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 25px;
+  min-height: 350px;
+}
+
+.main-card-title {
+  font-size: 2.3rem;
+  font-weight: 700;
+  color: #2b486a;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+}
+
+.main-card-icon {
+  font-size: 3rem;
+  line-height: 1;
+  margin-left: 10px;
+}
+
+.main-card-desc {
+  font-size: 1.25rem;
+  color: #4482cb;
+  margin-bottom: 15px;
+  opacity: 0.92;
+}
+
+/* Responsive */
+@media (max-width: 1920px) and (min-width: 1600px) {
+  .container {
+    padding: 25px 35px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container { padding: 15px; }
+  .header-center-balance h1 { font-size: 1.8rem; }
+  .main-content { padding: 30px 25px; }
+  .modules-grid { grid-template-columns: 1fr; }
+  .action-buttons { flex-direction: column; align-items: center; }
+}

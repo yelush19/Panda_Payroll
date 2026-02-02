@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת בדיקת תלושי שכר - ליתאי פנדה טק</title>
+    <style>
+        /* Base Styles */
+        body {
+            font-family: 'Segoe UI', 'Heebo', Arial, sans-serif;
+            background: #e9eef3;
+            color: #2b486a;
+            direction: rtl;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            padding: 16px; 
+        }
+
+        /* Header */
+        .header-hitech-balance {
+            background: linear-gradient(90deg, #30bced 0%, #528163 100%);
+            color: #fff;
+            border-radius: 18px;
+            box-shadow: 0 6px 18px rgba(82,129,99,0.09);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 98px;
+            padding: 0 34px;
+            margin-bottom: 38px;
+        }
+
+        .logo-box {
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            background: #fff; 
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(48,188,237,0.08);
+            min-width: 80px; 
+            min-height: 62px; 
+            margin: 0 15px; 
+            padding: 0 10px;
+            border: 2.2px solid #e4e5e9;
+        }
+
+        .header-logo {
+            height: 46px; 
+            width: auto; 
+            border-radius: 8px; 
+            object-fit: contain;
+            display: block; 
+            margin: 0 auto;
+        }
+
+        .header-center-balance {
+            flex: 1; 
+            text-align: center; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            gap: 3px;
+        }
+
+        .header-center-balance h1 { 
+            font-size: 2.2rem; 
+            font-weight: 700; 
+            margin: 0 0 4px 0; 
+            letter-spacing: -1px; 
+        }
+
+        .header-center-desc {
+            font-size: 1.08rem; 
+            opacity: 0.96; 
+            font-weight: 400; 
+            margin-bottom: 0; 
+            color: #e7f9f3;
+        }
+
+        .header-slogan-branded {
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 10px;
+            font-size: 1.17rem; 
+            margin-top: 4px; 
+            margin-bottom: 2px;
+            font-family: 'Segoe UI', 'Heebo', Arial, sans-serif; 
+            font-weight: bold;
+            letter-spacing: 0.03em;
+            background: linear-gradient(90deg, #fff 10%, #c7f6ea 90%);
+            color: #295c42; 
+            border-radius: 7px; 
+            padding: 6px 18px 7px 18px;
+            box-shadow: 0 2px 16px rgba(48,188,237,0.10); 
+            width: fit-content;
+            margin-left: auto; 
+            margin-right: auto;
+        }
+
+        .slogan-brand {
+            color: #1874be; 
+            font-weight: bold; 
+            letter-spacing: 0.04em; 
+            font-size: 1.22em;
+            font-family: 'Segoe UI', 'Heebo', Arial, sans-serif;
+        }
+
+        .slogan-sep {
+            color: #528163; 
+            font-size: 1.2em; 
+            font-weight: bold; 
+            opacity: 0.82; 
+            margin: 0 7px;
+        }
+
+        /* Main Content */
+        .main-content {
+            background: #fff;
+            border-radius: 20px;
+            padding: 40px;
+            min-height: 600px;
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .welcome-title {
+            font-size: 2.5rem;
+            color: #2b486a;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .welcome-desc {
+            font-size: 1.2rem;
+            color: #4482cb;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        /* System Status */
+        .system-status {
+            background: #f8fbfe;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 40px;
+            border: 2px solid #e1e8ed;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .status-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .status-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .status-label {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .status-time {
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        /* Modules Grid */
+        .modules-section h2 {
+            font-size: 2rem;
+            color: #2b486a;
+            margin-bottom: 30px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .module-card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            border-color: #30bced;
+        }
+
+        .module-card.active {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #f0fff4 0%, #ecfdf5 100%);
+        }
+
+        .module-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .module-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            background: linear-gradient(135deg, #30bced, #528163);
+            color: white;
+            box-shadow: 0 4px 15px rgba(48, 188, 237, 0.3);
+        }
+
+        .module-info h3 {
+            font-size: 1.4rem;
+            color: #2b486a;
+            margin: 0 0 5px 0;
+            font-weight: 600;
+        }
+
+        .module-status {
+            font-size: 0.9rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #d1fae5;
+            color: #10b981;
+        }
+
+        .module-desc {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .module-features {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .module-features li {
+            padding: 5px 0;
+            font-size: 0.9rem;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .module-features li:before {
+            content: "✓";
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            background: #f0f7ff;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .quick-actions h3 {
+            font-size: 1.5rem;
+            color: #2b486a;
+            margin-bottom: 20px;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #528163, #30bced);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #528163;
+            border: 2px solid #528163;
+        }
+
+        .btn-secondary:hover {
+            background: #f0f7ff;
+            transform: translateY(-2px);
+        }
+
+        /* Footer */
+        .footer-hitech-balance {
+            background: linear-gradient(90deg, #30bced 0%, #528163 100%);
+            color: #fff;
+            border-radius: 18px;
+            box-shadow: 0 6px 18px rgba(82,129,99,0.09);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 82px;
+            padding: 0 34px;
+            margin: 60px 0 20px 0;
+        }
+
+        .footer-main {
+            font-size: 1.08rem;
+            opacity: 0.96;
+            font-weight: 400;
+            color: #e7f9f3;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header-center-balance h1 {
+                font-size: 1.5rem;
+            }
+            
+            .modules-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header-hitech-balance">
+            <div class="logo-box">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='50' font-size='50' text-anchor='middle' x='50'%3E💼%3C/text%3E%3C/svg%3E" alt="לוגו ליתאי" class="header-logo">
+            </div>
+            
+            <div class="header-center-balance">
+                <h1>מערכת בדיקת תלושי שכר</h1>
+                <p class="header-center-desc">מערכת מודולרית לבדיקה אוטומטית ותיקון חריגות</p>
+                <div class="header-slogan-branded">
+                    <span class="slogan-brand">ליתאי</span>
+                    <span class="slogan-sep">|</span>
+                    <span>פנדה טק</span>
+                </div>
+            </div>
+
+            <div class="logo-box">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='50' font-size='50' text-anchor='middle' x='50'%3E🐼%3C/text%3E%3C/svg%3E" alt="לוגו פנדה טק" class="header-logo">
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Welcome Section -->
+            <section class="welcome-section">
+                <h1 class="welcome-title">
+                    <span>🏠</span>
+                    ברוכים הבאים למערכת הבדיקות
+                </h1>
+                <p class="welcome-desc">
+                    מערכת מודולרית מתקדמת לבדיקת תלושי שכר, זיהוי חריגות וחיסכון זמן עבודה משמעותי
+                </p>
+            </section>
+
+            <!-- Month Picker -->
+            <div id="dashboardMonthPicker"></div>
+            <div id="dataBusStatus"></div>
+
+            <!-- System Status -->
+            <section class="system-status">
+                <h2 style="text-align: center; margin-bottom: 25px; color: #2b486a;">סטטוס המערכת</h2>
+                <div class="status-grid">
+                    <div class="status-card">
+                        <div class="status-number" style="color: #10b981;">7</div>
+                        <div class="status-label">מודולים פעילים</div>
+                        <div class="status-time">מוכנים לשימוש</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-number" style="color: #30bced;">37</div>
+                        <div class="status-label">עובדים במערכת</div>
+                        <div class="status-time" id="statusMonthDisplay"></div>
+                    </div>
+                    <div class="status-card">
+                        <div id="maxWorkDaysDisplay" class="status-number" style="color: #ef4444;"></div>
+                        <div class="status-label">ימי עבודה מקסימום</div>
+                        <div class="status-time">לחודש הנבחר</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-number" style="color: #f59e0b;">95%</div>
+                        <div class="status-label">דיוק בדיקות</div>
+                        <div class="status-time">אוטומטי</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Modules Grid -->
+            <section class="modules-section">
+                <h2>
+                    <span>🔧</span>
+                    מודולי המערכת
+                </h2>
+                
+                <div class="modules-grid">
+                    <!-- Module 0: Mecano Converter - NEW! -->
+                    <div class="module-card active" onclick="openModule('mecano-converter')">
+                        <div class="module-header">
+                            <div class="module-icon">🔄</div>
+                            <div class="module-info">
+                                <h3>המרת מקאנו</h3>
+                                <span class="module-status status-active">פעיל</span>
+                            </div>
+                        </div>
+                        <p class="module-desc">
+                            המרת קובץ מקאנו גולמי לפורמט מוכן לבדיקת תלושים
+                        </p>
+                        <ul class="module-features">
+                            <li>קריאת קובץ מקאנו גולמי</li>
+                            <li>המרה לפורמט Excel/CSV</li>
+                            <li>ניקוי וסידור נתונים</li>
+                            <li>יצירת קובץ MECANO_TO_PAYROLL_READY</li>
+                        </ul>
+                    </div>
+
+                    <!-- Module 1: Upload System - MOVED HERE -->
+                    <div class="module-card active" onclick="openModule('upload')">
+                        <div class="module-header">
+                            <div class="module-icon">📤</div>
+                            <div class="module-info">
+                                <h3>מערכת טעינת קבצי שכר</h3>
+                                <span class="module-status status-active">פעיל</span>
+                            </div>
+                        </div>
+                        <p class="module-desc">
+                            טעינה מרכזית של קבצים לאחר המרת מקאנו לביצוע בדיקות מקיפות
+                        </p>
+                        <ul class="module-features">
+                            <li>טעינת קובץ MECANO_TO_PAYROLL_READY</li>
+                            <li>העלאת תלושים סופיים</li>
+                            <li>העלאת דוח חריגים</li>
+                            <li>הרצת בדיקות אוטומטיות</li>
+                        </ul>
+                    </div>
+
+                    <!-- Module 2: Basic Checks -->
+                    <div class="module-card active" onclick="openModule('basic-checks')">
+                        <div class="module-header">
+                            <div class="module-icon">📋</div>
+                            <div class="module-info">
+                                <h3>בדיקות בסיסיות</h3>
+                                <span class="module-status status-active">פעיל</span>
+                            </div>
+                        </div>
+                        <p class="module-desc">
+                            בדיקת ימי עבודה, ארוחות, שעות נוספות והפרשות בסיסיות
+                        </p>
+                        <ul class="module-features">
+                            <li>בדיקת מקסימום ימי עבודה לפי חודש</li>
+                            <li>בדיקת ארוחות (40₪ × ימי עבודה)</li>
+                            <li>השוואה מול נתוני מקאנו</li>
+                            <li>8 בדיקות מתקדמות</li>
+                        </ul>
+                    </div>
+
+                    <!-- Module 2: New Employees -->
+                    <div class="module-card active" onclick="openModule('new-employees')">
+                        <div class="module-header">
+                            <div class="module-icon">👤</div>
+                            <div class="module-info">
+                                <h3>קליטת עובדים חדשים</h3>
+                                <span class="module-status status-active">פעיל</span>
+                            </div>
+                        </div>
+                        <p class="module-desc">
+                            זיהוי אוטומטי ובדיקת מסמכים נדרשים לעובדים חדשים
+                        </p>
+                        <ul class="module-features">
+                            <li>זיהוי אוטומטי מדוח חריגים</li>
+                            <li>בדיקת 4 מסמכים עיקריים</li>
+                            <li>דוח חסרים למשאבי אנוש</li>
+                            <li>הגדרות עובד מתקדמות</li>
+                        </ul>
+                    </div>
+
+                    <!-- Module 3: Pension & Benefits -->
+                    <div class="module-card active" onclick="openModule('pension')">
+                        <div class="module-header">
+                            <div class="module-icon">💰</div>
+                            <div class="module-info">
+                                <h3>הפרשות ופנסיה</h3>
+                                <span class="module-status status-active">פעיל</span>
+                            </div>
+                        </div>
+                        <p class="module-desc">
+                            זיהוי עובדים ללא הפרשה ודוח מרכז לטיפול במשרד
+                        </p>
+                        <ul class="module-features">
+                            <li>חישוב גמל מעסיק 6.5%</li>
+                            <li>חישוב פיצויים 8.33%</li>
+                            <li>זיהוי חסרי קה"ש</li>
+                            <li>טופס קוביות למשרד</li>
+                        </ul>
+                    </div>
+
+                    <!-- Module 4: Comparison Table -->
+                    <div class="module-card active" onclick="openModule('comparison')">
+                        <div class="module-header">
+                            <div class="module-icon">🔍</div>
+                            <div class="module-info">
+                                <h3>השוואה מקאנו-תלושים</h3>
+                                <span class="module-status status-active">פעיל</span>
+                            </div>
+                        </div>
+                        <p class="module-desc">
+                            טבלת השוואה מרכזית עם הדגשת הפרשים בצבעים
+                        </p>
+                        <ul class="module-features">
+                            <li>השוואת ימי עבודה/שעות/ארוחות</li>
+                            <li>צביעה לפי חומרה (ירוק/כתום/אדום)</li>
+                            <li>סינונים מתקדמים</li>
+                            <li>ייצוא מתמחה</li>
+                        </ul>
+                    </div>
+
+                    <!-- Module 5: Summary Report -->
+                    <div class="module-card active" onclick="openModule('summary')">
+                        <div class="module-header">
+                            <div class="module-icon">&#128202;</div>
+                            <div class="module-info">
+                                <h3>דוח סיכום</h3>
+                                <span class="module-status status-active">פעיל</span>
+                            </div>
+                        </div>
+                        <p class="module-desc">
+                            ריכוז ממצאים מכל המודולים וייצוא ל-Excel
+                        </p>
+                        <ul class="module-features">
+                            <li>סיכום סטטוס כל המודולים</li>
+                            <li>ממצאים עיקריים</li>
+                            <li>טבלת עובדים מרכזית</li>
+                            <li>ייצוא Excel/CSV</li>
+                        </ul>
+                    </div>
+
+                    <!-- Module 6: Exceptions Report -->
+                    <div class="module-card active" onclick="openModule('exceptions')">
+                        <div class="module-header">
+                            <div class="module-icon">📄</div>
+                            <div class="module-info">
+                                <h3>דוח חריגים</h3>
+                                <span class="module-status status-active">פעיל</span>
+                            </div>
+                        </div>
+                        <p class="module-desc">
+                            עיבוד בקשות מדוח חריגים וקטגוריזציה אוטומטית
+                        </p>
+                        <ul class="module-features">
+                            <li>חילוץ בקשות אוטומטי מ-PDF</li>
+                            <li>קטגוריזציה חכמה</li>
+                            <li>עריכה ידנית של בקשות</li>
+                            <li>אינטגרציה עם מודולים</li>
+                        </ul>
+                    </div>
+
+
+                </div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="quick-actions">
+                <h3>🚀 פעולות מהירות</h3>
+                <div class="action-buttons">
+                    <a href="../mecanochecker/index.html" class="btn btn-primary">
+                        <span>🔄</span>
+                        המר קובץ מקאנו
+                    </a>
+                    <a href="upload_module.html" class="btn btn-primary">
+                        <span>▶️</span>
+                        התחל בדיקה חדשה
+                    </a>
+                    <a href="basic-checks.html" class="btn btn-secondary">
+                        <span>📋</span>
+                        בדיקות בסיסיות
+                    </a>
+                    <a href="comparison_table.html" class="btn btn-secondary">
+                        <span>&#128269;</span>
+                        השוואת נתונים
+                    </a>
+                    <a href="summary_report.html" class="btn btn-secondary">
+                        <span>&#128202;</span>
+                        דוח סיכום
+                    </a>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer-hitech-balance">
+            <p class="footer-main">מערכת בדיקת תלושי שכר מודולרית | פותח על ידי ליתאי ופנדה טק | 2025-2026</p>
+        </footer>
+    </div>
+
+    <script src="../payrollchecker/shared/month_config.js"></script>
+    <script src="../payrollchecker/shared/data_bus.js"></script>
+    <script>
+        // Module navigation with correct file names
+        function openModule(moduleName) {
+            const moduleFiles = {
+                'mecano-converter': '../mecanochecker/index.html',
+                'basic-checks': 'basic-checks.html',
+                'pension': 'pension_module.html',
+                'new-employees': 'new_employees_module.html',
+                'exceptions': 'exceptions-module.html',
+                'comparison': 'comparison_table.html',
+                'upload': 'upload_module.html',
+                'summary': 'summary_report.html'
+            };
+
+            const file = moduleFiles[moduleName];
+            
+            if (!file) {
+                alert('מודול לא נמצא!');
+                return;
+            }
+
+            // Add loading effect
+            const moduleCard = event.currentTarget;
+            moduleCard.style.opacity = '0.7';
+            moduleCard.style.transform = 'scale(0.98)';
+            
+            setTimeout(() => {
+                window.location.href = file;
+            }, 200);
+        }
+
+        // Add animation on load
+        document.addEventListener('DOMContentLoaded', function() {
+            // אתחול בורר חודש
+            const pickerContainer = document.getElementById('dashboardMonthPicker');
+            if (pickerContainer && typeof MonthConfig !== 'undefined') {
+                pickerContainer.innerHTML = MonthConfig.createMonthPickerHTML('monthPicker');
+                MonthConfig.initMonthPicker();
+                updateDashboardFromMonth(MonthConfig.loadSelectedMonth());
+            }
+
+            // האזנה לשינוי חודש
+            window.addEventListener('monthChanged', function(e) {
+                updateDashboardFromMonth(e.detail);
+            });
+
+            const cards = document.querySelectorAll('.module-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+
+        function updateDashboardFromMonth(config) {
+            const monthDisplay = document.getElementById('statusMonthDisplay');
+            if (monthDisplay) monthDisplay.textContent = config.periodDisplay;
+            const maxDays = document.getElementById('maxWorkDaysDisplay');
+            if (maxDays) maxDays.textContent = config.maxWorkDays;
+
+            // עדכון סטטוס נתונים מ-DataBus
+            if (typeof DataBus !== 'undefined') {
+                const statusBar = document.getElementById('dataBusStatus');
+                if (statusBar) {
+                    statusBar.innerHTML = DataBus.createDataStatusHTML();
+                }
+            }
+        }
+
+        // Update system status
+        function updateSystemStatus() {
+            const timeElements = document.querySelectorAll('.status-time');
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('he-IL');
+        }
+
+        setInterval(updateSystemStatus, 30000);
+    </script>
+</body>
+</html>

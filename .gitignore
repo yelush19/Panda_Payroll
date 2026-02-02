@@ -1,0 +1,33 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Node (if used later)
+node_modules/
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
+*.bak
+
+# Public data files (sample/test data - not source code)
+public/*.xlsx
+public/*.pdf
+
+# Claude session files
+.claude/

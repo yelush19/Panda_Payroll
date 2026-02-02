@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מודול דוח חריגים | ליתאי פנדה טק</title>
+    <link rel="stylesheet" href="assets/css/payroll-dashboard-styles.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f5f7fa;
+            direction: rtl;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .back-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid #e1e8ed;
+            padding-bottom: 10px;
+        }
+
+        .upload-zone {
+            border: 2px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fb;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .upload-zone:hover {
+            border-color: #5a67d8;
+            background: #f0f4f8;
+        }
+
+        .upload-zone.dragover {
+            border-color: #10b981;
+            background: #f0fff4;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 15px;
+        }
+
+        .exceptions-list {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .employee-exception {
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: #fafbfc;
+            transition: all 0.3s ease;
+        }
+
+        .employee-exception:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .employee-exception.has-request {
+            border-color: #f59e0b;
+            background: #fffbeb;
+        }
+
+        .employee-exception.no-request {
+            border-color: #10b981;
+            background: #f0fff4;
+        }
+
+        .employee-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .employee-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .exception-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-has-request {
+            background: #fef3c7;
+            color: #f59e0b;
+        }
+
+        .status-no-request {
+            background: #d1fae5;
+            color: #10b981;
+        }
+
+        .exception-content {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .exception-textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .exception-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .exception-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-category {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-clear {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-save {
+            background: #10b981;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .category-tags {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .category-tag {
+            padding: 4px 8px;
+            background: #e1e8ed;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .category-tag.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .summary-stats {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fb 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #666;
+        }
+
+        .export-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .export-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .export-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+        }
+
+        .loading-spinner {
+            display: none;
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #667eea;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .exception-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .export-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">⬅️ חזרה לדף הבית</a>
+        <a href="summary_report.html" class="back-btn" style="background: #fbbf24;">&#128202; דוח סיכום</a>
+        
+        <div class="header">
+            <h1 id="exceptionsTitle">מודול דוח חריגים</h1>
+            <p>עיבוד דוח חריגים וחילוץ בקשות לכל עובד</p>
+        </div>
+
+        <!-- Month Picker -->
+        <div id="moduleMonthPicker"></div>
+
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <h2 class="section-title">
+                <span>📤</span>
+                העלאת דוח חריגים
+            </h2>
+            
+            <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">📄</div>
+                <div>גרור דוח חריגים לכאן או לחץ לבחירה</div>
+                <div style="font-size: 0.9rem; color: #666; margin-top: 10px;">
+                    נתמכים: PDF, Word, טקסט
+                </div>
+                <button class="upload-btn" type="button">בחר קובץ</button>
+            </div>
+            
+            <input type="file" id="fileInput" class="file-input" accept=".pdf,.doc,.docx,.txt" onchange="handleFileUpload(this)">
+            <div class="loading-spinner" id="loadingSpinner"></div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats" id="summaryStats" style="display: none;">
+            <h2 class="section-title">
+                <span>📊</span>
+                סיכום דוח חריגים
+            </h2>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #667eea;" id="totalEmployees">0</div>
+                    <div class="stat-label">סה"כ עובדים</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #f59e0b;" id="hasRequests">0</div>
+                    <div class="stat-label">עם בקשות</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #10b981;" id="noRequests">0</div>
+                    <div class="stat-label">ללא בקשות</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #ef4444;" id="needsReview">0</div>
+                    <div class="stat-label">דורש בדיקה</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exceptions List -->
+        <div class="exceptions-list" id="exceptionsList" style="display: none;">
+            <h2 class="section-title">
+                <span>📝</span>
+                בקשות חריגים לפי עובד
+            </h2>
+            
+            <div id="employeeExceptions">
+                <!-- Employee exceptions will be populated here -->
+            </div>
+        </div>
+
+        <!-- Export Section -->
+        <div class="export-section" id="exportSection" style="display: none;">
+            <h3>📤 ייצוא דוחות</h3>
+            <div class="export-buttons">
+                <button class="export-btn btn-primary" onclick="exportProcessedExceptions()">
+                    <span>📊</span>
+                    ייצא דוח מעובד
+                </button>
+                <button class="export-btn btn-secondary" onclick="exportForPayroll()">
+                    <span>💰</span>
+                    ייצא לתלושי שכר
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="../payrollchecker/shared/month_config.js"></script>
+    <script src="../payrollchecker/shared/data_bus.js"></script>
+    <script>
+        // ========== EXCEPTIONS DATA ==========
+        let exceptionsData = {};
+        let employeesData = {};
+
+        // Sample employee data - in real app this would come from API
+        const sampleEmployees = [
+            "בנימין זהר", "אבישי לייבנזון", "חיים ראש", "דוד אחדות", "לוי דביש",
+            "יורם שלמה", "ירדן אפל", "אורי אשתר", "איילה שירזי", "דוד לוי",
+            "אברהם בנג'יו", "דור לוי", "צחי חנגל", "שלמה לסנר", "מיכאל רפאיל"
+        ];
+
+        // Exception categories
+        const exceptionCategories = [
+            "קיזוז", "תוספת", "שינוי מס", "שעות נוספות", "חופש", "מחלה", "אחר"
+        ];
+
+        // ========== FILE UPLOAD HANDLING ==========
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            document.getElementById('loadingSpinner').style.display = 'block';
+            
+            // Simulate file processing
+            setTimeout(() => {
+                processExceptionsFile(file);
+                document.getElementById('loadingSpinner').style.display = 'none';
+            }, 2000);
+        }
+
+        // Drag and drop functionality
+        const uploadZone = document.getElementById('uploadZone');
+
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('fileInput').files = files;
+                handleFileUpload(document.getElementById('fileInput'));
+            }
+        });
+
+        // ========== EXCEPTIONS PROCESSING ==========
+        async function processExceptionsFile(file) {
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+
+            try {
+                if (fileExtension === 'pdf') {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const text = await extractTextFromPDF(arrayBuffer);
+                    parseExceptionsContent(text);
+                } else {
+                    // txt / doc - קריאה כטקסט
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        parseExceptionsContent(e.target.result);
+                    };
+                    reader.readAsText(file);
+                }
+            } catch (error) {
+                document.getElementById('loadingSpinner').style.display = 'none';
+                alert(`שגיאה בעיבוד הקובץ: ${error.message}`);
+            }
+        }
+
+        // חילוץ טקסט מ-PDF באמצעות PDF.js
+        async function extractTextFromPDF(arrayBuffer) {
+            if (typeof pdfjsLib === 'undefined') {
+                throw new Error('PDF.js לא נטען - לא ניתן לעבד קבצי PDF');
+            }
+
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = '';
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                fullText += pageText + '\n';
+            }
+
+            return fullText;
+        }
+
+        function parseExceptionsContent(content) {
+            exceptionsData = {};
+            employeesData = {};
+
+            // ניסיון זיהוי עובדים ובקשות מתוך הטקסט
+            const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+            // חפש שמות עובדים מוכרים בטקסט
+            sampleEmployees.forEach(employeeName => {
+                let foundRequest = "";
+
+                // חפש את השם בשורות הטקסט
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].includes(employeeName)) {
+                        // שורת הבקשה - בדרך כלל באותה שורה או בשורה הבאה
+                        const currentLine = lines[i];
+                        const nextLine = (i + 1 < lines.length) ? lines[i + 1] : '';
+
+                        // חלץ את הטקסט שאחרי השם (הבקשה)
+                        const afterName = currentLine.split(employeeName).pop().trim();
+                        // נקה תווים מיותרים
+                        const cleaned = afterName.replace(/^[\s\-:–]+/, '').trim();
+
+                        if (cleaned.length > 3) {
+                            foundRequest = cleaned;
+                        } else if (nextLine.length > 3 && !sampleEmployees.some(n => nextLine.includes(n))) {
+                            // אם הבקשה בשורה הבאה
+                            foundRequest = nextLine.replace(/^[\s\-:–]+/, '').trim();
+                        }
+                        break;
+                    }
+                }
+
+                const hasRequest = foundRequest.length > 0 && foundRequest !== "אין";
+
+                exceptionsData[employeeName] = {
+                    hasRequest: hasRequest,
+                    request: hasRequest ? foundRequest : "אין",
+                    category: hasRequest ? getCategoryFromRequest(foundRequest) : "",
+                    amount: hasRequest ? extractAmountFromRequest(foundRequest) : 0,
+                    processed: false
+                };
+
+                employeesData[employeeName] = {
+                    department: "",
+                    id: ""
+                };
+            });
+
+            // חפש שמות נוספים שאינם ברשימה המוכרת (עובדים חדשים)
+            const hebrewNamePattern = /[\u0590-\u05FF]{2,}\s+[\u0590-\u05FF]{2,}/g;
+            const foundNames = new Set();
+            lines.forEach(line => {
+                const matches = line.match(hebrewNamePattern);
+                if (matches) {
+                    matches.forEach(name => {
+                        const cleanName = name.trim();
+                        if (!sampleEmployees.includes(cleanName) && !foundNames.has(cleanName) && cleanName.length < 30) {
+                            foundNames.add(cleanName);
+                        }
+                    });
+                }
+            });
+
+            // אם לא נמצאו כלל שמות מוכרים - כנראה פורמט אחר, הצג הטקסט הגולמי
+            const matchedCount = Object.values(exceptionsData).filter(e => e.hasRequest).length;
+            if (matchedCount === 0 && lines.length > 0) {
+                // הצג את הטקסט הגולמי כדי שהמשתמש יוכל לערוך ידנית
+                sampleEmployees.forEach(employeeName => {
+                    exceptionsData[employeeName] = {
+                        hasRequest: false,
+                        request: "אין",
+                        category: "",
+                        amount: 0,
+                        processed: false
+                    };
+                    employeesData[employeeName] = { department: "", id: "" };
+                });
+            }
+
+            displayExceptions();
+            updateSummaryStats();
+            showSections();
+            persistExceptionsData();
+        }
+
+        function getCategoryFromRequest(request) {
+            if (request.includes("קיזוז")) return "קיזוז";
+            if (request.includes("תוספת") || request.includes("שעות")) return "שעות נוספות";
+            if (request.includes("מס")) return "שינוי מס";
+            if (request.includes("חופש")) return "חופש";
+            if (request.includes("החזר")) return "תוספת";
+            return "אחר";
+        }
+
+        function extractAmountFromRequest(request) {
+            const match = request.match(/(\d+)₪/);
+            return match ? parseInt(match[1]) : 0;
+        }
+
+        // ========== DISPLAY EXCEPTIONS ==========
+        function displayExceptions() {
+            const container = document.getElementById('employeeExceptions');
+            container.innerHTML = '';
+
+            Object.keys(exceptionsData).forEach(employeeName => {
+                const exception = exceptionsData[employeeName];
+                const employee = employeesData[employeeName];
+                
+                const employeeCard = createEmployeeExceptionCard(employeeName, exception, employee);
+                container.appendChild(employeeCard);
+            });
+        }
+
+        function createEmployeeExceptionCard(employeeName, exception, employee) {
+            const card = document.createElement('div');
+            card.className = `employee-exception ${exception.hasRequest ? 'has-request' : 'no-request'}`;
+            
+            card.innerHTML = `
+                <div class="employee-header">
+                    <div class="employee-name">${employeeName}</div>
+                    <div class="exception-status ${exception.hasRequest ? 'status-has-request' : 'status-no-request'}">
+                        ${exception.hasRequest ? 'יש בקשות' : 'אין בקשות'}
+                    </div>
+                </div>
+                
+                <div class="exception-content">
+                    <div>
+                        <textarea 
+                            class="exception-textarea" 
+                            placeholder="הזן בקשות חריגים או 'אין'..."
+                            onchange="updateExceptionRequest('${employeeName}', this.value)"
+                        >${exception.request}</textarea>
+                        
+                        <div class="category-tags">
+                            ${exceptionCategories.map(cat => `
+                                <span class="category-tag ${exception.category === cat ? 'active' : ''}" 
+                                      onclick="setCategory('${employeeName}', '${cat}')">
+                                    ${cat}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="exception-actions">
+                        <button class="action-btn btn-category" onclick="autoCategorizerequest('${employeeName}')">
+                            🏷️ קטגוריה אוטומטית
+                        </button>
+                        <button class="action-btn btn-clear" onclick="clearRequest('${employeeName}')">
+                            🗑️ נקה
+                        </button>
+                        <button class="action-btn btn-save" onclick="saveRequest('${employeeName}')">
+                            💾 שמור
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // ========== EXCEPTION ACTIONS ==========
+        function updateExceptionRequest(employeeName, request) {
+            if (!exceptionsData[employeeName]) return;
+            
+            exceptionsData[employeeName].request = request.trim();
+            exceptionsData[employeeName].hasRequest = request.trim() !== "" && request.trim() !== "אין";
+            exceptionsData[employeeName].category = getCategoryFromRequest(request);
+            exceptionsData[employeeName].amount = extractAmountFromRequest(request);
+            
+            updateSummaryStats();
+            
+            // Update card styling
+            const card = event.target.closest('.employee-exception');
+            if (card) {
+                card.className = `employee-exception ${exceptionsData[employeeName].hasRequest ? 'has-request' : 'no-request'}`;
+                
+                const statusElement = card.querySelector('.exception-status');
+                statusElement.textContent = exceptionsData[employeeName].hasRequest ? 'יש בקשות' : 'אין בקשות';
+                statusElement.className = `exception-status ${exceptionsData[employeeName].hasRequest ? 'status-has-request' : 'status-no-request'}`;
+            }
+        }
+
+        function setCategory(employeeName, category) {
+            if (!exceptionsData[employeeName]) return;
+            
+            exceptionsData[employeeName].category = category;
+            
+            // Update visual state
+            const card = event.target.closest('.employee-exception');
+            const tags = card.querySelectorAll('.category-tag');
+            tags.forEach(tag => {
+                tag.classList.remove('active');
+                if (tag.textContent.trim() === category) {
+                    tag.classList.add('active');
+                }
+            });
+        }
+
+        function autoCategorizerequest(employeeName) {
+            const exception = exceptionsData[employeeName];
+            if (!exception) return;
+            
+            const category = getCategoryFromRequest(exception.request);
+            setCategory(employeeName, category);
+            
+            // Visual feedback
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '✓ בוצע';
+            button.style.background = '#10b981';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '#667eea';
+            }, 1500);
+        }
+
+        function clearRequest(employeeName) {
+            if (!exceptionsData[employeeName]) return;
+            
+            exceptionsData[employeeName].request = "אין";
+            exceptionsData[employeeName].hasRequest = false;
+            exceptionsData[employeeName].category = "";
+            exceptionsData[employeeName].amount = 0;
+            
+            // Update textarea
+            const card = event.target.closest('.employee-exception');
+            const textarea = card.querySelector('.exception-textarea');
+            textarea.value = "אין";
+            
+            updateExceptionRequest(employeeName, "אין");
+        }
+
+        function saveRequest(employeeName) {
+            const exception = exceptionsData[employeeName];
+            if (!exception) return;
+
+            exception.processed = true;
+
+            // שמירה ל-DataBus
+            persistExceptionsData();
+
+            // Visual feedback
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '✓ נשמר';
+            button.style.background = '#10b981';
+
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '#10b981';
+            }, 1500);
+        }
+
+        // שמירת נתוני חריגים ב-DataBus
+        function persistExceptionsData() {
+            if (typeof DataBus !== 'undefined') {
+                const config = (typeof MonthConfig !== 'undefined') ? MonthConfig.loadSelectedMonth() : null;
+                const periodKey = config ? config.periodKey : 'unknown';
+                DataBus.saveExceptionsData(periodKey, {
+                    exceptions: exceptionsData,
+                    employees: employeesData
+                });
+            }
+        }
+
+        // טעינת נתוני חריגים שנשמרו קודם
+        function loadPersistedExceptions() {
+            if (typeof DataBus !== 'undefined') {
+                const config = (typeof MonthConfig !== 'undefined') ? MonthConfig.loadSelectedMonth() : null;
+                const periodKey = config ? config.periodKey : 'unknown';
+                const saved = DataBus.loadExceptionsData(periodKey);
+                if (saved && saved.exceptions) {
+                    exceptionsData = saved.exceptions;
+                    employeesData = saved.employees || {};
+                    displayExceptions();
+                    updateSummaryStats();
+                    showSections();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // ========== SUMMARY STATS ==========
+        function updateSummaryStats() {
+            const total = Object.keys(exceptionsData).length;
+            const hasRequests = Object.values(exceptionsData).filter(e => e.hasRequest).length;
+            const noRequests = total - hasRequests;
+            const needsReview = Object.values(exceptionsData).filter(e => e.hasRequest && !e.processed).length;
+            
+            document.getElementById('totalEmployees').textContent = total;
+            document.getElementById('hasRequests').textContent = hasRequests;
+            document.getElementById('noRequests').textContent = noRequests;
+            document.getElementById('needsReview').textContent = needsReview;
+        }
+
+        function showSections() {
+            document.getElementById('summaryStats').style.display = 'block';
+            document.getElementById('exceptionsList').style.display = 'block';
+            document.getElementById('exportSection').style.display = 'block';
+        }
+
+        // ========== EXPORT FUNCTIONS ==========
+        function exportProcessedExceptions() {
+            let csv = 'דוח חריגים מעובד\n';
+            csv += `תאריך עיבוד: ${new Date().toLocaleDateString('he-IL')}\n\n`;
+            csv += 'שם עובד,מחלקה,יש בקשות,תיאור בקשה,קטגוריה,סכום,סטטוס\n';
+            
+            Object.keys(exceptionsData).forEach(employeeName => {
+                const exception = exceptionsData[employeeName];
+                const employee = employeesData[employeeName];
+                
+                csv += `${employeeName},${employee.department},${exception.hasRequest ? 'כן' : 'לא'},`;
+                csv += `"${exception.request}",${exception.category},${exception.amount},`;
+                csv += `${exception.processed ? 'מעובד' : 'ממתין'}\n`;
+            });
+            
+            downloadCSV(csv, `דוח_חריגים_מעובד_${new Date().toISOString().slice(0,10)}.csv`);
+        }
+
+        function exportForPayroll() {
+            let csv = 'דוח חריגים לתלושי שכר\n';
+            csv += `תאריך: ${new Date().toLocaleDateString('he-IL')}\n\n`;
+            csv += 'שם עובד,בקשות בדוח חריגים\n';
+            
+            Object.keys(exceptionsData).forEach(employeeName => {
+                const exception = exceptionsData[employeeName];
+                csv += `${employeeName},"${exception.request}"\n`;
+            });
+            
+            downloadCSV(csv, `חריגים_לתלושי_שכר_${new Date().toISOString().slice(0,10)}.csv`);
+        }
+
+        function downloadCSV(csv, filename) {
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+
+        // אתחול בורר חודש וטעינת נתונים שמורים
+        document.addEventListener('DOMContentLoaded', function() {
+            const pickerContainer = document.getElementById('moduleMonthPicker');
+            if (pickerContainer && typeof MonthConfig !== 'undefined') {
+                pickerContainer.innerHTML = MonthConfig.createMonthPickerHTML('monthPicker');
+                MonthConfig.initMonthPicker();
+                const config = MonthConfig.loadSelectedMonth();
+                const title = document.getElementById('exceptionsTitle');
+                if (title) title.textContent = `מודול דוח חריגים - ${config.periodDisplay}`;
+            }
+            // נסה לטעון נתונים שמורים מהתקופה הנבחרת
+            loadPersistedExceptions();
+
+            window.addEventListener('monthChanged', function(e) {
+                const title = document.getElementById('exceptionsTitle');
+                if (title) title.textContent = `מודול דוח חריגים - ${e.detail.periodDisplay}`;
+                // טען נתונים שמורים לתקופה החדשה
+                loadPersistedExceptions();
+            });
+        });
+    </script>
+</body>
+</html>

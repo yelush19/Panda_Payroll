@@ -1,0 +1,410 @@
+/* עיצוב מותאם למסך 27" Full HD */
+body {
+  font-family: 'Segoe UI', 'Heebo', Arial, sans-serif;
+  background: #e9eef3;
+  color: #2b486a;
+  direction: rtl;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Container מותאם למסך 27" */
+.container { 
+  max-width: 1600px; 
+  margin: 0 auto; 
+  padding: 30px 40px; 
+}
+
+/* Header & Footer */
+.header-hitech-balance, .footer-hitech-balance {
+  background: linear-gradient(90deg, #30bced 0%, #528163 100%);
+  color: #fff;
+  border-radius: 18px;
+  box-shadow: 0 6px 18px rgba(82,129,99,0.09);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 110px;
+  padding: 0 40px;
+  margin-bottom: 40px;
+  gap: 0;
+}
+
+.footer-hitech-balance { 
+  margin: 80px 0 30px 0; 
+  min-height: 90px; 
+}
+
+.logo-box {
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  background: #fff; 
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(48,188,237,0.08);
+  min-width: 90px; 
+  min-height: 70px; 
+  margin: 0 20px; 
+  padding: 0 15px;
+  border: 2.2px solid #e4e5e9;
+}
+
+.header-logo, .footer-logo {
+  height: 50px; 
+  width: auto; 
+  border-radius: 8px; 
+  object-fit: contain;
+  display: block; 
+  margin: 0 auto;
+}
+
+.header-center-balance, .footer-center-balance {
+  flex: 1; 
+  text-align: center; 
+  display: flex; 
+  flex-direction: column;
+  align-items: center; 
+  gap: 5px;
+}
+
+.header-center-balance h1 { 
+  font-size: 2.4rem; 
+  font-weight: 700; 
+  margin: 0 0 5px 0; 
+  letter-spacing: -1px; 
+}
+
+.header-center-desc, .footer-main {
+  font-size: 1.1rem; 
+  opacity: 0.96; 
+  font-weight: 400; 
+  margin-bottom: 0; 
+  color: #e7f9f3;
+}
+
+.header-slogan-branded, .footer-slogan-branded {
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 12px;
+  font-size: 1.2rem; 
+  margin-top: 5px; 
+  margin-bottom: 3px;
+  font-family: 'Segoe UI', 'Heebo', Arial, sans-serif; 
+  font-weight: bold;
+  letter-spacing: 0.03em;
+  background: linear-gradient(90deg, #fff 10%, #c7f6ea 90%);
+  color: #295c42; 
+  border-radius: 8px; 
+  padding: 8px 24px;
+  box-shadow: 0 2px 16px rgba(48,188,237,0.10); 
+  width: fit-content;
+  margin-left: auto; 
+  margin-right: auto;
+}
+
+.slogan-brand {
+  color: #1874be; 
+  font-weight: bold; 
+  letter-spacing: 0.04em; 
+  font-size: 1.25em;
+  font-family: 'Segoe UI', 'Heebo', Arial, sans-serif;
+}
+
+.slogan-sep {
+  color: #528163; 
+  font-size: 1.2em; 
+  font-weight: bold; 
+  opacity: 0.82; 
+  margin: 0 8px;
+}
+
+/* MAIN CARD - מותאם למסך 27" */
+.main-card-centered {
+  max-width: 100%; 
+  margin: 40px 0; 
+  padding: 60px 80px 50px 80px;
+  background: #fff; 
+  border-radius: 24px; 
+  box-shadow: 0 8px 40px rgba(48, 188, 237, 0.08);
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  text-align: center; 
+  gap: 25px; 
+  min-height: 350px;
+}
+
+.main-card-title { 
+  font-size: 2.3rem; 
+  font-weight: 700; 
+  color: #2b486a; 
+  margin-bottom: 10px; 
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+  justify-content: center; 
+}
+
+.main-card-icon { 
+  font-size: 3rem; 
+  line-height: 1; 
+  margin-left: 10px; 
+}
+
+.main-card-desc { 
+  font-size: 1.25rem; 
+  color: #4482cb; 
+  margin-bottom: 15px; 
+  opacity: 0.92; 
+}
+
+.main-card-upload { 
+  display: block; 
+  width: 100%; 
+  max-width: 700px; 
+  margin: 20px auto 15px auto; 
+  cursor: pointer; 
+}
+
+.main-card-upload-box {
+  padding: 35px 40px; 
+  border: 3px dashed #4482cb; 
+  border-radius: 16px;
+  background: #f6fafd; 
+  font-size: 1.35rem; 
+  color: #4482cb; 
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.main-card-upload-box:hover, .main-card-upload-box:focus-within {
+  background: #e5f3fa; 
+  border-color: #2b486a; 
+  color: #2b486a;
+  transform: scale(1.02);
+}
+
+.main-card-help { 
+  font-size: 1.05rem; 
+  color: #84b7e8; 
+  opacity: 0.86; 
+  margin-top: 15px; 
+}
+
+/* טבלה - מותאמת למסך רחב */
+.table-wrapper { 
+  overflow-x: auto; 
+  margin-top: 25px; 
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+}
+
+.table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  background: #fff; 
+  font-size: 1.05rem;
+}
+
+.table th {
+  background: #e6f0fa; 
+  color: #2b486a; 
+  font-size: 1.1rem; 
+  font-weight: bold;
+  padding: 14px 12px; 
+  border-bottom: 2px solid #c5e0f9; 
+  text-align: right;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 12px; 
+  border-bottom: 1px solid #e4e5e9; 
+  color: #3b537a; 
+  text-align: right;
+}
+
+.table tr:hover {
+  background: #f8fbfe;
+}
+
+/* מיון */
+.sort-button {
+  background: none; 
+  border: none; 
+  font: inherit; 
+  color: #1976d2; 
+  cursor: pointer; 
+  font-weight: bold; 
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.sort-button:hover {
+  color: #30bced;
+}
+
+.sort-button.sort-active { 
+  color: #528163; 
+  text-decoration: underline; 
+}
+
+.sort-arrow { 
+  font-size: 1.1em; 
+  margin-right: 3px; 
+}
+
+/* בחירת עמודות - מותאם למסך 27" */
+.columns-toggle {
+  margin: 30px 0 20px 0; 
+  padding: 30px 40px; 
+  background: #eaf6ef;
+  border-radius: 16px; 
+  text-align: center; 
+  box-shadow: 0 3px 15px rgba(82,129,99,0.08);
+  display: flex; 
+  flex-direction: column; 
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.columns-toggle > label {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2b486a;
+  margin-bottom: 10px;
+}
+
+#columnsToggleList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+  justify-content: center;
+  width: 100%;
+  margin-top: 15px;
+  padding: 0 20px;
+}
+
+#columnsToggleList label {
+  font-size: 1.1rem; 
+  background: #fff; 
+  padding: 14px 20px; 
+  border-radius: 10px;
+  box-shadow: 0 3px 8px rgba(48,188,237,0.12); 
+  cursor: pointer;
+  border: 2px solid #aee6ce; 
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+#columnsToggleList label:hover {
+  background: #f0f9f4;
+  border-color: #528163;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(48,188,237,0.2);
+}
+
+#columnsToggleList input[type="checkbox"] { 
+  margin-left: 10px; 
+  accent-color: #528163; 
+  cursor: pointer; 
+  width: 18px;
+  height: 18px;
+}
+
+/* כפתור */
+.btn { 
+  padding: 15px 40px; 
+  border: none; 
+  border-radius: 10px; 
+  cursor: pointer; 
+  font-size: 1.15rem; 
+  margin: 20px 8px; 
+  transition: all 0.3s ease; 
+  font-weight: 600; 
+  letter-spacing: 0.5px;
+}
+
+.btn-primary { 
+  background: linear-gradient(135deg, #528163, #30bced); 
+  color: white; 
+  box-shadow: 0 4px 15px rgba(82,129,99,0.25);
+}
+
+.btn-primary:hover { 
+  background: linear-gradient(135deg, #30bced, #528163); 
+  transform: translateY(-3px); 
+  box-shadow: 0 6px 20px rgba(82,129,99,0.35);
+}
+
+/* סטטוס */
+.alert {
+  padding: 18px 25px;
+  border-radius: 10px;
+  margin: 15px 0;
+  font-weight: 500;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.alert.success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.alert.error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.alert.info {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+/* אנימציית טעינה */
+.loading {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(48, 188, 237, 0.3);
+  border-radius: 50%;
+  border-top-color: #30bced;
+  animation: spin 1s ease-in-out infinite;
+  margin-left: 12px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive - לא אמור להיות רלוונטי למסך 27" */
+@media (max-width: 1920px) and (min-width: 1600px) {
+  .container { 
+    padding: 25px 35px; 
+  }
+}
+
+@media (max-width: 768px) {
+  .container { padding: 15px; }
+  .header-center-balance h1 { font-size: 1.8rem; }
+  .main-card-centered { padding: 30px 25px; }
+  #columnsToggleList {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  #columnsToggleList label {
+    font-size: 1rem;
+    padding: 10px 15px;
+  }
+}

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>מעבד קבצי מקאנו - גרסה 5.0</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* תיקונים נוספים לפריסה */
+    .container {
+      max-width: 100%;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    
+    /* Header & Footer - רוחב מלא */
+    .header-hitech-balance, 
+    .footer-hitech-balance {
+      width: 100%;
+      max-width: none;
+      margin-left: -20px;
+      margin-right: -20px;
+      padding-left: 40px;
+      padding-right: 40px;
+      box-sizing: border-box;
+    }
+    
+    .back-button {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #528163, #30bced);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+    
+    .back-button:hover {
+      background: linear-gradient(135deg, #30bced, #528163);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    
+    /* תיקון פריסת הכרטיס המרכזי */
+    .main-card-centered {
+      max-width: 100% !important;
+      margin: 40px 0 !important;
+      padding: 50px 60px !important;
+      box-sizing: border-box;
+    }
+    
+    /* תיקון אזור העלאה */
+    .main-card-upload {
+      max-width: 700px !important;
+      margin: 20px auto !important;
+    }
+    
+    /* הודעת דרישות קבצים */
+    .file-requirements {
+      background: linear-gradient(135deg, #f0f8ff, #e6f3ff);
+      border: 2px dashed #667eea;
+      border-radius: 12px;
+      padding: 25px;
+      margin: 25px 0;
+      text-align: center;
+    }
+    
+    .file-requirements h3 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+    
+    .requirement-item {
+      display: flex;
+      align-items: center;
+      margin: 15px 0;
+      padding: 15px;
+      background: rgba(255,255,255,0.8);
+      border-radius: 8px;
+      text-align: right;
+    }
+    
+    .requirement-icon {
+      font-size: 1.8em;
+      margin-left: 15px;
+      width: 40px;
+    }
+    
+    .requirement-text {
+      flex: 1;
+    }
+    
+    .requirement-text strong {
+      color: #667eea;
+      font-size: 1.1em;
+    }
+    
+    .requirement-text small {
+      color: #666;
+      display: block;
+      margin-top: 5px;
+    }
+    
+    /* תיקון פריסת העמודות */
+    .columns-toggle {
+      max-width: 100%;
+      margin: 30px 0;
+      padding: 25px 40px;
+      box-sizing: border-box;
+    }
+    
+    #columnsToggleList {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+      max-width: 100%;
+      margin: 15px 0;
+    }
+    
+    #columnsToggleList label {
+      font-size: 0.95rem;
+      padding: 10px 15px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    /* תיקון הטבלה */
+    #tableSection {
+      max-width: 100%;
+      overflow: hidden;
+    }
+    
+    .table-wrapper {
+      margin: 20px 0;
+      max-width: 100%;
+      overflow-x: auto;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+    
+    .table {
+      width: 100%;
+      min-width: 800px;
+    }
+    
+    /* סטטוס הודעות מעוצבות */
+    .alert {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+      font-size: 1rem;
+    }
+    
+    .alert.info {
+      background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+      color: #0c5460;
+      border: 2px solid #b8daff;
+    }
+    
+    .alert.success {
+      background: linear-gradient(135deg, #d4edda, #c3e6cb);
+      color: #155724;
+      border: 2px solid #28a745;
+    }
+    
+    .alert.error {
+      background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+      color: #721c24;
+      border: 2px solid #dc3545;
+    }
+    
+    /* אנימציה לטעינה */
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 10px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- כפתור חזרה -->
+  <a href="../docs/index.html" class="back-button">
+    <span>🏠</span>
+    חזרה למערכת הראשית
+  </a>
+  
+  <div class="container">
+
+    <!-- HEADER -->
+    <div class="header-hitech-balance">
+      <div class="logo-box panda">
+        <img src="https://assets.codepen.io/14660575/website_header.png" alt="PandaTech Logo" class="header-logo" />
+      </div>
+      <div class="header-center-balance">
+        <h1>🚀 מערכת מקאנו מתקדמת</h1>
+        <div class="header-center-desc">
+          עיבוד דוחות אירועים ונתונים – גרסה 5.0 – PandaTech
+        </div>
+        <div class="header-slogan-branded">
+          <span class="slogan-brand">LITAY Finance – INNOVATION IN BALANCE</span>
+          <span class="slogan-sep">|</span>
+          <span>פתרונות פיננסיים מתקדמים</span>
+        </div>
+      </div>
+      <div class="logo-box litay">
+        <img src="https://assets.codepen.io/14660575/LITAYLOGO.png" alt="Litay Logo" class="header-logo" />
+      </div>
+    </div>
+
+    <!-- MAIN CARD -->
+    <div class="main-card-centered">
+      <div class="main-card-title">
+        <span class="main-card-icon">📊</span>
+        העלה 2 קבצי מקאנו
+      </div>
+      <div class="main-card-desc">
+        זיהוי אוטומטי של קבצים ואיחוד חכם של נתונים
+      </div>
+      
+      <!-- דרישות קבצים -->
+      <div class="file-requirements">
+        <h3>📋 קבצים נדרשים (2 קבצים)</h3>
+        
+        <div class="requirement-item">
+          <span class="requirement-icon">🎯</span>
+          <div class="requirement-text">
+            <strong>דוח אירועים (Events Report)</strong>
+            <small>קובץ המכיל את כל האירועים של העובדים - חגים, חופשות, מחלות וכו'</small>
+          </div>
+        </div>
+        
+        <div class="requirement-item">
+          <span class="requirement-icon">📈</span>
+          <div class="requirement-text">
+            <strong>דוח נתונים (Detailed/Platoon Report)</strong>
+            <small>קובץ המכיל נתונים מספריים - שעות, ימים, ארוחות וכו'</small>
+          </div>
+        </div>
+      </div>
+      
+      <label for="fileInput" class="main-card-upload">
+        <input type="file" id="fileInput" class="main-card-file-input" accept=".xlsx,.xls" multiple style="display:none;">
+        <div class="main-card-upload-box">
+          <span>לחץ כאן או גרור 2 קבצים לכאן</span>
+        </div>
+      </label>
+      <div class="main-card-help">
+        ✅ זיהוי אוטומטי של סוג קובץ | ✅ עמודות אירועים דינמיות | ✅ איחוד חכם של נתונים
+      </div>
+      
+      <!-- סטטוס -->
+      <div id="statusSection" style="display: none; margin-top: 18px;">
+        <div id="statusMessage"></div>
+      </div>
+      
+      <!-- תקופת דוח -->
+      <div id="reportPeriodArea"></div>
+      
+      <!-- בחירת עמודות -->
+      <div class="columns-toggle" id="columnsToggleSection" style="display: none;">
+        <label style="font-size: 1.2rem; font-weight: 600; display: block; margin-bottom: 15px;">בחר עמודות להצגה:</label>
+        <div id="columnsToggleList"></div>
+      </div>
+      
+      <!-- אזור בחירת עמודות דינמי -->
+      <div id="columnsToggleArea"></div>
+      
+      <!-- טבלת תוצאות -->
+      <div id="tableSection" style="display: none; margin-top: 32px;">
+        <div class="main-card-title" style="font-size:1.3rem;gap:6px">
+          <span class="main-card-icon">📋</span>
+          דוח עובדים מאוחד
+        </div>
+        <div class="table-wrapper">
+          <div id="dataTable"></div>
+        </div>
+        <div class="btn-container" style="text-align: center; margin-top: 20px;">
+          <button class="btn btn-primary" id="exportExcelBtn" style="display: none;">ייצוא לאקסל 💾</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer-hitech-balance">
+      <div class="logo-box panda">
+        <img src="https://assets.codepen.io/14660575/website_header.png" alt="PandaTech Logo" class="footer-logo" />
+      </div>
+      <div class="footer-center-balance">
+        <div class="footer-main">
+          פותח עבור <b>PANDATECH</b> | כל הזכויות שמורות ליתאי ניהול שירותים בע"מ © 2025
+        </div>
+        <div class="footer-slogan-branded">
+          <span class="slogan-brand">LITAY Finance – INNOVATION IN BALANCE</span>
+          <span class="slogan-sep">|</span>
+          <span>פתרונות פיננסיים מתקדמים</span>
+        </div>
+      </div>
+      <div class="logo-box litay">
+        <img src="https://assets.codepen.io/14660575/LITAYLOGO.png" alt="Litay Logo" class="footer-logo" />
+      </div>
+    </div>
+  </div>
+  
+  <!-- ספריית XLSX -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="../payrollchecker/shared/month_config.js"></script>
+  <script src="../payrollchecker/shared/data_bus.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מודול הפרשות ופנסיה | ליתאי פנדה טק</title>
+    <link rel="stylesheet" href="assets/css/payroll-dashboard-styles.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f5f7fa;
+            direction: rtl;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .back-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .stats-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fb 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-desc {
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        .pension-analysis {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid #e1e8ed;
+            padding-bottom: 10px;
+        }
+
+        .filter-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e1e8ed;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .filter-btn:hover {
+            border-color: #667eea;
+            transform: translateY(-1px);
+        }
+
+        .employee-card {
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            background: #fafbfc;
+        }
+
+        .employee-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .employee-card.critical {
+            border-color: #ef4444;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        }
+
+        .employee-card.warning {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        }
+
+        .employee-card.ok {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #f0fff4 0%, #ecfdf5 100%);
+        }
+
+        .employee-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .employee-info h3 {
+            margin: 0 0 5px 0;
+            color: #2c3e50;
+            font-size: 1.3rem;
+        }
+
+        .employee-info p {
+            margin: 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .employee-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .status-critical {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .status-warning {
+            background: #fef3c7;
+            color: #f59e0b;
+        }
+
+        .status-ok {
+            background: #d1fae5;
+            color: #10b981;
+        }
+
+        .pension-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .pension-item {
+            background: white;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .pension-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .pension-item.missing {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .pension-item.ok {
+            border-color: #10b981;
+            background: #f0fff4;
+        }
+
+        .pension-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pension-data {
+            display: grid;
+            gap: 5px;
+            font-size: 0.9rem;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .data-label {
+            color: #666;
+        }
+
+        .data-value {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .data-value.missing {
+            color: #ef4444;
+        }
+
+        .data-value.ok {
+            color: #10b981;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-fix {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-check {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-ok {
+            background: #10b981;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .export-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .export-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .export-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .pension-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-section {
+                flex-direction: column;
+            }
+            
+            .export-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .employee-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">⬅️ חזרה לדף הבית</a>
+        <a href="summary_report.html" class="back-btn" style="background: #fbbf24;">&#128202; דוח סיכום</a>
+        
+        <div class="header">
+            <h1 id="pensionTitle">מודול הפרשות ופנסיה</h1>
+            <p>זיהוי עובדים ללא הפרשות נדרשות | הפקת דוחות לטיפול במשרד</p>
+        </div>
+
+        <!-- Month Picker -->
+        <div id="moduleMonthPicker"></div>
+
+        <!-- Statistics Section -->
+        <div class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #667eea;" id="totalEmployees">0</div>
+                    <div class="stat-label">סה"כ עובדים</div>
+                    <div class="stat-desc">נבדקו להפרשות</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #ef4444;" id="criticalIssues">0</div>
+                    <div class="stat-label">בעיות קריטיות</div>
+                    <div class="stat-desc">חסרות הפרשות חובה</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #f59e0b;" id="warningIssues">0</div>
+                    <div class="stat-label">לבדיקה</div>
+                    <div class="stat-desc">חסר קה"ש או הבראה</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #10b981;" id="okEmployees">0</div>
+                    <div class="stat-label">תקינים</div>
+                    <div class="stat-desc">כל ההפרשות במקום</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pension Analysis -->
+        <div class="pension-analysis">
+            <h2 class="section-title">
+                <span>🔍</span>
+                ניתוח הפרשות לפי עובד
+            </h2>
+            
+            <div class="filter-section">
+                <button class="filter-btn active" onclick="filterByStatus('all')">הכל</button>
+                <button class="filter-btn" onclick="filterByStatus('critical')">בעיות קריטיות</button>
+                <button class="filter-btn" onclick="filterByStatus('warning')">לבדיקה</button>
+                <button class="filter-btn" onclick="filterByStatus('ok')">תקינים</button>
+                <button class="filter-btn" onclick="filterByType('hourly')">עובדים שעתיים</button>
+                <button class="filter-btn" onclick="filterByType('global')">עובדים גלובליים</button>
+            </div>
+            
+            <div id="employeesList">
+                <!-- יתמלא דינמית -->
+            </div>
+        </div>
+
+        <!-- Export Section -->
+        <div class="export-section">
+            <h3>📤 ייצוא דוחות לטיפול</h3>
+            <div class="export-buttons">
+                <button class="export-btn btn-danger" onclick="exportCriticalIssues()">
+                    <span>🚨</span>
+                    דוח בעיות קריטיות
+                </button>
+                <button class="export-btn btn-warning" onclick="exportMissingAdvancedStudy()">
+                    <span>📚</span>
+                    דוח חסרי קה"ש
+                </button>
+                <button class="export-btn btn-primary" onclick="exportKobiotForm()">
+                    <span>📋</span>
+                    טופס קוביות למשרד
+                </button>
+                <button class="export-btn btn-success" onclick="exportFullReport()">
+                    <span>📊</span>
+                    דוח כללי מפורט
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../payrollchecker/shared/month_config.js"></script>
+    <script src="../payrollchecker/shared/data_bus.js"></script>
+    <script>
+        // ========== PENSION DATA & LOGIC ==========
+        const _bc = (typeof MonthConfig !== 'undefined') ? MonthConfig.BUSINESS_CONSTANTS : {};
+        const pensionRates = {
+            pension: _bc.pensionRate || 0.065,
+            compensation: _bc.compensationRate || 0.0833,
+            advancedStudy: _bc.advancedStudyRate || 0.075
+        };
+
+        // Enhanced employee data with pension information
+        const employeesData = {
+            1: { 
+                name: "בנימין זהר", 
+                dept: "בעלי מניות", 
+                id: "317607316", 
+                startDate: "01/12/2006",
+                isShareholder: true,
+                employeeType: "global", // global = כמות 1, hourly = כמות שעות
+                
+                // Salary components
+                baseSalary: 35000,
+                absenceDeduction: 0,
+                standardHoursAbsence: 0,
+                
+                // Current pension payments
+                pensionEmployer: 2275,
+                compensationEmployer: 2916,
+                advancedStudyEmployer: 0,
+                
+                // Contract settings
+                hasAdvancedStudyInContract: false,
+                
+                specialNotes: "בעל מניות - הפרשות לפי סוכן ביטוח"
+            },
+
+            2: { 
+                name: "אבישי לייבנזון", 
+                dept: "בעלי מניות", 
+                id: "120831804", 
+                startDate: "01/01/2014",
+                isShareholder: true,
+                employeeType: "global",
+                
+                baseSalary: 35000,
+                absenceDeduction: 0,
+                standardHoursAbsence: 0,
+                
+                pensionEmployer: 2275,
+                compensationEmployer: 2916,
+                advancedStudyEmployer: 2625,
+                
+                hasAdvancedStudyInContract: true,
+                
+                specialNotes: "בעל מניות - הפרשות לפי סוכן ביטוח"
+            },
+
+            3: { 
+                name: "חיים ראש", 
+                dept: "מל\"מ", 
+                id: "058273851", 
+                startDate: "02/10/2012",
+                isShareholder: false,
+                employeeType: "hourly",
+                
+                baseSalary: 20586,
+                absenceDeduction: 320, // מחלה
+                standardHoursAbsence: 0,
+                
+                pensionEmployer: 1338,
+                compensationEmployer: 1715,
+                advancedStudyEmployer: 1544,
+                
+                hasAdvancedStudyInContract: true,
+                
+                specialNotes: ""
+            },
+
+            4: { 
+                name: "דוד אחדות", 
+                dept: "מל\"מ", 
+                id: "148548141", 
+                startDate: "15/03/2015",
+                isShareholder: false,
+                employeeType: "hourly",
+                
+                baseSalary: 22000,
+                absenceDeduction: 0,
+                standardHoursAbsence: 0,
+                
+                pensionEmployer: 1430,
+                compensationEmployer: 1833,
+                advancedStudyEmployer: 1650,
+                
+                hasAdvancedStudyInContract: true,
+                
+                specialNotes: ""
+            },
+
+            5: { 
+                name: "לוי דביש", 
+                dept: "מל\"מ", 
+                id: "144217130", 
+                startDate: "10/06/2018",
+                isShareholder: false,
+                employeeType: "hourly",
+                
+                baseSalary: 18500,
+                absenceDeduction: 0,
+                standardHoursAbsence: 0,
+                
+                pensionEmployer: 1203,
+                compensationEmployer: 1541,
+                advancedStudyEmployer: 0, // חסר קה"ש למרות שבחוזה!
+                
+                hasAdvancedStudyInContract: true,
+                
+                specialNotes: "חסר הפרשה לקה\"ש למרות שבחוזה"
+            },
+
+            13: { 
+                name: "יורם שלמה", 
+                dept: "פרויקט דרום", 
+                id: "111110236", 
+                startDate: "12/02/2017",
+                isShareholder: false,
+                employeeType: "hourly",
+                
+                baseSalary: 17500,
+                absenceDeduction: 0,
+                standardHoursAbsence: 0,
+                
+                pensionEmployer: 1138,
+                compensationEmployer: 1458,
+                advancedStudyEmployer: 1313,
+                
+                hasAdvancedStudyInContract: true,
+                
+                specialNotes: ""
+            },
+
+            29: { 
+                name: "ירדן אפל", 
+                dept: "משרד", 
+                id: "202343718", 
+                startDate: "12/04/2020",
+                isShareholder: false,
+                employeeType: "global",
+                
+                baseSalary: 19500,
+                absenceDeduction: 0,
+                standardHoursAbsence: 0,
+                
+                pensionEmployer: 1268,
+                compensationEmployer: 1624,
+                advancedStudyEmployer: 1463,
+                
+                hasAdvancedStudyInContract: true,
+                
+                specialNotes: "עובד משרד"
+            },
+
+            // עובד חדש שעתי - מתחת לשנה
+            "new1": {
+                name: "אורי אשתר", 
+                dept: "מחלקת IT", 
+                id: "NEW1", 
+                startDate: "01/05/2025",
+                isShareholder: false,
+                employeeType: "hourly",
+                
+                baseSalary: 15000,
+                absenceDeduction: 0,
+                standardHoursAbsence: 0,
+                
+                pensionEmployer: 975, // יש
+                compensationEmployer: 1250, // יש
+                advancedStudyEmployer: 0, // אין - עובד חדש
+                
+                hasAdvancedStudyInContract: true,
+                
+                specialNotes: "עובד חדש - פחות משנה, לא זכאי להבראה"
+            }
+        };
+
+        // ========== PENSION CHECKER CLASS ==========
+        class PensionChecker {
+            constructor() {
+                this.today = new Date();
+            }
+
+            calculatePensionBase(employee) {
+                // בסיס הפרשות = שכר יסוד - היעדרויות - היעדרויות בגין שעות תקן
+                return employee.baseSalary - employee.absenceDeduction - employee.standardHoursAbsence;
+            }
+
+            calculateRequiredPension(employee) {
+                const base = this.calculatePensionBase(employee);
+                return {
+                    pension: Math.round(base * pensionRates.pension),
+                    compensation: Math.round(base * pensionRates.compensation),
+                    advancedStudy: employee.hasAdvancedStudyInContract ? Math.round(base * pensionRates.advancedStudy) : 0
+                };
+            }
+
+            isEligibleForRecovery(employee) {
+                if (employee.employeeType !== 'hourly') return true;
+                
+                const startDate = new Date(employee.startDate.split('/').reverse().join('-'));
+                const oneYearLater = new Date(startDate);
+                oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+                
+                return this.today >= oneYearLater;
+            }
+
+            checkEmployee(employee) {
+                const required = this.calculateRequiredPension(employee);
+                const base = this.calculatePensionBase(employee);
+                
+                const issues = [];
+                
+                // בדיקת גמל
+                if (employee.pensionEmployer < required.pension) {
+                    issues.push({
+                        type: 'pension',
+                        severity: 'critical',
+                        message: `חסר גמל מעסיק: נדרש ${required.pension}₪, משולם ${employee.pensionEmployer}₪`,
+                        missing: required.pension - employee.pensionEmployer
+                    });
+                }
+                
+                // בדיקת פיצויים
+                if (employee.compensationEmployer < required.compensation) {
+                    issues.push({
+                        type: 'compensation',
+                        severity: 'critical',
+                        message: `חסר פיצויים: נדרש ${required.compensation}₪, משולם ${employee.compensationEmployer}₪`,
+                        missing: required.compensation - employee.compensationEmployer
+                    });
+                }
+                
+                // בדיקת קה"ש
+                if (employee.hasAdvancedStudyInContract && employee.advancedStudyEmployer < required.advancedStudy) {
+                    issues.push({
+                        type: 'advancedStudy',
+                        severity: 'warning',
+                        message: `חסר קה"ש: נדרש ${required.advancedStudy}₪, משולם ${employee.advancedStudyEmployer}₪`,
+                        missing: required.advancedStudy - employee.advancedStudyEmployer
+                    });
+                }
+                
+                // בדיקת הבראה
+                const eligibleForRecovery = this.isEligibleForRecovery(employee);
+                if (!eligibleForRecovery) {
+                    issues.push({
+                        type: 'recovery',
+                        severity: 'info',
+                        message: `לא זכאי להבראה - עובד שעתי מתחת לשנה`,
+                        missing: 0
+                    });
+                }
+                
+                return {
+                    employee: employee,
+                    base: base,
+                    required: required,
+                    issues: issues,
+                    status: this.getOverallStatus(issues)
+                };
+            }
+
+            getOverallStatus(issues) {
+                if (issues.some(issue => issue.severity === 'critical')) return 'critical';
+                if (issues.some(issue => issue.severity === 'warning')) return 'warning';
+                return 'ok';
+            }
+
+            checkAllEmployees() {
+                const results = {};
+                Object.keys(employeesData).forEach(empId => {
+                    results[empId] = this.checkEmployee(employeesData[empId]);
+                });
+                return results;
+            }
+        }
+
+        // ========== MAIN APPLICATION ==========
+        let pensionChecker = new PensionChecker();
+        let pensionResults = {};
+        let filteredEmployees = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // אתחול בורר חודש
+            const pickerContainer = document.getElementById('moduleMonthPicker');
+            if (pickerContainer && typeof MonthConfig !== 'undefined') {
+                pickerContainer.innerHTML = MonthConfig.createMonthPickerHTML('monthPicker');
+                MonthConfig.initMonthPicker();
+                const config = MonthConfig.loadSelectedMonth();
+                const title = document.getElementById('pensionTitle');
+                if (title) title.textContent = `מודול הפרשות ופנסיה - ${config.periodDisplay}`;
+            }
+            window.addEventListener('monthChanged', function(e) {
+                const title = document.getElementById('pensionTitle');
+                if (title) title.textContent = `מודול הפרשות ופנסיה - ${e.detail.periodDisplay}`;
+            });
+
+            runPensionAnalysis();
+            renderEmployeesList();
+            updateStatistics();
+        });
+
+        function runPensionAnalysis() {
+            pensionResults = pensionChecker.checkAllEmployees();
+            filteredEmployees = Object.keys(pensionResults);
+        }
+
+        function renderEmployeesList() {
+            const container = document.getElementById('employeesList');
+            container.innerHTML = '';
+
+            filteredEmployees.forEach(empId => {
+                const result = pensionResults[empId];
+                const emp = result.employee;
+                
+                const employeeCard = createEmployeeCard(empId, result);
+                container.appendChild(employeeCard);
+            });
+        }
+
+        function createEmployeeCard(empId, result) {
+            const emp = result.employee;
+            const statusClass = getStatusClass(result.status);
+            const statusText = getStatusText(result.status);
+
+            const card = document.createElement('div');
+            card.className = `employee-card ${statusClass}`;
+            
+            card.innerHTML = `
+                <div class="employee-header">
+                    <div class="employee-info">
+                        <h3>${emp.name}</h3>
+                        <p>${emp.dept} | ת.ז: ${emp.id} | ${emp.employeeType === 'hourly' ? 'שעתי' : 'גלובלי'}</p>
+                        <p>תחילת עבודה: ${emp.startDate} | בסיס הפרשות: ${result.base.toLocaleString()}₪</p>
+                    </div>
+                    <div class="employee-status status-${result.status}">
+                        ${statusText}
+                    </div>
+                </div>
+
+                <div class="pension-details">
+                    ${createPensionItems(result)}
+                </div>
+
+                ${result.issues.length > 0 ? `
+                <div class="action-buttons">
+                    ${createActionButtons(result)}
+                </div>
+                ` : ''}
+            `;
+
+            return card;
+        }
+
+        function createPensionItems(result) {
+            const emp = result.employee;
+            const req = result.required;
+            
+            const items = [
+                {
+                    title: "גמל מעסיק (6.5%)",
+                    icon: "💰",
+                    required: req.pension,
+                    actual: emp.pensionEmployer,
+                    type: "pension"
+                },
+                {
+                    title: "פיצויים (8.33%)",
+                    icon: "🛡️",
+                    required: req.compensation,
+                    actual: emp.compensationEmployer,
+                    type: "compensation"
+                },
+                {
+                    title: "קה\"ש (7.5%)",
+                    icon: "📚",
+                    required: req.advancedStudy,
+                    actual: emp.advancedStudyEmployer,
+                    type: "advancedStudy",
+                    conditional: emp.hasAdvancedStudyInContract ? "יש בחוזה" : "אין בחוזה"
+                },
+                {
+                    title: "הבראה",
+                    icon: "🌴",
+                    required: "לפי זכאות",
+                    actual: pensionChecker.isEligibleForRecovery(emp) ? "זכאי" : "לא זכאי",
+                    type: "recovery"
+                }
+            ];
+
+            return items.map(item => {
+                let statusClass = 'ok';
+                let statusIcon = '✅';
+                
+                if (item.type === 'recovery') {
+                    statusClass = pensionChecker.isEligibleForRecovery(emp) ? 'ok' : 'info';
+                    statusIcon = pensionChecker.isEligibleForRecovery(emp) ? '✅' : 'ℹ️';
+                } else if (item.type === 'advancedStudy' && !emp.hasAdvancedStudyInContract) {
+                    statusClass = 'info';
+                    statusIcon = 'ℹ️';
+                } else if (item.actual < item.required) {
+                    statusClass = 'missing';
+                    statusIcon = '❌';
+                }
+
+                return `
+                    <div class="pension-item ${statusClass}">
+                        <div class="pension-title">
+                            ${item.icon} ${item.title} ${statusIcon}
+                        </div>
+                        <div class="pension-data">
+                            ${typeof item.required === 'number' ? `
+                            <div class="data-row">
+                                <span class="data-label">נדרש:</span>
+                                <span class="data-value">${item.required.toLocaleString()}₪</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">משולם:</span>
+                                <span class="data-value ${item.actual < item.required ? 'missing' : 'ok'}">${item.actual.toLocaleString()}₪</span>
+                            </div>
+                            ${item.actual < item.required ? `
+                            <div class="data-row">
+                                <span class="data-label">חסר:</span>
+                                <span class="data-value missing">${(item.required - item.actual).toLocaleString()}₪</span>
+                            </div>` : ''}
+                            ` : `
+                            <div class="data-row">
+                                <span class="data-label">סטטוס:</span>
+                                <span class="data-value">${item.actual}</span>
+                            </div>`}
+                            ${item.conditional ? `
+                            <div class="data-row">
+                                <span class="data-label">בחוזה:</span>
+                                <span class="data-value">${item.conditional}</span>
+                            </div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function createActionButtons(result) {
+            const buttons = [];
+            
+            result.issues.forEach(issue => {
+                if (issue.severity === 'critical') {
+                    buttons.push(`<button class="action-btn btn-fix" onclick="markForFix('${result.employee.id}', '${issue.type}')">🚨 לתיקון דחוף</button>`);
+                } else if (issue.severity === 'warning') {
+                    buttons.push(`<button class="action-btn btn-check" onclick="markForCheck('${result.employee.id}', '${issue.type}')">⚠️ לבדיקה</button>`);
+                }
+            });
+            
+            return buttons.join('');
+        }
+
+        function getStatusClass(status) {
+            const classes = {
+                'critical': 'critical',
+                'warning': 'warning',
+                'ok': 'ok',
+                'info': 'info'
+            };
+            return classes[status] || 'ok';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'critical': '🚨 דחוף',
+                'warning': '⚠️ לבדיקה',
+                'ok': '✅ תקין',
+                'info': 'ℹ️ מידע'
+            };
+            return texts[status] || 'לא ידוע';
+        }
+
+        function filterByStatus(status) {
+            // Update active filter button
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (status === 'all') {
+                filteredEmployees = Object.keys(pensionResults);
+            } else {
+                filteredEmployees = Object.keys(pensionResults).filter(empId => {
+                    return pensionResults[empId].status === status;
+                });
+            }
+            
+            renderEmployeesList();
+            updateStatistics();
+        }
+
+        function filterByType(type) {
+            // Update active filter button
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            filteredEmployees = Object.keys(pensionResults).filter(empId => {
+                const emp = pensionResults[empId].employee;
+                return emp.employeeType === type;
+            });
+            
+            renderEmployeesList();
+            updateStatistics();
+        }
+
+        function updateStatistics() {
+            const stats = { total: 0, critical: 0, warning: 0, ok: 0 };
+            
+            filteredEmployees.forEach(empId => {
+                const result = pensionResults[empId];
+                stats.total++;
+                stats[result.status] = (stats[result.status] || 0) + 1;
+            });
+
+            document.getElementById('totalEmployees').textContent = stats.total;
+            document.getElementById('criticalIssues').textContent = stats.critical || 0;
+            document.getElementById('warningIssues').textContent = stats.warning || 0;
+            document.getElementById('okEmployees').textContent = stats.ok || 0;
+        }
+
+        function markForFix(empId, issueType) {
+            alert(`מסומן לתיקון דחוף: ${empId} - ${issueType}`);
+            // כאן אפשר להוסיף לוגיקה לסימון עובדים לתיקון
+        }
+
+        function markForCheck(empId, issueType) {
+            alert(`מסומן לבדיקה: ${empId} - ${issueType}`);
+            // כאן אפשר להוסיף לוגיקה לסימון עובדים לבדיקה
+        }
+
+        // ========== EXPORT FUNCTIONS ==========
+        function exportCriticalIssues() {
+            let csv = 'דוח בעיות קריטיות - הפרשות ופנסיה\n';
+            csv += `תאריך הפקה: ${new Date().toLocaleDateString('he-IL')}\n\n`;
+            csv += 'שם עובד,ת.ז,מחלקה,סוג עובד,בסיס הפרשות,בעיה,סכום חסר,הערות\n';
+            
+            Object.keys(pensionResults).forEach(empId => {
+                const result = pensionResults[empId];
+                if (result.status === 'critical') {
+                    const emp = result.employee;
+                    result.issues.forEach(issue => {
+                        if (issue.severity === 'critical') {
+                            csv += `${emp.name},${emp.id},${emp.dept},${emp.employeeType === 'hourly' ? 'שעתי' : 'גלובלי'},`;
+                            csv += `${result.base.toLocaleString()},${issue.message},${issue.missing}₪,${emp.specialNotes}\n`;
+                        }
+                    });
+                }
+            });
+            
+            downloadCSV(csv, `דוח_בעיות_קריטיות_הפרשות_${new Date().toISOString().slice(0,10)}.csv`);
+        }
+
+        function exportMissingAdvancedStudy() {
+            let csv = 'דוח חסרי קרן השתלמות\n';
+            csv += `תאריך הפקה: ${new Date().toLocaleDateString('he-IL')}\n\n`;
+            csv += 'שם עובד,ת.ז,מחלקה,יש בחוזה,נדרש,משולם,חסר,הערות\n';
+            
+            Object.keys(pensionResults).forEach(empId => {
+                const result = pensionResults[empId];
+                const emp = result.employee;
+                
+                const advancedStudyIssue = result.issues.find(issue => issue.type === 'advancedStudy');
+                if (advancedStudyIssue || (emp.hasAdvancedStudyInContract && emp.advancedStudyEmployer === 0)) {
+                    csv += `${emp.name},${emp.id},${emp.dept},${emp.hasAdvancedStudyInContract ? 'כן' : 'לא'},`;
+                    csv += `${result.required.advancedStudy}₪,${emp.advancedStudyEmployer}₪,`;
+                    csv += `${Math.max(0, result.required.advancedStudy - emp.advancedStudyEmployer)}₪,${emp.specialNotes}\n`;
+                }
+            });
+            
+            downloadCSV(csv, `דוח_חסרי_קרן_השתלמות_${new Date().toISOString().slice(0,10)}.csv`);
+        }
+
+        function exportKobiotForm() {
+            let csv = 'טופס קוביות למשרד הלקוח\n';
+            csv += `תאריך הפקה: ${new Date().toLocaleDateString('he-IL')}\n`;
+            csv += 'חברה: פנדה טק בע"מ\n';
+            csv += 'מס\' חברה: 515174757\n\n';
+            
+            csv += 'ת.ז עובד,שם עובד,שכר יסוד,גמל מעסיק נדרש,פיצויים נדרש,קה"ש נדרש,הערות\n';
+            
+            Object.keys(pensionResults).forEach(empId => {
+                const result = pensionResults[empId];
+                const emp = result.employee;
+                
+                csv += `${emp.id},${emp.name},${result.base.toLocaleString()},`;
+                csv += `${result.required.pension},${result.required.compensation},${result.required.advancedStudy},`;
+                csv += `${emp.hasAdvancedStudyInContract ? 'יש קה"ש בחוזה' : 'אין קה"ש בחוזה'}\n`;
+            });
+            
+            downloadCSV(csv, `טופס_קוביות_${new Date().toISOString().slice(0,10)}.csv`);
+        }
+
+        function exportFullReport() {
+            let csv = 'דוח הפרשות ופנסיה מלא\n';
+            csv += `תאריך הפקה: ${new Date().toLocaleDateString('he-IL')}\n\n`;
+            csv += 'שם עובד,ת.ז,מחלקה,סוג,בסיס הפרשות,גמל נדרש,גמל משולם,פיצויים נדרש,פיצויים משולם,קה"ש נדרש,קה"ש משולם,הבראה,סטטוס,הערות\n';
+            
+            Object.keys(pensionResults).forEach(empId => {
+                const result = pensionResults[empId];
+                const emp = result.employee;
+                
+                csv += `${emp.name},${emp.id},${emp.dept},${emp.employeeType === 'hourly' ? 'שעתי' : 'גלובלי'},`;
+                csv += `${result.base.toLocaleString()},${result.required.pension},${emp.pensionEmployer},`;
+                csv += `${result.required.compensation},${emp.compensationEmployer},`;
+                csv += `${result.required.advancedStudy},${emp.advancedStudyEmployer},`;
+                csv += `${pensionChecker.isEligibleForRecovery(emp) ? 'זכאי' : 'לא זכאי'},`;
+                csv += `${getStatusText(result.status)},"${emp.specialNotes}"\n`;
+            });
+            
+            downloadCSV(csv, `דוח_הפרשות_מלא_${new Date().toISOString().slice(0,10)}.csv`);
+        }
+
+        function downloadCSV(csv, filename) {
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+    </script>
+</body>
+</html>
