@@ -1,0 +1,123 @@
+# CLAUDE.DB - Panda Payroll Project Documentation
+# =================================================
+# Last Updated: 2026-02-03
+# Branch: claude/fix-vercel-wix-deployment-rPlNV
+
+## Project Overview
+-------------------
+Project: Panda_Payroll (Payroll Checking System v2.0)
+Organization: LITAY Services Management (ליתאי ניהול שירותים) + PandaTech
+Type: Web-based automated payroll validation system
+Architecture: Client-side only (no backend required)
+
+## Deployment Status
+--------------------
+
+### 1. GitHub Pages ✅ ACTIVE
+- Status: CONFIGURED AND WORKING
+- Config File: .github/workflows/deploy.yml
+- Source Directory: docs/
+- Trigger: Automatic on push to main
+- URL Pattern: https://[username].github.io/Panda_Payroll/
+
+### 2. Vercel ⚠️ CONFIGURED BUT NOT VERIFIED
+- Status: CONFIGURATION EXISTS - NEEDS VERIFICATION
+- Config File: vercel.json
+- Settings:
+  - outputDirectory: "docs"
+  - cleanUrls: true
+  - trailingSlash: false
+- Issues to Check:
+  [ ] Verify Vercel project is connected to repository
+  [ ] Check if deployment is active on Vercel dashboard
+  [ ] Get actual Vercel deployment URL
+  [ ] Test if site is accessible
+
+### 3. Wix Subdomain ❌ NOT CONFIGURED
+- Status: NO CONFIGURATION FOUND
+- Issues:
+  [ ] No Wix configuration files in codebase
+  [ ] Need to set up subdomain in Wix DNS settings
+  [ ] Need to point subdomain to Vercel deployment URL
+  [ ] CNAME record needs to be created in Wix
+
+## Required Actions for Wix + Vercel Integration
+-------------------------------------------------
+
+### Step 1: Verify/Setup Vercel Deployment
+1. Go to vercel.com and sign in
+2. Import the GitHub repository (yelush19/Panda_Payroll)
+3. Set output directory to "docs"
+4. Deploy and get the deployment URL (e.g., panda-payroll.vercel.app)
+
+### Step 2: Configure Wix DNS for Subdomain
+1. Go to Wix Dashboard > Domains
+2. Select your domain
+3. Go to DNS Settings
+4. Add CNAME record:
+   - Name: payroll (or desired subdomain)
+   - Value: cname.vercel-dns.com
+5. Wait for DNS propagation (up to 48 hours)
+
+### Step 3: Configure Custom Domain in Vercel
+1. Go to Vercel project settings > Domains
+2. Add custom domain: payroll.yourdomain.com
+3. Vercel will verify DNS configuration
+4. Enable SSL certificate (automatic)
+
+## Testing Checklist
+--------------------
+[ ] GitHub Pages deployment works
+[ ] Vercel deployment works
+[ ] Custom domain (Wix subdomain) resolves correctly
+[ ] SSL certificate is active
+[ ] All 8 modules load correctly:
+    - index.html (Dashboard)
+    - basic-checks.html
+    - comparison_table.html
+    - new_employees_module.html
+    - pension_module.html
+    - exceptions-module.html
+    - upload_module.html
+    - summary_report.html
+    - smart-navigation.html
+[ ] File upload functionality works
+[ ] Hebrew RTL display correct
+[ ] Cross-browser compatibility (Chrome, Edge, Firefox, Safari)
+
+## Project Structure
+--------------------
+docs/                          # Production build (deploy this)
+├── index.html                 # Main dashboard
+├── basic-checks.html          # Module 1
+├── comparison_table.html      # Module 2
+├── new_employees_module.html  # Module 3
+├── pension_module.html        # Module 4
+├── exceptions-module.html     # Module 5
+├── upload_module.html         # Module 6
+├── summary_report.html        # Module 7
+├── smart-navigation.html      # Module 8
+└── assets/
+    ├── css/
+    ├── js/
+    └── images/
+
+## Configuration Files
+----------------------
+vercel.json          # Vercel deployment config
+.github/workflows/   # GitHub Pages deployment
+
+## Notes
+--------
+- System is 100% client-side - no server/database needed
+- All data processing happens in browser
+- Uses localStorage for inter-module data sharing
+- Supports Excel (.xlsx, .xls) and CSV file uploads
+
+## Session Log
+--------------
+[2026-02-03] Initial investigation of deployment status
+- Found: GitHub Pages configured and should be working
+- Found: Vercel configuration exists but needs verification
+- Found: No Wix configuration - needs to be set up manually in Wix dashboard
+- Action needed: User needs to configure Wix subdomain DNS settings
