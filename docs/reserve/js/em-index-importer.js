@@ -101,6 +101,36 @@ window.EmIndexImporter = (function() {
         // אם total(125+150) >  הסף → רק העודף נשאר, פרופורציונלית בין 125/150
         // 0 / null = אין תוספת גלובלית (כל 125/150 משולמים)
         global_overtime_hours: null,
+
+        // ===== Phase HR - רכיבי שכר (additive, ברירת מחדל null/false) =====
+        base_salary:                  null,
+        hourly_rate:                  null,
+        pension_rate_employer:        0.065,
+        pension_rate_employee:        0.06,
+        compensation_rate:            0.0833,
+        has_advanced_study_in_contract: false,
+        advanced_study_rate_employer: 0.075,
+        advanced_study_rate_employee: 0.025,
+        has_intensive_work_bonus:     false,
+        intensive_work_hours:         null,
+        has_global_bonus:             false,    // נדלק אוטומטית אם global_overtime_hours > 0
+        meal_allowance_per_day:       40,
+        is_office_special_exception:  false,
+
+        // יתרות
+        vacation_balance_days:    0,
+        vacation_annual_quota:    14,
+        sick_balance_days:        0,
+        recovery_balance_amount:  0,
+        recovery_used_amount:     0,
+        is_eligible_for_recovery: true,
+
+        // מסמכים (Phase HR-2)
+        doc_form_101:             'missing',     // missing / pending / approved
+        doc_employment_contract:  'missing',
+        doc_kupot_form:           'missing',
+        doc_bank_details:         'missing',
+
         notes:         '',
 
         source: 'em_index',
