@@ -8,7 +8,10 @@ window.EmIndexImporter = (function() {
   const SHEET_NAME = 'Em_Index';
 
   // סוגי עובד אפשריים (לעריכה ידנית במסך)
-  const EMPLOYEE_TYPES = ['שכיר', 'קבלן', 'שעתי', 'מנכ"ל', 'פרויקט'];
+  const EMPLOYEE_TYPES = ['גלובלי', 'קבלן', 'שעתי', 'מנכ"ל', 'פרויקט'];
+
+  // סטטוסים מיוחדים (חופפים על סוג עובד; דורשים תקופה: מ-תאריך, עד-תאריך)
+  const SPECIAL_STATUSES = ['חופשת לידה', 'חל"ת', 'תאונת עבודה'];
 
   function parseFile(file) {
     return new Promise((resolve, reject) => {
@@ -89,6 +92,10 @@ window.EmIndexImporter = (function() {
         employee_type: '',
         start_date:    '',
         end_date:      '',
+        // סטטוס מיוחד (משותף לכל המודולים): חופשת לידה / חל"ת / תאונת עבודה
+        special_status:      '',
+        special_status_from: '',
+        special_status_to:   '',
         notes:         '',
 
         source: 'em_index',
@@ -115,5 +122,5 @@ window.EmIndexImporter = (function() {
     })[key] || key;
   }
 
-  return { parseFile, EMPLOYEE_TYPES, SHEET_NAME };
+  return { parseFile, EMPLOYEE_TYPES, SPECIAL_STATUSES, SHEET_NAME };
 })();

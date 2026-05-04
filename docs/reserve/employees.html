@@ -191,13 +191,39 @@
       flex-wrap: wrap;
     }
     .bulk-bar label { font-weight: 600; color: #2b486a; font-size: 0.95rem; }
-    .bulk-bar input[type="date"] {
+    .bulk-bar input[type="date"],
+    .bulk-bar input[type="text"],
+    .bulk-bar select {
       padding: 7px 10px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
       font-family: inherit;
       font-size: 0.95rem;
+      background: #fff;
     }
+    .bulk-panel {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 8px 14px;
+      margin-bottom: 14px;
+    }
+    .bulk-panel summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: #2b486a;
+      font-size: 0.98rem;
+      padding: 6px 0;
+      user-select: none;
+    }
+    .bulk-panel summary:hover { color: #30bced; }
+    .bulk-panel[open] summary { margin-bottom: 8px; }
+    .bulk-panel .bulk-bar {
+      background: #f8fafc;
+      border-color: transparent;
+      margin-bottom: 6px;
+    }
+    .bulk-panel .bulk-bar:last-child { margin-bottom: 0; }
     .btn {
       background: #30bced;
       color: #fff;
@@ -254,8 +280,10 @@
   <div class="container">
 
     <div class="header">
-      <h1>מודול מילואים — אינדקס עובדים</h1>
-      <div class="subtitle">שלב 1: ייבוא רשימת העובדים מקובץ Meckano חודשי, עם השלמת שדות חסרים</div>
+      <h1>אינדקס עובדים מרכזי</h1>
+      <div class="subtitle">
+        רשימת עובדים משותפת בין מודול שכר ומודול מילואים • ייבוא מקובץ Meckano חודשי + השלמה ידנית
+      </div>
     </div>
 
     <div class="card">
@@ -276,15 +304,54 @@
         💾 <strong>שמירה אוטומטית פעילה</strong> — כל שינוי בטבלה נשמר מיידית בדפדפן. אין צורך בכפתור שמור.
       </div>
 
-      <div class="bulk-bar">
-        <label>📅 הגדר תאריך תחילה לכולם:</label>
-        <input type="date" id="bulkStartDate" value="2026-01-01">
-        <button class="btn" id="bulkApplyStartDate">החל על כל העובדים</button>
-        <button class="btn btn-secondary" id="bulkApplyEmptyOnly">החל רק על שדות ריקים</button>
-        <span style="color:#6b7280; font-size:0.85rem; margin-right:auto;">
-          ניתן לעדכן בעתיד עובדים בודדים בלחיצה על התא
-        </span>
-      </div>
+      <details class="bulk-panel" open>
+        <summary>⚡ פעולות מרובות (פתח/סגור)</summary>
+
+        <div class="bulk-bar">
+          <label>📅 תאריך תחילה:</label>
+          <input type="date" id="bulkStartDate" value="2026-01-01">
+          <button class="btn" data-bulk-field="start_date" data-bulk-mode="all">החל לכולם</button>
+          <button class="btn btn-secondary" data-bulk-field="start_date" data-bulk-mode="empty">רק לריקים</button>
+        </div>
+
+        <div class="bulk-bar">
+          <label>📅 תאריך סיום:</label>
+          <input type="date" id="bulkEndDate">
+          <button class="btn" data-bulk-field="end_date" data-bulk-mode="all">החל לכולם</button>
+          <button class="btn btn-secondary" data-bulk-field="end_date" data-bulk-mode="empty">רק לריקים</button>
+        </div>
+
+        <div class="bulk-bar">
+          <label>🏷️ סוג עובד:</label>
+          <select id="bulkEmployeeType">
+            <option value="">— בחרי —</option>
+          </select>
+          <button class="btn" data-bulk-field="employee_type" data-bulk-mode="all">החל לכולם</button>
+          <button class="btn btn-secondary" data-bulk-field="employee_type" data-bulk-mode="empty">רק לריקים</button>
+        </div>
+
+        <div class="bulk-bar">
+          <label>🏢 מחלקה:</label>
+          <input type="text" id="bulkDepartment" placeholder="שם המחלקה" style="padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-family:inherit;">
+          <button class="btn" data-bulk-field="department" data-bulk-mode="all">החל לכולם</button>
+          <button class="btn btn-secondary" data-bulk-field="department" data-bulk-mode="empty">רק לריקים</button>
+        </div>
+
+        <div class="bulk-bar" style="background:#fff7ed; border-color:#fed7aa;">
+          <label>⚠️ סטטוס מיוחד:</label>
+          <select id="bulkSpecialStatus">
+            <option value="">— בחרי —</option>
+          </select>
+          <span style="font-size:0.85rem; color:#9a3412;">מ:</span>
+          <input type="date" id="bulkSpecialFrom">
+          <span style="font-size:0.85rem; color:#9a3412;">עד:</span>
+          <input type="date" id="bulkSpecialTo">
+          <button class="btn" id="bulkApplySpecial">החל לעובדים שתסמני</button>
+          <span style="color:#9a3412; font-size:0.82rem;">
+            (מסמנים בתיבות הסימון בטבלה)
+          </span>
+        </div>
+      </details>
 
       <div class="bulk-bar" style="background:#fef9c3; border-color:#fde68a;">
         <label>💾 גיבוי הנתונים (חשוב!):</label>
@@ -304,13 +371,17 @@
         <table id="empTable">
           <thead>
             <tr>
+              <th style="width:36px;"><input type="checkbox" id="selectAll" title="סמני הכל / נקי הכל"></th>
               <th style="width:80px;">מס' עובד</th>
               <th style="width:110px;">ת.ז.</th>
-              <th style="width:200px;">שם מלא</th>
-              <th style="width:140px;">מחלקה</th>
-              <th style="width:130px;">סוג עובד</th>
+              <th style="width:180px;">שם מלא</th>
+              <th style="width:130px;">מחלקה</th>
+              <th style="width:120px;">סוג עובד</th>
               <th style="width:130px;">תאריך תחילה</th>
               <th style="width:130px;">תאריך סיום</th>
+              <th style="width:140px; background:#fff7ed;">סטטוס מיוחד</th>
+              <th style="width:130px; background:#fff7ed;">מתאריך</th>
+              <th style="width:130px; background:#fff7ed;">עד תאריך</th>
               <th>הערות</th>
             </tr>
           </thead>
@@ -393,20 +464,28 @@
       );
 
       const types = EmIndexImporter.EMPLOYEE_TYPES;
+      const specials = EmIndexImporter.SPECIAL_STATUSES;
       const tbody = $('#empTableBody');
       tbody.innerHTML = filtered.map(emp => {
-        const optionsHtml = '<option value="">—</option>' + types.map(t =>
+        const typeOptions = '<option value="">—</option>' + types.map(t =>
           '<option value="' + t + '"' + (emp.employee_type === t ? ' selected' : '') + '>' + t + '</option>'
+        ).join('');
+        const specialOptions = '<option value="">—</option>' + specials.map(s =>
+          '<option value="' + s + '"' + (emp.special_status === s ? ' selected' : '') + '>' + s + '</option>'
         ).join('');
         return '' +
           '<tr data-emp="' + escapeAttr(emp.employee_no) + '">' +
+            '<td><input type="checkbox" class="row-select" data-emp="' + escapeAttr(emp.employee_no) + '"></td>' +
             '<td>' + escapeHtml(emp.employee_no) + '</td>' +
             '<td>' + escapeHtml(emp.national_id) + '</td>' +
             '<td>' + escapeHtml(emp.full_name) + '</td>' +
             '<td><input class="cell-input" data-field="department" value="' + escapeAttr(emp.department) + '"></td>' +
-            '<td><select class="cell-select" data-field="employee_type">' + optionsHtml + '</select></td>' +
+            '<td><select class="cell-select" data-field="employee_type">' + typeOptions + '</select></td>' +
             '<td><input class="cell-input" type="date" data-field="start_date" value="' + escapeAttr(emp.start_date) + '"></td>' +
             '<td><input class="cell-input" type="date" data-field="end_date" value="' + escapeAttr(emp.end_date) + '"></td>' +
+            '<td><select class="cell-select" data-field="special_status">' + specialOptions + '</select></td>' +
+            '<td><input class="cell-input" type="date" data-field="special_status_from" value="' + escapeAttr(emp.special_status_from) + '"></td>' +
+            '<td><input class="cell-input" type="date" data-field="special_status_to" value="' + escapeAttr(emp.special_status_to) + '"></td>' +
             '<td><input class="cell-input" data-field="notes" value="' + escapeAttr(emp.notes) + '"></td>' +
           '</tr>';
       }).join('');
@@ -463,39 +542,119 @@
       flashSaved();
     });
 
-    // פעולה מרובה: הגדרת תאריך תחילה לכולם
-    function applyBulkStartDate(onlyEmpty) {
-      const date = $('#bulkStartDate').value;
-      if (!date) {
-        showAlert('error', '❌ יש לבחור תאריך לפני החלה.');
+    // ====== פעולות מרובות גנריות ======
+    // מיפוי field → input id שממנו נלקח הערך
+    const BULK_INPUT_IDS = {
+      start_date:    'bulkStartDate',
+      end_date:      'bulkEndDate',
+      employee_type: 'bulkEmployeeType',
+      department:    'bulkDepartment',
+    };
+
+    const FIELD_LABELS = {
+      start_date:    'תאריך תחילה',
+      end_date:      'תאריך סיום',
+      employee_type: 'סוג עובד',
+      department:    'מחלקה',
+    };
+
+    function applyBulk(field, mode) {
+      const inputId = BULK_INPUT_IDS[field];
+      const value = $('#' + inputId).value;
+      if (value === '' || value === null || value === undefined) {
+        showAlert('error', '❌ יש לבחור ערך עבור "' + FIELD_LABELS[field] + '" לפני החלה.');
         return;
       }
       const all = EmIndexStore.loadAll();
       if (all.length === 0) return;
 
-      const target = onlyEmpty
-        ? all.filter(e => !e.start_date)
+      const target = mode === 'empty'
+        ? all.filter(e => !e[field])
         : all;
 
       if (target.length === 0) {
-        showAlert('info', 'ℹ️ אין עובדים ללא תאריך תחילה — אין מה לעדכן.');
+        showAlert('info', 'ℹ️ אין עובדים ללא "' + FIELD_LABELS[field] + '" — אין מה לעדכן.');
         return;
       }
 
-      const action = onlyEmpty
-        ? 'להגדיר ' + date + ' רק ל-' + target.length + ' עובדים שאין להם תאריך?'
-        : 'להגדיר ' + date + ' ככל ' + target.length + ' העובדים? (ידרוס תאריכים קיימים)';
+      const action = mode === 'empty'
+        ? 'להגדיר "' + FIELD_LABELS[field] + '" = ' + value + ' רק ל-' + target.length + ' עובדים שאין להם ערך?'
+        : 'להגדיר "' + FIELD_LABELS[field] + '" = ' + value + ' לכל ' + target.length + ' העובדים? (ידרוס ערכים קיימים)';
       if (!confirm(action)) return;
 
-      target.forEach(e => EmIndexStore.update(e.employee_no, { start_date: date }));
+      target.forEach(e => EmIndexStore.update(e.employee_no, { [field]: value }));
       renderTable();
       flashSaved('✓ עודכנו ' + target.length + ' עובדים');
       clearAlert();
-      showAlert('success', '✅ הוגדר תאריך תחילה ' + date + ' ל-' + target.length + ' עובדים.');
+      showAlert('success', '✅ הוגדר "' + FIELD_LABELS[field] + '" = ' + value + ' ל-' + target.length + ' עובדים.');
     }
 
-    $('#bulkApplyStartDate').addEventListener('click', () => applyBulkStartDate(false));
-    $('#bulkApplyEmptyOnly').addEventListener('click', () => applyBulkStartDate(true));
+    // האזנה גנרית לכל הכפתורים עם data-bulk-field
+    document.querySelectorAll('button[data-bulk-field]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const field = btn.dataset.bulkField;
+        const mode  = btn.dataset.bulkMode;
+        applyBulk(field, mode);
+      });
+    });
+
+    // ====== סטטוס מיוחד (3 שדות יחד, רק לעובדים שסומנו ידנית) ======
+    function applySpecialStatus() {
+      const status = $('#bulkSpecialStatus').value;
+      const from   = $('#bulkSpecialFrom').value;
+      const to     = $('#bulkSpecialTo').value;
+      if (!status) {
+        showAlert('error', '❌ יש לבחור סטטוס מיוחד.');
+        return;
+      }
+      if (!from) {
+        showAlert('error', '❌ יש לבחור תאריך התחלה לסטטוס המיוחד.');
+        return;
+      }
+      const selectedNos = Array.from(document.querySelectorAll('.row-select:checked'))
+        .map(cb => cb.dataset.emp);
+      if (selectedNos.length === 0) {
+        showAlert('error', '❌ לא סומנו עובדים. סמני בתיבות הסימון בשורות הרלוונטיות.');
+        return;
+      }
+      const conf = 'להגדיר "' + status + '" מ-' + from + (to ? ' עד ' + to : '') + ' ל-' + selectedNos.length + ' עובדים שסומנו?';
+      if (!confirm(conf)) return;
+
+      selectedNos.forEach(no => {
+        EmIndexStore.update(no, {
+          special_status:      status,
+          special_status_from: from,
+          special_status_to:   to || '',
+        });
+      });
+      renderTable();
+      flashSaved('✓ עודכנו ' + selectedNos.length + ' עובדים');
+      clearAlert();
+      showAlert('success', '✅ הוגדר סטטוס מיוחד "' + status + '" ל-' + selectedNos.length + ' עובדים.');
+    }
+    $('#bulkApplySpecial').addEventListener('click', applySpecialStatus);
+
+    // סמן הכל / נקי הכל
+    $('#selectAll').addEventListener('change', (e) => {
+      document.querySelectorAll('.row-select').forEach(cb => cb.checked = e.target.checked);
+    });
+
+    // מילוי האפשרויות בדרופ-דאונים של הפעולות המרובות (לפי הרשימות מהמודול)
+    function populateBulkDropdowns() {
+      const typeSel = $('#bulkEmployeeType');
+      EmIndexImporter.EMPLOYEE_TYPES.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t; opt.textContent = t;
+        typeSel.appendChild(opt);
+      });
+      const specSel = $('#bulkSpecialStatus');
+      EmIndexImporter.SPECIAL_STATUSES.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s; opt.textContent = s;
+        specSel.appendChild(opt);
+      });
+    }
+    populateBulkDropdowns();
 
     // ייצוא גיבוי לקובץ JSON
     $('#exportBackup').addEventListener('click', () => {
