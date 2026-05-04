@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>רכיבי שכר | פנדה טק</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', 'Heebo', Arial, sans-serif; background: #e9eef3; color: #2b486a; direction: rtl; margin: 0; padding: 20px; min-height: 100vh; }
+    .container { max-width: 1700px; margin: 0 auto; }
+    .header { background: linear-gradient(90deg, #06b6d4 0%, #0e7490 100%); color: #fff; border-radius: 14px; padding: 22px 28px; margin-bottom: 22px; }
+    .header h1 { margin: 0 0 6px 0; font-size: 1.6rem; }
+    .header .sub { opacity: 0.92; font-size: 0.92rem; }
+    .back-link { display: inline-block; color: #fff; background: rgba(255,255,255,0.18); padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 0.88rem; margin-bottom: 14px; }
+    .card { background: #fff; border-radius: 12px; padding: 18px 22px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    .search { padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; min-width: 280px; font-size: 0.95rem; }
+    .btn { padding: 8px 16px; border: 0; border-radius: 6px; cursor: pointer; font-size: 0.88rem; font-weight: 600; background: #e5e7eb; color: #374151; }
+    .btn-primary { background: #0e7490; color: #fff; }
+    .btn-primary:hover { background: #155e75; }
+    .btn-secondary:hover { background: #d1d5db; }
+    .filter-pill { padding: 4px 12px; border-radius: 12px; cursor: pointer; background: #f3f4f6; color: #374151; font-size: 0.84rem; user-select: none; border: 1px solid #e5e7eb; }
+    .filter-pill.active { background: #0e7490; color: #fff; border-color: #0e7490; }
+
+    .scroll-x { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+    thead th { background: #f3f4f6; padding: 8px 7px; text-align: center; font-weight: 700; border-bottom: 2px solid #d1d5db; position: sticky; top: 0; z-index: 1; white-space: nowrap; }
+    thead th.col-group { background: #ecfeff; color: #0e7490; }
+    thead th.col-group-pen { background: #fef3c7; color: #92400e; }
+    thead th.col-group-bal { background: #d1fae5; color: #065f46; }
+    tbody td { padding: 5px 6px; border-bottom: 1px solid #f3f4f6; text-align: center; }
+    tbody tr:hover { background: #fafafa; }
+    tbody td.left { text-align: right; padding-right: 10px; }
+    tbody td input { width: 100%; min-width: 70px; padding: 4px 6px; border: 1px solid transparent; border-radius: 4px; font-size: 0.86rem; text-align: center; background: transparent; }
+    tbody td input:hover { background: #fff; border-color: #e5e7eb; }
+    tbody td input:focus { background: #fff; border-color: #06b6d4; outline: none; }
+    tbody td input.dirty { background: #fffbeb; border-color: #f59e0b; }
+    tbody td input.saved { background: #d1fae5; border-color: #10b981; }
+    .empty-cell { color: #d1d5db; }
+    .modal-bg { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center; }
+    .modal-bg.active { display: flex; }
+    .modal { background: #fff; border-radius: 12px; padding: 24px 28px; max-width: 540px; width: 90%; box-shadow: 0 6px 30px rgba(0,0,0,0.25); }
+    .modal h2 { margin: 0 0 8px 0; color: #0e7490; }
+    .modal label { display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 5px; margin-top: 12px; }
+    .modal input, .modal select { width: 100%; padding: 9px; border: 1px solid #d1d5db; border-radius: 6px; }
+    .modal-actions { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
+    .alert { padding: 10px 14px; border-radius: 6px; margin: 8px 0; font-size: 0.9rem; }
+    .alert-info { background: #dbeafe; color: #1e40af; }
+    .alert-success { background: #d1fae5; color: #065f46; }
+    .alert-warn { background: #fef3c7; color: #78350f; }
+
+    .stats { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+    .stat-pill { background: #f0f9ff; border: 1px solid #7dd3fc; padding: 6px 14px; border-radius: 8px; font-size: 0.88rem; color: #0c4a6e; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="../index.html">← דף הבית</a>
+
+    <div class="header">
+      <h1>💰 רכיבי שכר — אינדקס מורחב</h1>
+      <div class="sub">שכר בסיס • שעתי • הפרשות לפנסיה/קה"ש/פיצויים • יתרות חופש/מחלה/הבראה</div>
+    </div>
+
+    <div class="card">
+      <div class="stats" id="stats"></div>
+
+      <div class="toolbar">
+        <input type="text" class="search" id="searchInput" placeholder="חיפוש לפי שם / מס' עובד / ת.ז....">
+        <span class="filter-pill active" data-filter="all">הכל</span>
+        <span class="filter-pill" data-filter="missing_salary">חסר שכר/תעריף</span>
+        <span class="filter-pill" data-filter="missing_pension">חסר פנסיה</span>
+        <span class="filter-pill" data-filter="hourly">שעתיים</span>
+        <span class="filter-pill" data-filter="global">גלובליים</span>
+        <button class="btn btn-primary" id="bulkBtn" style="margin-right:auto;">⚙️ החל ערך לכל מסומנים</button>
+      </div>
+
+      <div id="alertArea"></div>
+
+      <div class="scroll-x">
+        <table id="empTable">
+          <thead>
+            <tr>
+              <th rowspan="2" style="width:36px;"><input type="checkbox" id="selectAll"></th>
+              <th rowspan="2" style="width:70px;">מס'</th>
+              <th rowspan="2" class="left" style="width:160px;">שם עובד</th>
+              <th rowspan="2" style="width:90px;">סוג</th>
+              <th colspan="2" class="col-group">שכר בסיס</th>
+              <th colspan="3" class="col-group-pen">פנסיה (%)</th>
+              <th colspan="2" class="col-group-pen">קה"ש (%)</th>
+              <th colspan="3" class="col-group-bal">יתרות</th>
+              <th rowspan="2" style="width:130px;">תוס' גלובלית</th>
+            </tr>
+            <tr>
+              <th class="col-group">חודשי ₪</th>
+              <th class="col-group">שעתי ₪</th>
+              <th class="col-group-pen">מעסיק</th>
+              <th class="col-group-pen">עובד</th>
+              <th class="col-group-pen">פיצויים</th>
+              <th class="col-group-pen">מעסיק</th>
+              <th class="col-group-pen">עובד</th>
+              <th class="col-group-bal">חופש</th>
+              <th class="col-group-bal">מחלה</th>
+              <th class="col-group-bal">הבראה ₪</th>
+            </tr>
+          </thead>
+          <tbody id="empBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Bulk apply modal -->
+    <div class="modal-bg" id="bulkModal">
+      <div class="modal">
+        <h2>⚙️ החלת ערך</h2>
+        <p style="color:#6b7280; font-size:0.88rem; margin:0 0 8px 0;">בחרי שדה וערך — יוחל לעובדים שסימנת בטבלה.</p>
+        <label>שדה</label>
+        <select id="bulkField">
+          <option value="pension_rate_employer">פנסיה — מעסיק (%)</option>
+          <option value="pension_rate_employee">פנסיה — עובד (%)</option>
+          <option value="compensation_rate">פיצויים (%)</option>
+          <option value="advanced_study_rate_employer">קה"ש — מעסיק (%)</option>
+          <option value="advanced_study_rate_employee">קה"ש — עובד (%)</option>
+          <option value="base_salary">שכר חודשי (₪)</option>
+          <option value="hourly_rate">שכר שעתי (₪)</option>
+          <option value="vacation_balance_days">יתרת חופש (ימים)</option>
+          <option value="sick_balance_days">יתרת מחלה (ימים)</option>
+          <option value="recovery_balance_amount">יתרת הבראה (₪)</option>
+        </select>
+        <label>ערך</label>
+        <input type="number" id="bulkValue" step="0.01">
+        <div id="bulkPreview" style="margin-top:10px; color:#6b7280; font-size:0.86rem;"></div>
+        <div class="modal-actions">
+          <button class="btn" id="bulkCancel">ביטול</button>
+          <button class="btn btn-primary" id="bulkApply">החל</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../shared/js/supabase-config.js"></script>
+  <script src="../shared/js/supabase-client.js"></script>
+  <script src="../shared/js/auth-bar.js"></script>
+  <script src="../reserve/js/em-index-store.js"></script>
+  <script>
+    'use strict';
+
+    let allEmployees = [];
+    let activeFilter = 'all';
+
+    function loadEmployees() {
+      allEmployees = EmIndexStore.loadAll() || [];
+    }
+
+    function renderStats() {
+      const total = allEmployees.length;
+      const missingSal = allEmployees.filter(e => !e.base_salary && !e.hourly_rate).length;
+      const missingPen = allEmployees.filter(e => !e.pension_rate_employer && !e.pension_rate_employee).length;
+      const hourly = allEmployees.filter(e => e.hourly_rate > 0).length;
+      const global = allEmployees.filter(e => e.employee_type === 'גלובלי').length;
+      document.getElementById('stats').innerHTML =
+        '<span class="stat-pill">👥 ' + total + ' עובדים</span>' +
+        '<span class="stat-pill">💰 ' + missingSal + ' ללא שכר</span>' +
+        '<span class="stat-pill">🏦 ' + missingPen + ' ללא פנסיה</span>' +
+        '<span class="stat-pill">⏰ ' + hourly + ' שעתיים</span>' +
+        '<span class="stat-pill">🌍 ' + global + ' גלובליים</span>';
+    }
+
+    function applyFilter(emp) {
+      if (activeFilter === 'all') return true;
+      if (activeFilter === 'missing_salary') return !emp.base_salary && !emp.hourly_rate;
+      if (activeFilter === 'missing_pension') return !emp.pension_rate_employer && !emp.pension_rate_employee;
+      if (activeFilter === 'hourly') return emp.hourly_rate > 0;
+      if (activeFilter === 'global') return emp.employee_type === 'גלובלי';
+      return true;
+    }
+
+    function applySearch(emp, q) {
+      if (!q) return true;
+      const s = q.toLowerCase();
+      return String(emp.employee_no).includes(s)
+        || (emp.full_name || '').toLowerCase().includes(s)
+        || (emp.national_id || '').includes(s);
+    }
+
+    function fmtVal(v) {
+      if (v == null || v === '') return '';
+      return v;
+    }
+
+    function renderTable() {
+      const q = document.getElementById('searchInput').value.trim();
+      const filtered = allEmployees
+        .filter(e => applyFilter(e))
+        .filter(e => applySearch(e, q));
+
+      const FIELDS = [
+        ['base_salary', 'number', 0.01],
+        ['hourly_rate', 'number', 0.01],
+        ['pension_rate_employer', 'number', 0.01],
+        ['pension_rate_employee', 'number', 0.01],
+        ['compensation_rate', 'number', 0.01],
+        ['advanced_study_rate_employer', 'number', 0.01],
+        ['advanced_study_rate_employee', 'number', 0.01],
+        ['vacation_balance_days', 'number', 0.5],
+        ['sick_balance_days', 'number', 0.5],
+        ['recovery_balance_amount', 'number', 1],
+        ['global_overtime_hours', 'number', 0.5],
+      ];
+
+      const body = document.getElementById('empBody');
+      let html = '';
+      filtered.forEach(emp => {
+        html += '<tr data-no="' + emp.employee_no + '">';
+        html += '<td><input type="checkbox" class="row-check"></td>';
+        html += '<td>' + emp.employee_no + '</td>';
+        html += '<td class="left">' + (emp.full_name || (emp.first_name + ' ' + emp.last_name)) + '</td>';
+        html += '<td><small>' + (emp.employee_type || '—') + '</small></td>';
+        FIELDS.forEach(([f, type, step]) => {
+          const v = emp[f];
+          html += '<td><input type="' + type + '" step="' + step + '" data-field="' + f + '" value="' + fmtVal(v) + '"></td>';
+        });
+        html += '</tr>';
+      });
+      if (!filtered.length) html = '<tr><td colspan="15" style="padding:30px; color:#9ca3af;">אין עובדים תואמים</td></tr>';
+      body.innerHTML = html;
+
+      // Inline edit handlers
+      body.querySelectorAll('input[data-field]').forEach(inp => {
+        inp.addEventListener('focus', () => inp.classList.remove('saved'));
+        inp.addEventListener('input', () => inp.classList.add('dirty'));
+        inp.addEventListener('change', () => {
+          const tr = inp.closest('tr');
+          const empNo = parseInt(tr.dataset.no, 10);
+          const field = inp.dataset.field;
+          const raw = inp.value.trim();
+          const val = raw === '' ? null : parseFloat(raw);
+          EmIndexStore.update(empNo, { [field]: val });
+          inp.classList.remove('dirty');
+          inp.classList.add('saved');
+          // עדכון מקומי גם ב-allEmployees
+          const emp = allEmployees.find(e => parseInt(e.employee_no, 10) === empNo);
+          if (emp) emp[field] = val;
+          renderStats();
+        });
+      });
+    }
+
+    document.getElementById('searchInput').addEventListener('input', renderTable);
+    document.querySelectorAll('.filter-pill').forEach(p => {
+      p.addEventListener('click', () => {
+        document.querySelectorAll('.filter-pill').forEach(x => x.classList.remove('active'));
+        p.classList.add('active');
+        activeFilter = p.dataset.filter;
+        renderTable();
+      });
+    });
+    document.getElementById('selectAll').addEventListener('change', (e) => {
+      document.querySelectorAll('.row-check').forEach(c => c.checked = e.target.checked);
+    });
+
+    // ===== Bulk apply =====
+    const bulkModal = document.getElementById('bulkModal');
+    const bulkPreview = document.getElementById('bulkPreview');
+
+    function refreshPreview() {
+      const checked = Array.from(document.querySelectorAll('.row-check:checked'));
+      bulkPreview.textContent = 'יוחל ל-' + checked.length + ' עובדים מסומנים.';
+    }
+
+    document.getElementById('bulkBtn').addEventListener('click', () => {
+      refreshPreview();
+      bulkModal.classList.add('active');
+    });
+    document.getElementById('bulkCancel').addEventListener('click', () => bulkModal.classList.remove('active'));
+    document.getElementById('bulkApply').addEventListener('click', () => {
+      const field = document.getElementById('bulkField').value;
+      const val = parseFloat(document.getElementById('bulkValue').value);
+      if (isNaN(val)) { alert('יש להזין ערך מספרי'); return; }
+      const checked = Array.from(document.querySelectorAll('.row-check:checked')).map(c => parseInt(c.closest('tr').dataset.no, 10));
+      if (!checked.length) { alert('לא סומנו עובדים'); return; }
+      checked.forEach(empNo => {
+        EmIndexStore.update(empNo, { [field]: val });
+        const emp = allEmployees.find(e => parseInt(e.employee_no, 10) === empNo);
+        if (emp) emp[field] = val;
+      });
+      bulkModal.classList.remove('active');
+      renderTable();
+      renderStats();
+      const alertArea = document.getElementById('alertArea');
+      alertArea.innerHTML = '<div class="alert alert-success">✅ הוחל ' + field + '=' + val + ' ל-' + checked.length + ' עובדים</div>';
+      setTimeout(() => alertArea.innerHTML = '', 4000);
+    });
+
+    // Init: load + sync from Supabase if available
+    loadEmployees();
+    renderStats();
+    renderTable();
+    if (typeof EmIndexStore.init === 'function') {
+      EmIndexStore.init().then(state => {
+        if (state && state.mode === 'synced') {
+          loadEmployees();
+          renderStats();
+          renderTable();
+        }
+      });
+    }
+  </script>
+</body>
+</html>

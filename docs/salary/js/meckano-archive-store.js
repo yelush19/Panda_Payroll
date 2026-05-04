@@ -166,8 +166,118 @@ window.MeckanoArchiveStore = (function() {
     return restored;
   }
 
+  // ===== Supabase sync =====
+  // אסטרטגיה זהה ל-EmIndexStore: localStorage כ-cache, Supabase כמקור-אמת.
+
+  function isSupabaseAvailable() {
+    return typeof SB !== 'undefined' && SB && SB.client;
+  }
+
+  // העלאת רשומת חודש ל-Supabase. לא עוצר זרימה אם נכשל.
+  async function pushArchiveToSupabase(year, month) {
+    if (!isSupabaseAvailable()) return { ok: false, reason: 'no_client' };
+    const session = await SB.getSession();
+    if (!session) return { ok: false, reason: 'no_session' };
+    const arc = loadArchive(year, month);
+    if (!arc) return { ok: false, reason: 'no_local_data' };
+    const payload = {
+      period: periodKey(year, month),
+      year: year,
+      month: month,
+      file_name: arc.file_name || null,
+      total_blocks: arc.blocks ? arc.blocks.length : 0,
+      sheet_name: arc.sheet_name || 'report',
+      blocks: arc.blocks || [],
+      workbook_sheets: arc.workbook_sheets || null,
+    };
+    const { data, error } = await SB.client
+      .from('meckano_archives')
+      .upsert(payload, { onConflict: 'period' })
+      .select();
+    if (error) {
+      console.warn('Meckano push to Supabase failed:', error);
+      return { ok: false, reason: 'error', error };
+    }
+    return { ok: true, period: payload.period };
+  }
+
+  // טעינת אינדקס מ-Supabase לתזוזה ב-UI (מבלי להעמיס את כל ה-blocks).
+  async function syncIndexFromSupabase() {
+    if (!isSupabaseAvailable()) return { ok: false, reason: 'no_client' };
+    const session = await SB.getSession();
+    if (!session) return { ok: false, reason: 'no_session' };
+    const { data, error } = await SB.client
+      .from('meckano_archives')
+      .select('period, year, month, file_name, total_blocks, uploaded_at')
+      .order('period', { ascending: false });
+    if (error) {
+      console.warn('Meckano index sync error:', error);
+      return { ok: false, reason: 'error', error };
+    }
+    // עדכון אינדקס מקומי — נשמור מטא, אבל לא נדרוס ארכיון מקומי שכבר מורכב יותר
+    const localIdx = loadIndex();
+    const localPeriods = new Set(localIdx.map(m => m.period));
+    let added = 0;
+    (data || []).forEach(remote => {
+      if (!localPeriods.has(remote.period)) {
+        localIdx.push({
+          year: remote.year,
+          month: remote.month,
+          period: remote.period,
+          saved_at: remote.uploaded_at,
+          file_name: remote.file_name,
+          total_blocks: remote.total_blocks,
+          size_bytes: 0,
+          remote_only: true,
+        });
+        added++;
+      }
+    });
+    localIdx.sort((a, b) => b.period.localeCompare(a.period));
+    saveIndex(localIdx);
+    return { ok: true, total: (data || []).length, added: added };
+  }
+
+  // שליפה מ-Supabase של חודש ספציפי לזיכרון מקומי (כשהמשתמש בוחר חודש שאין מקומית).
+  async function fetchArchiveFromSupabase(year, month) {
+    if (!isSupabaseAvailable()) return { ok: false, reason: 'no_client' };
+    const session = await SB.getSession();
+    if (!session) return { ok: false, reason: 'no_session' };
+    const { data, error } = await SB.client
+      .from('meckano_archives')
+      .select('*')
+      .eq('period', periodKey(year, month))
+      .maybeSingle();
+    if (error) {
+      console.warn('Meckano fetch from Supabase error:', error);
+      return { ok: false, reason: 'error', error };
+    }
+    if (!data) return { ok: false, reason: 'not_found' };
+    saveArchive(year, month, {
+      file_name: data.file_name,
+      sheet_name: data.sheet_name,
+      blocks: data.blocks || [],
+      workbook_sheets: data.workbook_sheets,
+      remote_pulled: true,
+    });
+    return { ok: true, period: data.period };
+  }
+
+  // שמירה מקומית + push אוטומטי ל-Supabase ברקע
+  function saveArchiveAndSync(year, month, data) {
+    const meta = saveArchive(year, month, data);
+    if (isSupabaseAvailable()) {
+      pushArchiveToSupabase(year, month).then(r => {
+        if (r.ok) console.log('Meckano SB push: ' + r.period);
+        else console.warn('Meckano SB push:', r.reason);
+      });
+    }
+    return meta;
+  }
+
   return {
     saveArchive,
+    saveArchiveAndSync,
     loadArchive,
     loadByPeriod,
     deleteArchive,
@@ -178,5 +288,10 @@ window.MeckanoArchiveStore = (function() {
     exportFullBackup,
     importFullBackup,
     periodKey,
+    // Supabase
+    pushArchiveToSupabase,
+    syncIndexFromSupabase,
+    fetchArchiveFromSupabase,
+    isSupabaseAvailable,
   };
 })();
