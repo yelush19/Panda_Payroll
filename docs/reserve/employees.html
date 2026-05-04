@@ -274,6 +274,104 @@
       align-items: center;
       gap: 8px;
     }
+
+    /* Drill-down button + modal */
+    .drill-btn {
+      border: 0; padding: 4px 10px; border-radius: 5px;
+      cursor: pointer; font-family: inherit; font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .drill-btn-active { background: #dbeafe; color: #1e40af; }
+    .drill-btn-active:hover { background: #bfdbfe; }
+    .drill-btn-empty { background: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
+
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none; align-items: flex-start; justify-content: center;
+      padding: 30px 20px; overflow-y: auto;
+      z-index: 1000;
+    }
+    .modal-backdrop.visible { display: flex; }
+    .modal-box {
+      background: #fff; border-radius: 12px;
+      width: 100%; max-width: 1200px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+    .modal-header {
+      background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
+      color: #fff; padding: 16px 22px;
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    }
+    .modal-header h3 { margin: 0; font-size: 1.2rem; }
+    .modal-header .meta { font-size: 0.85rem; opacity: 0.9; }
+    .modal-header .close-btn {
+      background: rgba(255,255,255,0.2); color: #fff; border: 0;
+      border-radius: 6px; padding: 6px 14px; cursor: pointer;
+      font-family: inherit; margin-right: auto;
+    }
+    .modal-header .close-btn:hover { background: rgba(255,255,255,0.35); }
+    .modal-period-tabs {
+      display: flex; gap: 6px; padding: 10px 22px;
+      background: #f1f5f9; border-bottom: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+    }
+    .period-tab {
+      background: #fff; border: 1px solid #cbd5e1;
+      padding: 5px 12px; border-radius: 6px; cursor: pointer;
+      font-family: inherit; font-size: 0.86rem;
+    }
+    .period-tab.active { background: #1e40af; color: #fff; border-color: #1e40af; }
+
+    .modal-body { padding: 18px 22px; max-height: 70vh; overflow-y: auto; }
+    .modal-section { margin-bottom: 22px; }
+    .modal-section h4 {
+      margin: 0 0 8px 0; font-size: 1rem; color: #1e3a8a;
+      padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;
+    }
+
+    .meta-grid {
+      display: grid; gap: 8px;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+    .meta-grid div { font-size: 0.88rem; }
+    .meta-grid .k { color: #6b7280; }
+    .meta-grid .v { font-weight: 600; color: #1e293b; }
+
+    .stat-grid {
+      display: grid; gap: 8px;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+    .stat-cell {
+      background: #f8fafc; border: 1px solid #e2e8f0;
+      border-radius: 7px; padding: 8px 10px;
+    }
+    .stat-cell .k { font-size: 0.74rem; color: #6b7280; }
+    .stat-cell .v { font-size: 1.05rem; font-weight: 700; color: #1e293b; }
+    .stat-cell.events { background: #fff7ed; border-color: #fed7aa; }
+    .stat-cell.events .v { color: #9a3412; }
+
+    table.daily-table {
+      width: 100%; border-collapse: collapse; font-size: 0.83rem;
+    }
+    table.daily-table th {
+      background: #f1f5f9; padding: 6px; text-align: right;
+      font-weight: 600; font-size: 0.78rem;
+      border-bottom: 1px solid #cbd5e1;
+    }
+    table.daily-table td {
+      padding: 4px 6px; border-bottom: 1px solid #f1f5f9;
+    }
+    table.daily-table tr.weekend td { background: #fafbfc; color: #94a3b8; }
+    table.daily-table tr.event-day td:nth-child(11) { background: #fff7ed; font-weight: 600; }
+    table.daily-table tr.has-event { background: #fef3c7; }
+
+    .unknown-warn {
+      background: #fef3c7; border: 1px solid #fcd34d;
+      border-radius: 7px; padding: 8px 12px; margin-top: 8px;
+      font-size: 0.85rem; color: #78350f;
+    }
   </style>
 </head>
 <body>
@@ -375,6 +473,7 @@
               <th style="width:80px;">מס' עובד</th>
               <th style="width:110px;">ת.ז.</th>
               <th style="width:180px;">שם מלא</th>
+              <th style="width:50px; text-align:center;" title="ראי דיווח Meckano">📋</th>
               <th style="width:130px;">מחלקה</th>
               <th style="width:120px;">סוג עובד</th>
               <th style="width:130px;">תאריך תחילה</th>
@@ -406,9 +505,23 @@
 
   <div class="save-indicator" id="saveIndicator">✓ נשמר</div>
 
+  <!-- Modal: Meckano source-report drill-down -->
+  <div class="modal-backdrop" id="drillModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="drillTitle">דיווח Meckano</h3>
+        <span class="meta" id="drillMeta"></span>
+        <button class="close-btn" id="drillClose">סגור ✕</button>
+      </div>
+      <div class="modal-period-tabs" id="drillPeriodTabs"></div>
+      <div class="modal-body" id="drillBody"></div>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="js/em-index-store.js"></script>
   <script src="js/em-index-importer.js"></script>
+  <script src="../salary/js/meckano-archive-store.js"></script>
   <script>
     'use strict';
 
@@ -473,12 +586,20 @@
         const specialOptions = '<option value="">—</option>' + specials.map(s =>
           '<option value="' + s + '"' + (emp.special_status === s ? ' selected' : '') + '>' + s + '</option>'
         ).join('');
+        const archiveCount = (typeof MeckanoArchiveStore !== 'undefined')
+          ? MeckanoArchiveStore.findEmployeeAcrossPeriods(emp.employee_no).length
+          : 0;
+        const drillBtn = archiveCount > 0
+          ? '<button class="drill-btn drill-btn-active" data-emp="' + escapeAttr(emp.employee_no) +
+            '" title="' + archiveCount + ' חודשים בארכיון">🔍 ' + archiveCount + '</button>'
+          : '<button class="drill-btn drill-btn-empty" disabled title="אין דיווח Meckano בארכיון">—</button>';
         return '' +
           '<tr data-emp="' + escapeAttr(emp.employee_no) + '">' +
             '<td><input type="checkbox" class="row-select" data-emp="' + escapeAttr(emp.employee_no) + '"></td>' +
             '<td>' + escapeHtml(emp.employee_no) + '</td>' +
             '<td>' + escapeHtml(emp.national_id) + '</td>' +
             '<td>' + escapeHtml(emp.full_name) + '</td>' +
+            '<td style="text-align:center;">' + drillBtn + '</td>' +
             '<td><input class="cell-input" data-field="department" value="' + escapeAttr(emp.department) + '"></td>' +
             '<td><select class="cell-select" data-field="employee_type">' + typeOptions + '</select></td>' +
             '<td><input class="cell-input" type="date" data-field="start_date" value="' + escapeAttr(emp.start_date) + '"></td>' +
@@ -723,6 +844,179 @@
         renderTable();
         clearAlert();
         showAlert('info', '🗑️ הנתונים נמחקו. ניתן לייבא מחדש.');
+      }
+    });
+
+    // ====== Meckano source-report drill-down ======
+    const MONTH_NAMES = ['', 'ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+
+    function openDrill(empNo) {
+      if (typeof MeckanoArchiveStore === 'undefined') return;
+      const periods = MeckanoArchiveStore.findEmployeeAcrossPeriods(empNo);
+      if (periods.length === 0) {
+        alert('אין דיווח Meckano בארכיון לעובד זה.');
+        return;
+      }
+      // Sort newest first
+      periods.sort((a, b) => b.period.localeCompare(a.period));
+      renderDrill(empNo, periods, 0);
+      $('#drillModal').classList.add('visible');
+    }
+
+    function closeDrill() {
+      $('#drillModal').classList.remove('visible');
+    }
+
+    function renderDrill(empNo, periods, activeIdx) {
+      const active = periods[activeIdx];
+      const block = active.block;
+      const empData = EmIndexStore.loadAll().find(e => String(e.employee_no) === String(empNo));
+      const fullName = (empData && empData.full_name) || block.employee_name || '';
+
+      $('#drillTitle').textContent = 'דיווח Meckano: ' + fullName;
+      $('#drillMeta').textContent = 'מס\' עובד ' + empNo + ' • ' + (block.department || '-') + ' • ' + (block.contract_type || '-');
+
+      // Period tabs
+      $('#drillPeriodTabs').innerHTML = periods.map((p, i) =>
+        '<button class="period-tab' + (i === activeIdx ? ' active' : '') + '" data-period-idx="' + i + '">' +
+          MONTH_NAMES[p.month] + ' ' + p.year +
+        '</button>'
+      ).join('');
+      $('#drillPeriodTabs').querySelectorAll('.period-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          renderDrill(empNo, periods, parseInt(tab.dataset.periodIdx, 10));
+        });
+      });
+
+      // Body
+      const summary = block.summary || {};
+      const events = block.events || {};
+
+      const summaryFields = [
+        ['days_present', 'ימי נוכחות'],
+        ['days_paid', 'ימים משולמים'],
+        ['hours_present', 'שעות נוכחות'],
+        ['hours_standard', 'שעות תקן'],
+        ['hours_paid', 'שעות משולמות'],
+        ['hours_missing', 'שעות חוסר'],
+        ['fake_deficit', 'הפחתה מדומה'],
+        ['hours_missing_net', 'חוסר מעודכן'],
+        ['hours_100', '100%'],
+        ['hours_125', '125%'],
+        ['hours_150', '150%'],
+        ['miluim_work_hours', 'עבודה במילואים'],
+      ];
+      const eventFields = [
+        ['holiday', 'חג'],
+        ['eve_holiday', 'ערב חג'],
+        ['chol_hamoed', 'חוה"מ'],
+        ['vacation_existing', 'חופש'],
+        ['vacation_eve', 'חופש בע.חג'],
+        ['vacation_chm', 'חופש בחוה"מ'],
+        ['vacation_charged', 'חופשה לחיוב'],
+        ['sick', 'מחלה'],
+        ['miluim', 'מילואים'],
+        ['work_accident', 'תאונת עבודה'],
+        ['chalat', 'חל"ת'],
+        ['absence', 'היעדרות'],
+      ];
+
+      const fmt = v => (v === null || v === undefined || v === '') ? '—' : v;
+
+      const summaryHtml = summaryFields.map(([k, label]) => {
+        const v = summary[k];
+        if (v === undefined || v === null) return '';
+        return '<div class="stat-cell"><div class="k">' + label + '</div><div class="v">' + fmt(v) + '</div></div>';
+      }).join('');
+
+      const eventsHtml = eventFields.map(([k, label]) => {
+        const v = events[k];
+        if (v === undefined || v === null || v === 0) return '';
+        return '<div class="stat-cell events"><div class="k">' + label + '</div><div class="v">' + fmt(v) + '</div></div>';
+      }).join('');
+
+      const days = block.days || [];
+      const dailyHtml = '<table class="daily-table"><thead><tr>' +
+        '<th>תאריך</th><th>סוג</th><th>כניסה</th><th>יציאה</th>' +
+        '<th>סה"כ</th><th>הפסקה</th><th>משולמות</th>' +
+        '<th>תקן</th><th>חוסר</th><th>100%</th><th>125%</th><th>150%</th>' +
+        '<th>אירוע</th><th>הערה</th>' +
+        '</tr></thead><tbody>' +
+        days.map(d => {
+          const isWeekend = d.day_type === 'סופ"ש';
+          const hasEvent = !!d.event;
+          const cls = isWeekend ? 'weekend' : (hasEvent ? 'has-event' : '');
+          return '<tr' + (cls ? ' class="' + cls + '"' : '') + '>' +
+            '<td>' + d.day_letter + '-' + String(d.day_number).padStart(2,'0') + '</td>' +
+            '<td>' + escapeHtml(d.day_type) + '</td>' +
+            '<td>' + escapeHtml(d.entry) + '</td>' +
+            '<td>' + escapeHtml(d.exit) + '</td>' +
+            '<td>' + escapeHtml(d.hours_total) + '</td>' +
+            '<td>' + escapeHtml(d.break_time) + '</td>' +
+            '<td>' + escapeHtml(d.hours_paid) + '</td>' +
+            '<td>' + escapeHtml(d.hours_standard) + '</td>' +
+            '<td>' + escapeHtml(d.hours_missing) + '</td>' +
+            '<td>' + escapeHtml(d.hours_100) + '</td>' +
+            '<td>' + escapeHtml(d.hours_125) + '</td>' +
+            '<td>' + escapeHtml(d.hours_150) + '</td>' +
+            '<td>' + escapeHtml(d.event) + '</td>' +
+            '<td>' + escapeHtml(d.note) + '</td>' +
+          '</tr>';
+        }).join('') +
+        '</tbody></table>';
+
+      const unknownsHtml = (block.unknown_columns && block.unknown_columns.length > 0) ?
+        '<div class="unknown-warn">⚠️ הערות יד-אדם בכותרות הבלוק: ' +
+          block.unknown_columns.map(u => '<code>' + escapeHtml(u.value) + '</code>').join(', ') +
+        '</div>' : '';
+
+      $('#drillBody').innerHTML =
+        '<div class="modal-section">' +
+          '<h4>📋 פרטי הבלוק</h4>' +
+          '<div class="meta-grid">' +
+            '<div><span class="k">מס\' עובד:</span> <span class="v">' + escapeHtml(block.employee_no) + '</span></div>' +
+            '<div><span class="k">שם:</span> <span class="v">' + escapeHtml(block.employee_name) + '</span></div>' +
+            '<div><span class="k">חברה:</span> <span class="v">' + escapeHtml(block.company || '-') + '</span></div>' +
+            '<div><span class="k">מחלקה:</span> <span class="v">' + escapeHtml(block.department || '-') + '</span></div>' +
+            '<div><span class="k">טווח:</span> <span class="v">' + escapeHtml(block.date_range) + '</span></div>' +
+            '<div><span class="k">סוג חוזה:</span> <span class="v">' + escapeHtml(block.contract_type || '-') + '</span></div>' +
+            '<div><span class="k">קובץ מקור:</span> <span class="v">' + escapeHtml(active.file_name || '-') + '</span></div>' +
+          '</div>' +
+          unknownsHtml +
+        '</div>' +
+        (summaryHtml ?
+        '<div class="modal-section">' +
+          '<h4>📊 סיכום חודשי (כפי שמופיע ב-Meckano)</h4>' +
+          '<div class="stat-grid">' + summaryHtml + '</div>' +
+        '</div>' : '') +
+        (eventsHtml ?
+        '<div class="modal-section">' +
+          '<h4>🎯 אירועים</h4>' +
+          '<div class="stat-grid">' + eventsHtml + '</div>' +
+        '</div>' : '') +
+        '<div class="modal-section">' +
+          '<h4>📅 דיווח יומי (' + days.length + ' ימים)</h4>' +
+          dailyHtml +
+        '</div>';
+    }
+
+    // האזנה לכפתורי דרילדאון בטבלה
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.drill-btn-active');
+      if (btn) {
+        e.preventDefault();
+        openDrill(btn.dataset.emp);
+      }
+    });
+
+    // סגירת מודאל
+    $('#drillClose').addEventListener('click', closeDrill);
+    $('#drillModal').addEventListener('click', (e) => {
+      if (e.target === $('#drillModal')) closeDrill();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && $('#drillModal').classList.contains('visible')) {
+        closeDrill();
       }
     });
 

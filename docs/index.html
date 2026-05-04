@@ -550,6 +550,48 @@
                         </div>
                     </details>
 
+                    <!-- Salary: Meckano monthly intake (NEW) -->
+                    <details class="module-card foundational">
+                        <summary>
+                            <div class="module-icon">📤</div>
+                            <div class="module-info"><h3>קליטת Meckano חודשי</h3></div>
+                            <span class="module-status status-foundational">תשתית משותפת</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">
+                                העלאת קובץ Meckano חודשי, פירסור 44 בלוקי עובדים אוטומטי, ושמירה בארכיון לפי חודש לצורך התייחסות עתידית.
+                            </p>
+                            <ul class="module-features">
+                                <li>זיהוי דינמי של עמודות (עמיד לשינויי מבנה)</li>
+                                <li>ארכיון מלא לפי חודש - שליפה בכל עת</li>
+                                <li>חילוץ מטא + ימים יומיים + סיכום + אירועים</li>
+                                <li>וולידציה אוטומטית מול גיליון "1.סיכום ימים" (100%)</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('salary-upload')">פתח קליטה ←</button>
+                        </div>
+                    </details>
+
+                    <!-- Salary: Report 1 - Days Summary -->
+                    <details class="module-card">
+                        <summary>
+                            <div class="module-icon">📊</div>
+                            <div class="module-info"><h3>דוח 1: סיכום ימים</h3></div>
+                            <span class="module-status status-active">פעיל</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">
+                                דוח אוטומטי של 18 העמודות לפי הגיליון "1.סיכום ימים" — ימי נוכחות, חופש, מילואים, חגים, ימים משולמים וסטטוס.
+                            </p>
+                            <ul class="module-features">
+                                <li>סינון אוטומטי של קבלנים</li>
+                                <li>זיהוי פערים: חוסר סגירה / מחלה לקיזוז</li>
+                                <li>חישוב תאונת עבודה עם סף ב"ל (12 ימים)</li>
+                                <li>ייצוא Excel + CSV</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('salary-days-summary')">פתח דוח ←</button>
+                        </div>
+                    </details>
+
                     <!-- Module 0: Mecano Converter -->
                     <details class="module-card">
                         <summary>
@@ -764,8 +806,10 @@
         // Module navigation with correct file names
         function openModule(moduleName) {
             const moduleFiles = {
-                'employees-index':  'reserve/employees.html',
-                'reserve':          'reserve/employees.html',
+                'employees-index':      'reserve/employees.html',
+                'salary-upload':        'salary/upload.html',
+                'salary-days-summary':  'salary/days-summary.html',
+                'reserve':              'reserve/employees.html',
                 'mecano-converter': '../mecanochecker/index.html',
                 'basic-checks':     'basic-checks.html',
                 'pension':          'pension_module.html',

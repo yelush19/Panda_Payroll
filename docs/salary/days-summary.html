@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>דוח 1: סיכום ימים | פנדה טק</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Heebo', Arial, sans-serif;
+      background: #e9eef3; color: #2b486a;
+      direction: rtl; margin: 0; padding: 20px; min-height: 100vh;
+    }
+    .container { max-width: 1700px; margin: 0 auto; }
+
+    .header {
+      background: linear-gradient(90deg, #30bced 0%, #528163 100%);
+      color: #fff; border-radius: 14px;
+      padding: 22px 28px; margin-bottom: 22px;
+      box-shadow: 0 4px 14px rgba(82,129,99,0.12);
+      display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    }
+    .header h1 { margin: 0; font-size: 1.6rem; font-weight: 700; }
+    .header .sub { opacity: 0.9; font-size: 0.92rem; }
+    .back-link {
+      background: rgba(255,255,255,0.18); color: #fff;
+      padding: 6px 12px; border-radius: 6px;
+      text-decoration: none; font-size: 0.88rem;
+    }
+    .back-link:hover { background: rgba(255,255,255,0.3); }
+
+    .card {
+      background: #fff; border-radius: 12px;
+      padding: 18px 22px; margin-bottom: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .toolbar {
+      display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+    }
+    .toolbar select, .toolbar input {
+      padding: 7px 12px; border: 1px solid #cbd5e1;
+      border-radius: 6px; font-family: inherit; font-size: 0.95rem;
+    }
+    .btn {
+      background: #30bced; color: #fff; border: 0;
+      padding: 8px 16px; border-radius: 7px;
+      cursor: pointer; font-family: inherit;
+      font-size: 0.92rem; font-weight: 600;
+    }
+    .btn:hover { background: #1ea1d1; }
+    .btn-secondary { background: transparent; color: #30bced; border: 1px solid #30bced; }
+    .btn-secondary:hover { background: #f0f7ff; }
+
+    .alert {
+      padding: 12px 16px; border-radius: 8px; margin-top: 10px;
+      font-size: 0.95rem; line-height: 1.5;
+    }
+    .alert-info  { background: #e1effe; color: #1e429f; border: 1px solid #a4cafe; }
+    .alert-warn  { background: #fef3c7; color: #78350f; border: 1px solid #fcd34d; }
+    .alert-error { background: #fde8e8; color: #9b1c1c; border: 1px solid #f8b4b4; }
+    .empty-state { padding: 40px; text-align: center; color: #6b7280; font-size: 0.95rem; }
+
+    .stats-bar {
+      display: flex; gap: 12px; margin: 12px 0 4px;
+      flex-wrap: wrap;
+    }
+    .stats-bar .pill {
+      background: #f3f4f6; padding: 5px 12px; border-radius: 20px;
+      font-size: 0.85rem; font-weight: 600;
+    }
+    .pill.ok   { background: #d1fae5; color: #047857; }
+    .pill.warn { background: #fef3c7; color: #92400e; }
+
+    .table-wrap {
+      max-height: 75vh; overflow: auto;
+      border: 1px solid #e5e7eb; border-radius: 8px;
+    }
+    table.report-table {
+      width: 100%; border-collapse: collapse; font-size: 0.85rem;
+      min-width: 1500px;
+    }
+    table.report-table th {
+      background: #f1f5f9; padding: 8px 6px; text-align: right;
+      font-weight: 600; font-size: 0.78rem;
+      border-bottom: 2px solid #cbd5e1;
+      position: sticky; top: 0; z-index: 1;
+      white-space: nowrap;
+    }
+    table.report-table td {
+      padding: 5px 7px; border-bottom: 1px solid #f1f5f9;
+      white-space: nowrap;
+    }
+    table.report-table tbody tr:hover { background: #f8fafc; }
+
+    /* Color groups (per spec section 4.1) */
+    .col-emp     { background: #eef2ff; }  /* פרטי עובד */
+    .col-days    { background: #f0fdf4; }  /* ימים */
+    .col-holiday { background: #eff6ff; }  /* חגים */
+    .col-deduct  { background: #fef2f2; }  /* קיזוזים */
+    .col-status  { background: #fafafa; }  /* סטטוס */
+
+    td.status-ok   { color: #047857; font-weight: 600; }
+    td.status-warn { color: #92400e; font-weight: 600; }
+    td.status-info { color: #6b7280; font-style: italic; }
+
+    .num { text-align: center; font-variant-numeric: tabular-nums; }
+    .zero { color: #cbd5e1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 דוח 1: סיכום ימים</h1>
+      <span class="sub">לפי 18 העמודות של גיליון <code>1.סיכום ימים</code></span>
+      <a class="back-link" href="../index.html" style="margin-right:auto;">← דף הבית</a>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <label>חודש:</label>
+        <select id="periodSelect"><option value="">— בחרי —</option></select>
+        <button class="btn btn-secondary" id="refreshBtn">רענון נתונים</button>
+        <span style="color:#6b7280; font-size:0.85rem; margin-right:auto;">
+          הדוח מבוסס על הארכיון. אם החודש לא מופיע — העלי קובץ Meckano בקליטה.
+        </span>
+      </div>
+      <div id="alertArea"></div>
+      <div class="stats-bar" id="statsBar"></div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar" style="margin-bottom:10px;">
+        <input type="text" id="searchInput" placeholder="חיפוש לפי שם / מספר עובד..." style="min-width:260px;">
+        <label style="margin-right:auto; font-size:0.9rem;">
+          <input type="checkbox" id="onlyWarnings"> הצגת אזהרות בלבד
+        </label>
+        <button class="btn" id="exportXlsxBtn">📥 ייצוא Excel</button>
+        <button class="btn btn-secondary" id="exportCsvBtn">📥 ייצוא CSV</button>
+      </div>
+      <div id="reportArea"><div class="empty-state">טוענת נתונים…</div></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="../../payrollchecker/shared/month_config.js"></script>
+  <script src="../reserve/js/em-index-store.js"></script>
+  <script src="js/employee-rules.js"></script>
+  <script src="js/meckano-archive-store.js"></script>
+  <script src="js/days-summary-engine.js"></script>
+  <script>
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+    const MONTH_NAMES = ['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+    let _currentReport = null;
+
+    function showAlert(level, msg) { $('#alertArea').innerHTML = '<div class="alert alert-'+level+'">'+msg+'</div>'; }
+    function clearAlert() { $('#alertArea').innerHTML = ''; }
+
+    // Populate period dropdown from archive
+    function populatePeriods() {
+      const sel = $('#periodSelect');
+      const idx = MeckanoArchiveStore.loadIndex();
+      sel.innerHTML = '<option value="">— בחרי —</option>' +
+        idx.map(m => '<option value="' + m.period + '">' + MONTH_NAMES[m.month] + ' ' + m.year + ' (' + m.total_blocks + ' עובדים)</option>').join('');
+      if (idx.length === 0) {
+        showAlert('warn', '⚠️ אין דוחות בארכיון. <a href="upload.html">העלי קובץ Meckano</a> כדי להתחיל.');
+      }
+    }
+
+    // Generate report for selected period
+    function generate() {
+      clearAlert();
+      const period = $('#periodSelect').value;
+      if (!period) { $('#reportArea').innerHTML = '<div class="empty-state">בחרי חודש כדי להפיק את הדוח.</div>'; return; }
+
+      const arc = MeckanoArchiveStore.loadByPeriod(period);
+      if (!arc) { showAlert('error', 'הארכיון לחודש זה לא נטען.'); return; }
+
+      const employees = (typeof EmIndexStore !== 'undefined') ? EmIndexStore.loadAll() : [];
+      const [year, month] = period.split('-').map(Number);
+      const report = DaysSummaryEngine.build(arc.blocks, employees, year, month);
+      _currentReport = report;
+      renderReport();
+    }
+
+    function renderReport() {
+      if (!_currentReport) return;
+      const search = ($('#searchInput').value || '').trim().toLowerCase();
+      const onlyWarn = $('#onlyWarnings').checked;
+      let rows = _currentReport.rows;
+      if (search) {
+        rows = rows.filter(r =>
+          String(r.employee_no).includes(search) ||
+          (r.employee_name || '').toLowerCase().includes(search)
+        );
+      }
+      if (onlyWarn) rows = rows.filter(r => r.status && r.status.startsWith('⚠'));
+
+      // Stats
+      const totalRows = _currentReport.rows.length;
+      const okCount   = _currentReport.rows.filter(r => r.status === '✓').length;
+      const warnCount = _currentReport.rows.filter(r => r.status && r.status.startsWith('⚠')).length;
+      $('#statsBar').innerHTML =
+        '<span class="pill">סה"כ עובדים: ' + totalRows + '</span>' +
+        '<span class="pill ok">תקין: ' + okCount + '</span>' +
+        (warnCount > 0 ? '<span class="pill warn">דורש בדיקה: ' + warnCount + '</span>' : '');
+
+      if (rows.length === 0) {
+        $('#reportArea').innerHTML = '<div class="empty-state">אין שורות תואמות לחיפוש.</div>';
+        return;
+      }
+
+      const cols = _currentReport.columns;
+      // Column groups for coloring (per spec)
+      const groups = {
+        employee_no:'col-emp', employee_name:'col-emp',
+        days_present:'col-days', vacation_existing:'col-days', vacation_charged:'col-days',
+        vacation_total:'col-days', miluim:'col-days', work_accident:'col-days',
+        sick:'col-days', sick_kizuz:'col-days',
+        holiday:'col-holiday', eve_holiday:'col-holiday', chol_hamoed:'col-holiday',
+        days_paid:'col-deduct', chalat:'col-deduct', absence:'col-deduct',
+        status:'col-status', notes:'col-status',
+      };
+
+      const head = '<tr>' + cols.map(c => '<th class="' + (groups[c.key]||'') + '">' + c.label + '</th>').join('') + '</tr>';
+      const body = rows.map(r => '<tr>' + cols.map(c => {
+        let v = r[c.key];
+        const g = groups[c.key] || '';
+        let cls = g;
+        let display;
+        if (c.key === 'status') {
+          if (v === '✓') cls += ' status-ok';
+          else if (v && v.startsWith('⚠')) cls += ' status-warn';
+          else cls += ' status-info';
+          display = v || '';
+        } else if (c.key === 'employee_name' || c.key === 'employee_no' || c.key === 'notes') {
+          display = (v === null || v === undefined) ? '' : String(v);
+        } else {
+          if (v === null || v === undefined || v === 0 || v === '') {
+            cls += ' num zero';
+            display = (v === null) ? '—' : '0';
+          } else {
+            cls += ' num';
+            display = (typeof v === 'number') ? roundDisplay(v) : v;
+          }
+        }
+        return '<td class="' + cls + '">' + escapeHtml(display) + '</td>';
+      }).join('') + '</tr>').join('');
+
+      $('#reportArea').innerHTML =
+        '<div class="table-wrap"><table class="report-table"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>';
+    }
+
+    function roundDisplay(n) {
+      // 2 decimals max, trim trailing zeros
+      return parseFloat(n.toFixed(2)).toString();
+    }
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ===== Export =====
+    function exportXlsx() {
+      if (!_currentReport) return;
+      const cols = _currentReport.columns;
+      const aoa = [cols.map(c => c.label)];
+      _currentReport.rows.forEach(r => {
+        aoa.push(cols.map(c => {
+          const v = r[c.key];
+          if (v === null || v === undefined) return '';
+          return v;
+        }));
+      });
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!views'] = [{ RTL: true }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'סיכום ימים');
+      const period = _currentReport.period;
+      const filename = 'סיכום_ימים_' + period.year + '-' + String(period.month).padStart(2,'0') + '.xlsx';
+      XLSX.writeFile(wb, filename);
+    }
+
+    function exportCsv() {
+      if (!_currentReport) return;
+      const cols = _currentReport.columns;
+      const lines = [cols.map(c => c.label).join(',')];
+      _currentReport.rows.forEach(r => {
+        lines.push(cols.map(c => {
+          const v = r[c.key];
+          if (v === null || v === undefined) return '';
+          let s = String(v);
+          if (s.includes(',') || s.includes('"')) s = '"' + s.replace(/"/g,'""') + '"';
+          return s;
+        }).join(','));
+      });
+      const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const period = _currentReport.period;
+      a.href = url; a.download = 'סיכום_ימים_' + period.year + '-' + String(period.month).padStart(2,'0') + '.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Wire events
+    $('#periodSelect').addEventListener('change', generate);
+    $('#refreshBtn').addEventListener('click', () => { populatePeriods(); generate(); });
+    $('#searchInput').addEventListener('input', renderReport);
+    $('#onlyWarnings').addEventListener('change', renderReport);
+    $('#exportXlsxBtn').addEventListener('click', exportXlsx);
+    $('#exportCsvBtn').addEventListener('click', exportCsv);
+
+    // Init
+    populatePeriods();
+    // Auto-select first period if any
+    const idx = MeckanoArchiveStore.loadIndex();
+    if (idx.length > 0) {
+      $('#periodSelect').value = idx[0].period;
+      generate();
+    }
+  </script>
+</body>
+</html>
