@@ -473,7 +473,68 @@
 
       <div class="toolbar">
         <input type="text" class="search" id="searchInput" placeholder="חיפוש לפי שם / מספר עובד / ת.ז....">
+        <button class="btn" id="addEmployeeBtn" style="background:#0e7490; color:#fff;">➕ הוספת עובד חדש</button>
         <span class="toolbar-hint">לחצי על תא לעריכה • שדה צהוב = נשמר עכשיו</span>
+      </div>
+
+      <!-- Add Employee Modal -->
+      <div id="addEmpModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.45); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:14px; padding:24px 28px; max-width:680px; width:90%; max-height:90vh; overflow-y:auto; box-shadow:0 6px 30px rgba(0,0,0,0.25);">
+          <h2 style="margin:0 0 6px 0; color:#0e7490; font-size:1.3rem;">➕ הוספת עובד חדש לאינדקס</h2>
+          <p style="color:#6b7280; font-size:0.88rem; margin:0 0 18px 0;">
+            עובד שלא מקאנו (למשל מנכ"ל משותף, או עובד שעדיין לא דווח השבוע).
+            השדות החיוניים בלבד; את השאר אפשר להשלים אחר כך.
+          </p>
+          <form id="addEmpForm" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <label style="font-size:0.86rem; font-weight:600;">מס' עובד *</label>
+              <input type="number" name="employee_no" required style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:6px;">
+            </div>
+            <div>
+              <label style="font-size:0.86rem; font-weight:600;">ת.ז.</label>
+              <input type="text" name="national_id" pattern="\d{0,9}" style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:6px;">
+            </div>
+            <div>
+              <label style="font-size:0.86rem; font-weight:600;">שם פרטי *</label>
+              <input type="text" name="first_name" required style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:6px;">
+            </div>
+            <div>
+              <label style="font-size:0.86rem; font-weight:600;">שם משפחה *</label>
+              <input type="text" name="last_name" required style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:6px;">
+            </div>
+            <div>
+              <label style="font-size:0.86rem; font-weight:600;">סוג עובד</label>
+              <select name="employee_type" style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:6px;">
+                <option value="גלובלי">גלובלי</option>
+                <option value="שעתי">שעתי</option>
+                <option value="קבלן">קבלן</option>
+                <option value='מנכ"ל משותף'>מנכ"ל משותף</option>
+                <option value="פרויקט">פרויקט</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:0.86rem; font-weight:600;">מחלקה</label>
+              <input type="text" name="department" style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:6px;">
+            </div>
+            <div>
+              <label style="font-size:0.86rem; font-weight:600;">תאריך תחילת עבודה</label>
+              <input type="date" name="start_date" style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:6px;">
+            </div>
+            <div>
+              <label style="font-size:0.86rem; font-weight:600;">שכר בסיס (₪)</label>
+              <input type="number" name="base_salary" step="0.01" style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:6px;">
+            </div>
+            <div style="grid-column:1/-1;">
+              <label style="font-size:0.86rem; font-weight:600;">הערות</label>
+              <textarea name="notes" rows="2" style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:6px; resize:vertical;"></textarea>
+            </div>
+          </form>
+          <div id="addEmpAlert" style="margin-top:12px;"></div>
+          <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
+            <button type="button" class="btn" id="addEmpCancel">בטל</button>
+            <button type="button" class="btn" id="addEmpSubmit" style="background:#0e7490; color:#fff;">💾 שמור</button>
+          </div>
+        </div>
       </div>
       <div class="table-wrap">
         <table id="empTable">
@@ -900,6 +961,64 @@
 
     // חיפוש
     $('#searchInput').addEventListener('input', renderTable);
+
+    // ====== Add Employee Modal ======
+    const addModal = document.getElementById('addEmpModal');
+    const addForm  = document.getElementById('addEmpForm');
+    const addAlert = document.getElementById('addEmpAlert');
+
+    function openAddModal() {
+      addForm.reset();
+      addAlert.innerHTML = '';
+      addModal.style.display = 'flex';
+    }
+    function closeAddModal() { addModal.style.display = 'none'; }
+
+    document.getElementById('addEmployeeBtn').addEventListener('click', openAddModal);
+    document.getElementById('addEmpCancel').addEventListener('click', closeAddModal);
+    addModal.addEventListener('click', (e) => { if (e.target === addModal) closeAddModal(); });
+
+    document.getElementById('addEmpSubmit').addEventListener('click', () => {
+      addAlert.innerHTML = '';
+      const formData = new FormData(addForm);
+      const data = Object.fromEntries(formData.entries());
+
+      // Validation
+      if (!data.employee_no || !data.first_name || !data.last_name) {
+        addAlert.innerHTML = '<div style="color:#9b1c1c; padding:8px 12px; background:#fee2e2; border-radius:6px;">יש למלא: מס\' עובד, שם פרטי, שם משפחה.</div>';
+        return;
+      }
+      const empNo = parseInt(data.employee_no, 10);
+      const all = EmIndexStore.loadAll();
+      if (all.find(e => parseInt(e.employee_no, 10) === empNo)) {
+        addAlert.innerHTML = '<div style="color:#9b1c1c; padding:8px 12px; background:#fee2e2; border-radius:6px;">מס\' עובד ' + empNo + ' כבר קיים באינדקס.</div>';
+        return;
+      }
+
+      const newEmp = {
+        employee_no: empNo,
+        national_id: data.national_id || '',
+        first_name: data.first_name.trim(),
+        last_name: data.last_name.trim(),
+        full_name: (data.first_name.trim() + ' ' + data.last_name.trim()).trim(),
+        employee_type: data.employee_type || 'גלובלי',
+        department: data.department || '',
+        start_date: data.start_date || '',
+        base_salary: data.base_salary ? parseFloat(data.base_salary) : null,
+        notes: data.notes || '',
+        source: 'manual_add',
+        imported_at: new Date().toISOString(),
+      };
+
+      // הוספה לאינדקס + push ל-Supabase
+      const updated = [...all, newEmp].sort((a, b) =>
+        parseInt(a.employee_no, 10) - parseInt(b.employee_no, 10));
+      EmIndexStore.saveAll(updated, { sourceFile: 'manual', count: updated.length });
+      closeAddModal();
+      renderMeta();
+      renderTable();
+      showAlert('success', '✅ עובד #' + empNo + ' (' + newEmp.full_name + ') נוסף לאינדקס.');
+    });
 
     // איפוס מלא
     $('#clearLink').addEventListener('click', () => {

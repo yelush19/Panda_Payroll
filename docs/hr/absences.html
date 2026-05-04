@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ניהול היעדרויות | פנדה טק</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', 'Heebo', Arial, sans-serif; background: #e9eef3; color: #2b486a; direction: rtl; margin: 0; padding: 20px; min-height: 100vh; }
+    .container { max-width: 1500px; margin: 0 auto; }
+    .header { background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%); color: #fff; border-radius: 14px; padding: 22px 28px; margin-bottom: 22px; }
+    .header h1 { margin: 0 0 6px 0; font-size: 1.6rem; }
+    .header .sub { opacity: 0.92; font-size: 0.92rem; }
+    .back-link { display: inline-block; color: #fff; background: rgba(255,255,255,0.18); padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 0.88rem; margin-bottom: 14px; }
+    .card { background: #fff; border-radius: 12px; padding: 18px 22px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    .search { padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; min-width: 250px; font-size: 0.95rem; }
+    select { padding: 7px 11px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.92rem; }
+    .filter-pill { padding: 4px 12px; border-radius: 12px; cursor: pointer; background: #f3f4f6; color: #374151; font-size: 0.84rem; user-select: none; border: 1px solid #e5e7eb; }
+    .filter-pill.active { background: #d97706; color: #fff; border-color: #d97706; }
+
+    .stats { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+    .stat-pill { background: #fef3c7; border: 1px solid #fcd34d; padding: 6px 14px; border-radius: 8px; font-size: 0.88rem; color: #78350f; font-weight: 600; }
+
+    .scroll-x { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+    thead th { background: #f3f4f6; padding: 8px 7px; text-align: center; font-weight: 700; border-bottom: 2px solid #d1d5db; position: sticky; top: 0; z-index: 1; white-space: nowrap; }
+    thead th.col-vac { background: #d1fae5; color: #065f46; }
+    thead th.col-sick { background: #fee2e2; color: #7f1d1d; }
+    thead th.col-rec { background: #dbeafe; color: #1e40af; }
+    thead th.col-mil { background: #fef3c7; color: #78350f; }
+    tbody td { padding: 6px; border-bottom: 1px solid #f3f4f6; text-align: center; }
+    tbody tr:hover { background: #fafafa; }
+    tbody td.left { text-align: right; padding-right: 10px; }
+    tbody td.warn { background: #fffbeb; }
+    tbody td.alert { background: #fee2e2; color: #991b1b; font-weight: 600; }
+
+    .alert { padding: 12px 16px; border-radius: 8px; margin: 10px 0; font-size: 0.92rem; }
+    .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+    .alert-warn { background: #fef3c7; color: #78350f; border: 1px solid #fcd34d; }
+    .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+    .legend { font-size: 0.84rem; color: #6b7280; margin-top: 8px; }
+    .legend span { padding: 2px 8px; border-radius: 4px; margin-left: 10px; }
+    .empty { color: #d1d5db; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="../index.html">← דף הבית</a>
+
+    <div class="header">
+      <h1>🌴 ניהול היעדרויות</h1>
+      <div class="sub">חופש • מחלה • הבראה • מילואים — לפי חודש, מבוסס שיקלולית + Meckano</div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <strong>חודש:</strong>
+        <select id="monthSelect"></select>
+        <select id="yearSelect"></select>
+        <input type="text" class="search" id="searchInput" placeholder="חיפוש לפי שם / מס' עובד">
+        <span class="filter-pill active" data-filter="all">הכל</span>
+        <span class="filter-pill" data-filter="used_vacation">השתמשו בחופש</span>
+        <span class="filter-pill" data-filter="used_sick">השתמשו במחלה</span>
+        <span class="filter-pill" data-filter="had_miluim">היו במילואים</span>
+        <span class="filter-pill" data-filter="low_vacation">יתרת חופש &lt; 5</span>
+      </div>
+
+      <div id="stats" class="stats"></div>
+
+      <div id="dataAvailability" style="font-size:0.88rem; margin-bottom:10px;"></div>
+      <div id="alertArea"></div>
+
+      <div class="scroll-x">
+        <table id="absTable">
+          <thead>
+            <tr>
+              <th rowspan="2" style="width:60px;">מס'</th>
+              <th rowspan="2" class="left" style="width:160px;">שם עובד</th>
+              <th rowspan="2" style="width:80px;">סוג</th>
+              <th colspan="3" class="col-vac">חופש (ימים)</th>
+              <th colspan="3" class="col-sick">מחלה (ימים)</th>
+              <th colspan="3" class="col-rec">הבראה (₪/ימים)</th>
+              <th colspan="2" class="col-mil">מילואים</th>
+            </tr>
+            <tr>
+              <th class="col-vac">יתרה פתיחה</th>
+              <th class="col-vac">ניצול בחודש</th>
+              <th class="col-vac">יתרה סוגרת</th>
+              <th class="col-sick">יתרה פתיחה</th>
+              <th class="col-sick">ניצול בחודש</th>
+              <th class="col-sick">יתרה סוגרת</th>
+              <th class="col-rec">יתרה פתיחה</th>
+              <th class="col-rec">ניצול בחודש</th>
+              <th class="col-rec">יתרה סוגרת</th>
+              <th class="col-mil">Meckano (ימים)</th>
+              <th class="col-mil">שיקלולית</th>
+            </tr>
+          </thead>
+          <tbody id="absBody"></tbody>
+        </table>
+      </div>
+
+      <div class="legend">
+        <span style="background:#fffbeb;">💡 צהוב</span> = ניצול בחודש &gt; 0
+        &nbsp;&nbsp;
+        <span style="background:#fee2e2; color:#991b1b;">⚠ אדום</span> = יתרה שלילית או חוסר תאימות בין Meckano לשיקלולית
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../shared/js/supabase-config.js"></script>
+  <script src="../shared/js/supabase-client.js"></script>
+  <script src="../shared/js/auth-bar.js"></script>
+  <script src="../shared/js/month_config.js"></script>
+  <script src="../reserve/js/em-index-store.js"></script>
+  <script src="../salary/js/meckano-archive-store.js"></script>
+  <script src="../salary/js/payslip-store.js"></script>
+  <script>
+    'use strict';
+
+    const monthSelect = document.getElementById('monthSelect');
+    const yearSelect = document.getElementById('yearSelect');
+    for (let m = 1; m <= 12; m++) {
+      const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
+      monthSelect.appendChild(opt);
+    }
+    const cy = new Date().getFullYear();
+    for (let y = cy + 1; y >= cy - 3; y--) {
+      const opt = document.createElement('option'); opt.value = y; opt.textContent = y;
+      yearSelect.appendChild(opt);
+    }
+    const conf = (typeof MonthConfig !== 'undefined') ? MonthConfig.loadSelectedMonth() : null;
+    if (conf) { monthSelect.value = conf.month; yearSelect.value = conf.year; }
+    else {
+      const lm = new Date(); lm.setMonth(lm.getMonth() - 1);
+      monthSelect.value = lm.getMonth() + 1;
+      yearSelect.value = lm.getFullYear();
+    }
+
+    let activeFilter = 'all';
+
+    function getRows() {
+      const y = parseInt(yearSelect.value, 10);
+      const m = parseInt(monthSelect.value, 10);
+      const empIndex = (typeof EmIndexStore !== 'undefined') ? (EmIndexStore.loadAll() || []) : [];
+      const empByNo = {};
+      empIndex.forEach(e => { empByNo[String(e.employee_no)] = e; });
+
+      const meck = (typeof MeckanoArchiveStore !== 'undefined') ? MeckanoArchiveStore.loadArchive(y, m) : null;
+      const meckBlocks = (meck && meck.blocks) ? meck.blocks : [];
+
+      const pay = (typeof PayslipStore !== 'undefined') ? PayslipStore.load(y, m) : null;
+      const absReport = pay && pay.reports && pay.reports.absences ? pay.reports.absences : null;
+
+      const allEmpNos = new Set();
+      empIndex.forEach(e => allEmpNos.add(parseInt(e.employee_no, 10)));
+      meckBlocks.forEach(b => allEmpNos.add(parseInt(b.employee_no, 10)));
+      if (absReport) Object.keys(absReport.employees).forEach(n => allEmpNos.add(parseInt(n, 10)));
+
+      const rows = [];
+      Array.from(allEmpNos).sort((a, b) => a - b).forEach(empNo => {
+        const emp = empByNo[String(empNo)] || null;
+        const block = meckBlocks.find(b => parseInt(b.employee_no, 10) === empNo) || null;
+        const absEmp = absReport && absReport.employees[empNo] ? absReport.employees[empNo] : null;
+
+        // Pick שיקלולית data for this month
+        function pickMonth(arr) { return arr ? arr.find(x => x.month === m) : null; }
+        const vacM = absEmp ? pickMonth(absEmp.vacation.monthly) : null;
+        const sickM = absEmp ? pickMonth(absEmp.sick.monthly) : null;
+        const recM = absEmp ? pickMonth(absEmp.recreation.monthly) : null;
+        const milM = absEmp && absEmp._miluim_by_month ? absEmp._miluim_by_month[m] : null;
+
+        // Opening balance: ניצול בחודש = used; closing = balance; opening = closing + used (קירוב)
+        function openBal(monthData, prior) {
+          if (!monthData) return prior;
+          if (monthData.balance != null && monthData.used != null) return monthData.balance + monthData.used - (monthData.accrued || 0);
+          return prior;
+        }
+
+        const vacOpen = absEmp ? openBal(vacM, absEmp.vacation.prior) : (emp ? emp.vacation_balance_days : null);
+        const sickOpen = absEmp ? openBal(sickM, absEmp.sick.prior) : (emp ? emp.sick_balance_days : null);
+        const recOpen = absEmp ? openBal(recM, absEmp.recreation.prior) : (emp ? emp.recovery_balance_amount : null);
+
+        const meckMiluim = block && block.events ? (block.events.miluim || 0) : 0;
+
+        rows.push({
+          employee_no: empNo,
+          full_name: (emp && emp.full_name) || (block && block.employee_name) || '',
+          employee_type: (emp && emp.employee_type) || '',
+          vac_open:  vacOpen, vac_used:  vacM ? vacM.used : null,  vac_close:  vacM ? vacM.balance : (absEmp ? absEmp.vacation.prior : null),
+          sick_open: sickOpen, sick_used: sickM ? sickM.used : null, sick_close: sickM ? sickM.balance : (absEmp ? absEmp.sick.prior : null),
+          rec_open:  recOpen, rec_used:  recM ? recM.used : null, rec_close:  recM ? recM.balance : (absEmp ? absEmp.recreation.prior : null),
+          meck_miluim: meckMiluim,
+          shik_miluim: milM,
+          has_meckano: !!block,
+          has_payslip: !!absEmp,
+        });
+      });
+
+      return { rows, hasMeck: !!meck, hasPay: !!absReport };
+    }
+
+    function renderStats(rows) {
+      const total = rows.length;
+      const usedVac = rows.filter(r => r.vac_used > 0).length;
+      const usedSick = rows.filter(r => r.sick_used > 0).length;
+      const hadMil = rows.filter(r => r.meck_miluim > 0 || r.shik_miluim > 0).length;
+      const lowVac = rows.filter(r => r.vac_close != null && r.vac_close < 5).length;
+      document.getElementById('stats').innerHTML =
+        '<span class="stat-pill">👥 ' + total + ' עובדים</span>' +
+        '<span class="stat-pill">🌴 ' + usedVac + ' השתמשו בחופש</span>' +
+        '<span class="stat-pill">🤒 ' + usedSick + ' השתמשו במחלה</span>' +
+        '<span class="stat-pill">🎖️ ' + hadMil + ' היו במילואים</span>' +
+        '<span class="stat-pill">⚠ ' + lowVac + ' עם יתרת חופש נמוכה</span>';
+    }
+
+    function applyFilter(r) {
+      if (activeFilter === 'all') return true;
+      if (activeFilter === 'used_vacation') return r.vac_used > 0;
+      if (activeFilter === 'used_sick') return r.sick_used > 0;
+      if (activeFilter === 'had_miluim') return (r.meck_miluim > 0) || (r.shik_miluim > 0);
+      if (activeFilter === 'low_vacation') return r.vac_close != null && r.vac_close < 5;
+      return true;
+    }
+
+    function applySearch(r, q) {
+      if (!q) return true;
+      const s = q.toLowerCase();
+      return String(r.employee_no).includes(s) || (r.full_name || '').toLowerCase().includes(s);
+    }
+
+    function fmtCell(v, suffix) {
+      if (v == null) return '<span class="empty">—</span>';
+      const num = typeof v === 'number' ? Math.round(v * 100) / 100 : v;
+      return num + (suffix || '');
+    }
+
+    function renderTable(rowsData) {
+      const q = document.getElementById('searchInput').value.trim();
+      const filtered = rowsData.filter(applyFilter).filter(r => applySearch(r, q));
+      const body = document.getElementById('absBody');
+
+      let html = '';
+      filtered.forEach(r => {
+        // Cell classes for visual cues
+        const vacUsedCls = r.vac_used > 0 ? 'warn' : '';
+        const sickUsedCls = r.sick_used > 0 ? 'warn' : '';
+        const recUsedCls = r.rec_used > 0 ? 'warn' : '';
+        const milMeckCls = r.meck_miluim > 0 ? 'warn' : '';
+        const milShikCls = r.shik_miluim > 0 ? 'warn' : '';
+        const vacCloseCls = (r.vac_close != null && r.vac_close < 0) ? 'alert' : '';
+        const sickCloseCls = (r.sick_close != null && r.sick_close < 0) ? 'alert' : '';
+        // Mismatch: Meckano has miluim but שיקלולית doesn't (or vice versa)
+        const milMismatch = ((r.meck_miluim > 0) !== (r.shik_miluim > 0));
+
+        html += '<tr>';
+        html += '<td>' + r.employee_no + '</td>';
+        html += '<td class="left">' + r.full_name + '</td>';
+        html += '<td><small>' + (r.employee_type || '—') + '</small></td>';
+        html += '<td>' + fmtCell(r.vac_open) + '</td>';
+        html += '<td class="' + vacUsedCls + '">' + fmtCell(r.vac_used) + '</td>';
+        html += '<td class="' + vacCloseCls + '">' + fmtCell(r.vac_close) + '</td>';
+        html += '<td>' + fmtCell(r.sick_open) + '</td>';
+        html += '<td class="' + sickUsedCls + '">' + fmtCell(r.sick_used) + '</td>';
+        html += '<td class="' + sickCloseCls + '">' + fmtCell(r.sick_close) + '</td>';
+        html += '<td>' + fmtCell(r.rec_open) + '</td>';
+        html += '<td class="' + recUsedCls + '">' + fmtCell(r.rec_used) + '</td>';
+        html += '<td>' + fmtCell(r.rec_close) + '</td>';
+        html += '<td class="' + milMeckCls + (milMismatch ? ' alert' : '') + '">' + fmtCell(r.meck_miluim) + '</td>';
+        html += '<td class="' + milShikCls + (milMismatch ? ' alert' : '') + '">' + fmtCell(r.shik_miluim) + '</td>';
+        html += '</tr>';
+      });
+
+      if (!filtered.length) html = '<tr><td colspan="14" style="padding:30px; color:#9ca3af;">אין נתונים לחודש זה / לסינון זה</td></tr>';
+      body.innerHTML = html;
+    }
+
+    function refresh() {
+      const { rows, hasMeck, hasPay } = getRows();
+
+      // Data availability
+      const div = document.getElementById('dataAvailability');
+      let html = '';
+      if (hasMeck) html += '<span style="color:#047857;">✅ Meckano</span>';
+      else html += '<span style="color:#9b1c1c;">❌ Meckano חסר — <a href="../salary/upload.html" style="color:#dc2626;">העלי</a></span>';
+      html += ' &nbsp;&nbsp; ';
+      if (hasPay) html += '<span style="color:#047857;">✅ שיקלולית</span>';
+      else html += '<span style="color:#9b1c1c;">❌ שיקלולית חסר — <a href="../salary/payslip-upload.html" style="color:#dc2626;">העלי</a></span>';
+      div.innerHTML = html;
+
+      renderStats(rows);
+      renderTable(rows);
+    }
+
+    monthSelect.addEventListener('change', refresh);
+    yearSelect.addEventListener('change', refresh);
+    document.getElementById('searchInput').addEventListener('input', refresh);
+    document.querySelectorAll('.filter-pill').forEach(p => {
+      p.addEventListener('click', () => {
+        document.querySelectorAll('.filter-pill').forEach(x => x.classList.remove('active'));
+        p.classList.add('active');
+        activeFilter = p.dataset.filter;
+        refresh();
+      });
+    });
+
+    refresh();
+
+    // Sync from Supabase on load
+    if (typeof EmIndexStore.init === 'function') {
+      EmIndexStore.init().then(() => refresh());
+    }
+  </script>
+</body>
+</html>
