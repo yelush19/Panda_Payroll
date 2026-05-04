@@ -550,6 +550,27 @@
                         </div>
                     </details>
 
+                    <!-- Salary: Meckano monthly intake (NEW) -->
+                    <details class="module-card foundational">
+                        <summary>
+                            <div class="module-icon">📤</div>
+                            <div class="module-info"><h3>קליטת Meckano חודשי</h3></div>
+                            <span class="module-status status-foundational">תשתית משותפת</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">
+                                העלאת קובץ Meckano חודשי, פירסור 44 בלוקי עובדים אוטומטי, ושמירה בארכיון לפי חודש לצורך התייחסות עתידית.
+                            </p>
+                            <ul class="module-features">
+                                <li>זיהוי דינמי של עמודות (עמיד לשינויי מבנה)</li>
+                                <li>ארכיון מלא לפי חודש - שליפה בכל עת</li>
+                                <li>חילוץ מטא + ימים יומיים + סיכום + אירועים</li>
+                                <li>בסיס ל-4 הדוחות שיבואו בהמשך</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('salary-upload')">פתח קליטה ←</button>
+                        </div>
+                    </details>
+
                     <!-- Module 0: Mecano Converter -->
                     <details class="module-card">
                         <summary>
@@ -765,6 +786,7 @@
         function openModule(moduleName) {
             const moduleFiles = {
                 'employees-index':  'reserve/employees.html',
+                'salary-upload':    'salary/upload.html',
                 'reserve':          'reserve/employees.html',
                 'mecano-converter': '../mecanochecker/index.html',
                 'basic-checks':     'basic-checks.html',

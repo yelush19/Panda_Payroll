@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>קליטת Meckano חודשי | פנדה טק</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Heebo', Arial, sans-serif;
+      background: #e9eef3;
+      color: #2b486a;
+      direction: rtl;
+      margin: 0; padding: 20px; min-height: 100vh;
+    }
+    .container { max-width: 1300px; margin: 0 auto; }
+    .header {
+      background: linear-gradient(90deg, #30bced 0%, #528163 100%);
+      color: #fff; border-radius: 14px;
+      padding: 22px 28px; margin-bottom: 22px;
+      box-shadow: 0 4px 14px rgba(82,129,99,0.12);
+    }
+    .header h1 { margin: 0 0 6px 0; font-size: 1.7rem; font-weight: 700; }
+    .header .subtitle { opacity: 0.92; font-size: 0.98rem; }
+    .card {
+      background: #fff; border-radius: 12px;
+      padding: 22px 24px; margin-bottom: 18px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .card h2 { margin: 0 0 14px 0; font-size: 1.15rem; color: #2b486a; }
+
+    .upload-zone {
+      border: 2px dashed #30bced; border-radius: 10px;
+      padding: 38px 20px; text-align: center; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .upload-zone:hover { background: #f0f7ff; }
+    .upload-zone input { display: none; }
+    .upload-zone .main-text { font-size: 1.1rem; font-weight: 600; }
+    .upload-zone .sub-text { margin-top: 8px; font-size: 0.9rem; color: #6b7280; }
+
+    .alert {
+      padding: 12px 16px; border-radius: 8px;
+      margin-top: 14px; font-size: 0.95rem; line-height: 1.55;
+      white-space: pre-line;
+    }
+    .alert code { background: rgba(0,0,0,0.06); padding: 1px 6px; border-radius: 4px; }
+    .alert-error   { background: #fde8e8; color: #9b1c1c; border: 1px solid #f8b4b4; }
+    .alert-success { background: #def7ec; color: #03543f; border: 1px solid #84e1bc; }
+    .alert-info    { background: #e1effe; color: #1e429f; border: 1px solid #a4cafe; }
+    .alert-warn    { background: #fef3c7; color: #78350f; border: 1px solid #fcd34d; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: #f3f4f6; padding: 10px 8px; text-align: right;
+      font-weight: 600; font-size: 0.85rem;
+      border-bottom: 2px solid #d1d5db;
+    }
+    tbody td {
+      padding: 8px; font-size: 0.9rem;
+      border-bottom: 1px solid #f1f3f5;
+    }
+    tbody tr:hover { background: #f9fafb; }
+
+    .btn {
+      background: #30bced; color: #fff; border: 0;
+      padding: 8px 16px; border-radius: 7px;
+      cursor: pointer; font-family: inherit;
+      font-size: 0.92rem; font-weight: 600;
+    }
+    .btn:hover { background: #1ea1d1; }
+    .btn-secondary { background: transparent; color: #30bced; border: 1px solid #30bced; }
+    .btn-secondary:hover { background: #f0f7ff; }
+    .btn-danger { background: #dc2626; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-small { padding: 4px 10px; font-size: 0.82rem; }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px; margin-top: 12px;
+    }
+    .stat {
+      background: #f8fafc; border: 1px solid #e2e8f0;
+      border-radius: 8px; padding: 10px 14px;
+    }
+    .stat .label { font-size: 0.78rem; color: #6b7280; }
+    .stat .value { font-size: 1.4rem; font-weight: 700; color: #2b486a; }
+
+    .month-row { border-right: 4px solid #30bced; }
+    .empty-state { text-align: center; color: #6b7280; padding: 30px; }
+
+    .toolbar {
+      display: flex; gap: 10px; align-items: center;
+      flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .toolbar-spacer { margin-right: auto; font-size: 0.85rem; color: #6b7280; }
+
+    .back-link {
+      display: inline-block;
+      color: #fff; text-decoration: none;
+      padding: 6px 14px; border-radius: 6px;
+      background: rgba(255,255,255,0.18);
+      font-size: 0.88rem;
+      margin-bottom: 14px;
+    }
+    .back-link:hover { background: rgba(255,255,255,0.28); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="../index.html">← דף הבית</a>
+
+    <div class="header">
+      <h1>📤 קליטת דוח Meckano חודשי</h1>
+      <div class="subtitle">
+        העלאת קובץ Meckano חודשי, פירסור גיליון <code>report</code> לבלוקי עובדים, ושמירה בארכיון לשליפה עתידית.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📁 בחירת קובץ</h2>
+      <label class="upload-zone" for="fileInput">
+        <div class="main-text">לחצי כאן או גררי קובץ Meckano חודשי (xlsx)</div>
+        <div class="sub-text">המערכת תזהה את כל בלוקי העובדים אוטומטית ותשמור אותם לפי חודש.</div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+      </label>
+      <div id="alertArea"></div>
+      <div id="summaryArea"></div>
+    </div>
+
+    <div class="card">
+      <h2>📚 ארכיון Meckano</h2>
+      <div class="toolbar">
+        <button class="btn btn-secondary" id="exportAllBtn">📥 גיבוי מלא של כל הארכיון</button>
+        <button class="btn btn-secondary" id="importAllBtn">📤 שחזור מגיבוי</button>
+        <input type="file" id="importInput" accept=".json" style="display:none;">
+        <span class="toolbar-spacer">הנתונים שמורים בדפדפן זה בלבד. מומלץ לגבות לקובץ.</span>
+      </div>
+      <div id="archiveTable"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="js/meckano-report-parser.js"></script>
+  <script src="js/meckano-archive-store.js"></script>
+  <script>
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+
+    function showAlert(level, msg) {
+      $('#alertArea').innerHTML = '<div class="alert alert-' + level + '">' + msg + '</div>';
+    }
+    function clearAlert() { $('#alertArea').innerHTML = ''; }
+
+    // המרת "01.04.2026 - 30.04.2026" ל-{year:2026, month:4}
+    function parsePeriodFromDateRange(dateRange) {
+      const m = String(dateRange).match(/(\d{2})\.(\d{2})\.(\d{4})/);
+      if (!m) return null;
+      return { year: parseInt(m[3], 10), month: parseInt(m[2], 10) };
+    }
+
+    function monthName(m) {
+      return ['', 'ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'][m] || '?';
+    }
+
+    function formatBytes(b) {
+      if (b < 1024) return b + ' B';
+      if (b < 1024*1024) return (b / 1024).toFixed(1) + ' KB';
+      return (b / 1024 / 1024).toFixed(2) + ' MB';
+    }
+
+    // ===== זרימת ההעלאה =====
+    $('#fileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      clearAlert();
+      $('#summaryArea').innerHTML = '';
+      showAlert('info', '⏳ קוראת את הקובץ ומפרסרת...');
+
+      try {
+        const result = await MeckanoReportParser.parseFile(file);
+        if (!result.blocks || result.blocks.length === 0) {
+          showAlert('error', '❌ לא נמצאו בלוקי עובדים בגיליון report.');
+          return;
+        }
+        // זיהוי חודש מהבלוק הראשון (אמור להיות זהה לכולם)
+        const firstRange = result.blocks[0].date_range;
+        const period = parsePeriodFromDateRange(firstRange);
+        if (!period) {
+          showAlert('error',
+            '❌ לא הצלחתי לזהות את חודש הדוח. טווח התאריכים בבלוק הראשון: "' + firstRange + '"');
+          return;
+        }
+
+        // Save to archive
+        const meta = MeckanoArchiveStore.saveArchive(period.year, period.month, {
+          file_name:     file.name,
+          total_blocks:  result.total_blocks,
+          sheet_name:    result.sheet_name,
+          workbook_sheets: result.workbook_sheets,
+          blocks:        result.blocks,
+        });
+
+        // הצגת סיכום
+        const totalDays = result.blocks.reduce((s, b) => s + b.days.length, 0);
+        const blocksWithUnknowns = result.blocks.filter(b => b.unknown_columns.length > 0).length;
+        const empWithEvents = result.blocks.filter(b => Object.keys(b.events).length > 0).length;
+
+        showAlert('success',
+          '✅ נקלט בהצלחה: <strong>' + monthName(period.month) + ' ' + period.year + '</strong>. ' +
+          'נשמר בארכיון תחת <code>' + meta.period + '</code>.'
+        );
+
+        $('#summaryArea').innerHTML =
+          '<div class="summary-grid">' +
+            statBox('עובדים', result.total_blocks) +
+            statBox('שורות יומיות', totalDays) +
+            statBox('עובדים עם אירועים', empWithEvents) +
+            statBox('בלוקים עם הערות', blocksWithUnknowns) +
+            statBox('גודל בארכיון', formatBytes(meta.size_bytes)) +
+          '</div>' +
+          (blocksWithUnknowns > 0 ?
+            '<div class="alert alert-warn" style="margin-top:14px;">' +
+              '⚠️ ' + blocksWithUnknowns + ' בלוקים מכילים הערות יד-אדם בכותרות (כגון "תאונת עבודה - כל החודש"). ' +
+              'הערות אלו נשמרו בנפרד ולא משפיעות על הסיכומים.' +
+            '</div>' : '');
+
+        renderArchive();
+      } catch (err) {
+        showAlert('error', '❌ ' + err.message);
+      } finally {
+        e.target.value = '';
+      }
+    });
+
+    function statBox(label, value) {
+      return '<div class="stat"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>';
+    }
+
+    // ===== ארכיון =====
+    function renderArchive() {
+      const idx = MeckanoArchiveStore.loadIndex();
+      const container = $('#archiveTable');
+      if (idx.length === 0) {
+        container.innerHTML = '<div class="empty-state">עדיין לא נקלטו דוחות. העלי קובץ Meckano כדי להתחיל.</div>';
+        return;
+      }
+      container.innerHTML = '<table>' +
+        '<thead><tr>' +
+          '<th>חודש</th>' +
+          '<th>קובץ מקור</th>' +
+          '<th>נקלט ב</th>' +
+          '<th>עובדים</th>' +
+          '<th>גודל</th>' +
+          '<th>פעולות</th>' +
+        '</tr></thead>' +
+        '<tbody>' +
+        idx.map(meta => {
+          const dt = new Date(meta.saved_at);
+          return '<tr class="month-row">' +
+            '<td><strong>' + monthName(meta.month) + ' ' + meta.year + '</strong></td>' +
+            '<td>' + meta.file_name + '</td>' +
+            '<td>' + dt.toLocaleString('he-IL') + '</td>' +
+            '<td>' + meta.total_blocks + '</td>' +
+            '<td>' + formatBytes(meta.size_bytes) + '</td>' +
+            '<td>' +
+              '<button class="btn btn-small btn-secondary" data-action="export" data-period="' + meta.period + '">⬇️ ייצוא</button> ' +
+              '<button class="btn btn-small btn-danger" data-action="delete" data-year="' + meta.year + '" data-month="' + meta.month + '">🗑️ מחיקה</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('') +
+        '</tbody></table>';
+    }
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      if (action === 'delete') {
+        const y = parseInt(btn.dataset.year, 10);
+        const m = parseInt(btn.dataset.month, 10);
+        if (confirm('למחוק את הארכיון של ' + monthName(m) + ' ' + y + '?')) {
+          MeckanoArchiveStore.deleteArchive(y, m);
+          renderArchive();
+        }
+      } else if (action === 'export') {
+        const period = btn.dataset.period;
+        const arc = MeckanoArchiveStore.loadByPeriod(period);
+        if (arc) downloadJson(arc, 'meckano_archive_' + period + '.json');
+      }
+    });
+
+    // ייצוא מלא
+    $('#exportAllBtn').addEventListener('click', () => {
+      const data = MeckanoArchiveStore.exportFullBackup();
+      const periods = Object.keys(data.periods).length;
+      if (periods === 0) {
+        showAlert('warn', 'אין נתונים בארכיון לגיבוי.');
+        return;
+      }
+      downloadJson(data, 'meckano_archive_full_' + new Date().toISOString().slice(0,10) + '.json');
+    });
+
+    // יבוא מלא
+    $('#importAllBtn').addEventListener('click', () => $('#importInput').click());
+    $('#importInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (!confirm('לטעון את הגיבוי? יידרסו ארכיונים קיימים לאותם חודשים.')) return;
+          const restored = MeckanoArchiveStore.importFullBackup(data);
+          showAlert('success', '✅ שוחזרו ' + restored + ' חודשים מהגיבוי.');
+          renderArchive();
+        } catch (err) {
+          showAlert('error', '❌ ' + err.message);
+        } finally {
+          e.target.value = '';
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    function downloadJson(data, filename) {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // אתחול
+    renderArchive();
+  </script>
+</body>
+</html>
