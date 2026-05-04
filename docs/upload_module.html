@@ -268,8 +268,8 @@
         </div>
     </div>
 
-    <script src="../payrollchecker/shared/month_config.js"></script>
-    <script src="../payrollchecker/shared/data_bus.js"></script>
+    <script src="shared/js/month_config.js"></script>
+    <script src="shared/js/data_bus.js"></script>
     <script src="assets/js/payroll-logic.js"></script>
     <script src="assets/js/payroll-dashboard-ui.js"></script>
 
@@ -496,7 +496,10 @@
 
         // Initialize unified checker
         let unifiedChecker = new UnifiedPayrollChecker();
-        let uploadedFiles = { mecano: null, payslips: null, exceptions: null };
+        // uploadedFiles - מוצהר ב-payroll-logic.js, אסור להצהיר שוב
+        if (typeof uploadedFiles === 'undefined') {
+            window.uploadedFiles = { mecano: null, payslips: null, exceptions: null };
+        }
 
         // Override the startAnalysis function
         async function startAnalysis() {
