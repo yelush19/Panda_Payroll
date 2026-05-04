@@ -418,7 +418,17 @@
                 <span>📝</span>
                 בקשות חריגים לפי עובד
             </h2>
-            
+
+            <div id="verifyToolbar" style="display:flex; gap:10px; align-items:center; margin-bottom:14px; padding:12px 16px; background:#eef2ff; border:1px solid #c7d2fe; border-radius:8px; flex-wrap:wrap;">
+                <button onclick="runVerifyAll()" style="background:#6366f1; color:#fff; border:0; padding:9px 20px; border-radius:6px; cursor:pointer; font-weight:600; font-size:0.93rem;">
+                    🔍 אמת את כל הבקשות מול תלושי שיקלולית
+                </button>
+                <span id="verifyStatus" style="color:#4338ca; font-size:0.9rem;"></span>
+                <span style="margin-right:auto; font-size:0.85rem; color:#6b7280;">
+                    דורש קליטת תלושים — <a href="salary/payslip-upload.html" style="color:#4338ca;">פתח קליטה</a>
+                </span>
+            </div>
+
             <div id="employeeExceptions">
                 <!-- Employee exceptions will be populated here -->
             </div>
@@ -450,6 +460,9 @@
     <script src="shared/js/auth-bar.js"></script>
   <script src="shared/js/prevent-default-drop.js"></script>
     <script src="reserve/js/em-index-store.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="salary/js/shiklulit-parser.js"></script>
+    <script src="salary/js/payslip-store.js"></script>
     <script>
         // ========== EXCEPTIONS DATA ==========
         let exceptionsData = {};
@@ -490,6 +503,175 @@
         const exceptionCategories = [
             "קיזוז", "תוספת", "שינוי מס", "שעות נוספות", "חופש", "מחלה", "אחר"
         ];
+
+        // ========== SHIKLULIT PAYSLIP VERIFICATION ==========
+        // ממפה קטגוריית בקשה למילות מפתח של רכיבי שיקלולית
+        const CATEGORY_TO_KEYWORDS = {
+            "קיזוז":         ["היעדרות", "קיזוז", "מחלה"],
+            "תוספת":         ["החזר", "תוספת", "בונוס", "מתנות", "ארוחות"],
+            "שינוי מס":      ["מס"],
+            "שעות נוספות":   ["נוספות", "ש.נוספות", "שעות", "תוספת גלובלית", "מואמצת"],
+            "חופש":          ["חופש", "תמורת חופשה", "חופשה"],
+            "מחלה":          ["מחלה"],
+            "אחר":           [],
+        };
+
+        // לקיחת קוד עובד מהאינדקס לפי שם
+        function findEmployeeNoByName(fullName) {
+            if (typeof EmIndexStore === 'undefined') return null;
+            const list = EmIndexStore.loadAll();
+            if (!list || !list.length) return null;
+            const target = String(fullName).trim();
+            // התאמה מדויקת ראשונה, ואז גם בסדר הפוך (פרטי+משפחה)
+            const exact = list.find(e => (e.full_name || '').trim() === target);
+            if (exact && exact.employee_no) return parseInt(exact.employee_no, 10);
+            const parts = target.split(/\s+/);
+            if (parts.length >= 2) {
+                const reversed = parts.reverse().join(' ');
+                const r = list.find(e => (e.full_name || '').trim() === reversed);
+                if (r && r.employee_no) return parseInt(r.employee_no, 10);
+            }
+            return null;
+        }
+
+        // קוראת ל-PayslipStore.verifyException עבור בקשת חריג מסוימת
+        function verifyExceptionAgainstPayslip(employeeName, exception) {
+            if (typeof PayslipStore === 'undefined') {
+                return { status: 'no_store', notes: 'מודול אימות תלושים לא טעון.' };
+            }
+            const config = (typeof MonthConfig !== 'undefined') ? MonthConfig.loadSelectedMonth() : null;
+            if (!config) {
+                return { status: 'no_period', notes: 'יש לבחור חודש.' };
+            }
+            const empNo = findEmployeeNoByName(employeeName);
+            if (!empNo) {
+                return { status: 'no_employee', notes: 'העובד לא נמצא באינדקס המרכזי (' + employeeName + ').' };
+            }
+            const keywords = CATEGORY_TO_KEYWORDS[exception.category] || [];
+            const result = PayslipStore.verifyException(config.year, config.month, {
+                employee_no: empNo,
+                expected_amount: exception.amount > 0 ? exception.amount : null,
+                component_keywords: keywords,
+            });
+            return { ...result, employee_no: empNo, period: config.periodKey };
+        }
+
+        // עיצוב פלט אימות — מחזיר HTML
+        function renderVerificationResult(result) {
+            if (!result) return '';
+            const STATUS_BADGES = {
+                verified:  { color: '#047857', bg: '#d1fae5', icon: '✅', label: 'אומת' },
+                partial:   { color: '#92400e', bg: '#fef3c7', icon: '⚠️', label: 'התאמה חלקית' },
+                not_found: { color: '#991b1b', bg: '#fee2e2', icon: '❌', label: 'לא נמצא' },
+                no_data:        { color: '#6b7280', bg: '#f3f4f6', icon: '📭', label: 'אין נתוני שיקלולית' },
+                no_store:       { color: '#6b7280', bg: '#f3f4f6', icon: '⚙️', label: 'מודול לא נטען' },
+                no_period:      { color: '#6b7280', bg: '#f3f4f6', icon: '📅', label: 'אין חודש' },
+                no_employee:    { color: '#6b7280', bg: '#f3f4f6', icon: '🔍', label: 'עובד לא ידוע' },
+                employee_not_found: { color: '#991b1b', bg: '#fee2e2', icon: '❌', label: 'אין בשיקלולית' },
+            };
+            const b = STATUS_BADGES[result.status] || STATUS_BADGES.no_data;
+            let html = '<div style="margin-top:8px; padding:8px 12px; border-radius:6px; background:' + b.bg + '; color:' + b.color + '; font-size:0.86rem;">';
+            html += '<strong>' + b.icon + ' ' + b.label + '</strong>';
+            if (result.notes) html += ' — ' + result.notes;
+            if (result.matches && result.matches.length) {
+                html += '<ul style="margin:6px 0 0 0; padding-right:18px;">';
+                result.matches.slice(0, 3).forEach(m => {
+                    html += '<li>[' + m.code + '] ' + m.name +
+                        ' — ₪' + (m.total != null ? Math.round(m.total).toLocaleString() : '?') +
+                        (m.qty != null ? ' (כמות ' + m.qty + ')' : '') +
+                        '</li>';
+                });
+                html += '</ul>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        // אימות יחיד + עדכון תצוגה בכרטיסייה
+        function verifyAndDisplay(employeeName) {
+            const exception = exceptionsData[employeeName];
+            if (!exception) return;
+            const result = verifyExceptionAgainstPayslip(employeeName, exception);
+            exception._verification = result;
+            const card = document.querySelector('.employee-exception[data-employee="' + cssEscape(employeeName) + '"]');
+            if (card) {
+                let panel = card.querySelector('.verify-panel');
+                if (!panel) {
+                    panel = document.createElement('div');
+                    panel.className = 'verify-panel';
+                    card.querySelector('.exception-content').appendChild(panel);
+                }
+                panel.innerHTML = renderVerificationResult(result);
+            }
+        }
+
+        function cssEscape(str) {
+            return String(str).replace(/[^\w֐-׿\-]/g, '_');
+        }
+
+        // אימות כולל לכל הבקשות שסומנו "בוצע"
+        function verifyAllProcessed() {
+            let counts = { verified: 0, partial: 0, not_found: 0, other: 0, total: 0 };
+            Object.keys(exceptionsData).forEach(name => {
+                const e = exceptionsData[name];
+                if (!e.hasRequest || !e.processed) return;
+                const r = verifyExceptionAgainstPayslip(name, e);
+                e._verification = r;
+                counts.total++;
+                if (r.status === 'verified') counts.verified++;
+                else if (r.status === 'partial') counts.partial++;
+                else if (r.status === 'not_found' || r.status === 'employee_not_found') counts.not_found++;
+                else counts.other++;
+            });
+            displayExceptions();
+            return counts;
+        }
+
+        // Wrapper לכפתור "אמת הכל" — מאמת ומציג סיכום בסטטוס בר
+        function runVerifyAll() {
+            const config = (typeof MonthConfig !== 'undefined') ? MonthConfig.loadSelectedMonth() : null;
+            if (!config) {
+                alert('יש לבחור חודש לפני האימות.');
+                return;
+            }
+            // בדיקה שיש נתוני שיקלולית לחודש זה
+            const data = (typeof PayslipStore !== 'undefined') ? PayslipStore.load(config.year, config.month) : null;
+            if (!data) {
+                if (!confirm('אין נתוני שיקלולית לחודש ' + config.periodKey +
+                    '. לפתוח את דף קליטת התלושים?')) return;
+                window.location.href = 'salary/payslip-upload.html';
+                return;
+            }
+
+            // אם יש בקשות שלא נשמרו (processed=false) - אימות לכולן בלי דרישת processed
+            let totalRequests = 0;
+            let counts = { verified: 0, partial: 0, not_found: 0, no_employee: 0, other: 0, total: 0 };
+            Object.keys(exceptionsData).forEach(name => {
+                const e = exceptionsData[name];
+                if (!e.hasRequest) return;
+                totalRequests++;
+                const r = verifyExceptionAgainstPayslip(name, e);
+                e._verification = r;
+                counts.total++;
+                if (r.status === 'verified') counts.verified++;
+                else if (r.status === 'partial') counts.partial++;
+                else if (r.status === 'not_found' || r.status === 'employee_not_found') counts.not_found++;
+                else if (r.status === 'no_employee') counts.no_employee++;
+                else counts.other++;
+            });
+            displayExceptions();
+
+            const status = document.getElementById('verifyStatus');
+            if (status) {
+                status.innerHTML = '<strong>חודש ' + config.periodKey + ':</strong> ' +
+                    counts.total + ' בקשות &mdash; ' +
+                    '✅ ' + counts.verified + ' אומתו, ' +
+                    '⚠️ ' + counts.partial + ' חלקיות, ' +
+                    '❌ ' + counts.not_found + ' לא נמצאו' +
+                    (counts.no_employee ? ', 🔍 ' + counts.no_employee + ' עובדים לא ידועים' : '');
+            }
+        }
+
 
         // ========== FILE UPLOAD HANDLING ==========
         function handleFileUpload(input) {
@@ -786,7 +968,11 @@
         function createEmployeeExceptionCard(employeeName, exception, employee) {
             const card = document.createElement('div');
             card.className = `employee-exception ${exception.hasRequest ? 'has-request' : 'no-request'}`;
-            
+            card.dataset.employee = cssEscape(employeeName);
+
+            const verifyHTML = exception._verification ? renderVerificationResult(exception._verification) : '';
+            const showVerifyBtn = exception.hasRequest;
+
             card.innerHTML = `
                 <div class="employee-header">
                     <div class="employee-name">${employeeName}</div>
@@ -794,25 +980,26 @@
                         ${exception.hasRequest ? 'יש בקשות' : 'אין בקשות'}
                     </div>
                 </div>
-                
+
                 <div class="exception-content">
                     <div>
-                        <textarea 
-                            class="exception-textarea" 
+                        <textarea
+                            class="exception-textarea"
                             placeholder="הזן בקשות חריגים או 'אין'..."
                             onchange="updateExceptionRequest('${employeeName}', this.value)"
                         >${exception.request}</textarea>
-                        
+
                         <div class="category-tags">
                             ${exceptionCategories.map(cat => `
-                                <span class="category-tag ${exception.category === cat ? 'active' : ''}" 
+                                <span class="category-tag ${exception.category === cat ? 'active' : ''}"
                                       onclick="setCategory('${employeeName}', '${cat}')">
                                     ${cat}
                                 </span>
                             `).join('')}
                         </div>
+                        <div class="verify-panel">${verifyHTML}</div>
                     </div>
-                    
+
                     <div class="exception-actions">
                         <button class="action-btn btn-category" onclick="autoCategorizerequest('${employeeName}')">
                             🏷️ קטגוריה אוטומטית
@@ -823,10 +1010,13 @@
                         <button class="action-btn btn-save" onclick="saveRequest('${employeeName}')">
                             💾 שמור
                         </button>
+                        ${showVerifyBtn ? `<button class="action-btn" style="background:#6366f1;color:#fff;" onclick="verifyAndDisplay('${employeeName}')">
+                            🔍 אימות מול תלוש
+                        </button>` : ''}
                     </div>
                 </div>
             `;
-            
+
             return card;
         }
 
@@ -911,6 +1101,13 @@
 
             // שמירה ל-DataBus
             persistExceptionsData();
+
+            // אימות אוטומטי מול תלוש (אם הנתונים זמינים)
+            try {
+                if (exception.hasRequest && typeof PayslipStore !== 'undefined') {
+                    verifyAndDisplay(employeeName);
+                }
+            } catch (e) { /* silent */ }
 
             // Visual feedback
             const button = event.target;
