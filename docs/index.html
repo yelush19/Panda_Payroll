@@ -643,6 +643,25 @@
                         </ul>
                     </div>
 
+                    <!-- Module 7: Reserve Duty (NEW) -->
+                    <div class="module-card active" onclick="openModule('reserve')">
+                        <div class="module-header">
+                            <div class="module-icon">🎖️</div>
+                            <div class="module-info">
+                                <h3>ניתוח מילואים</h3>
+                                <span class="module-status status-active">בפיתוח</span>
+                            </div>
+                        </div>
+                        <p class="module-desc">
+                            מודול חדש: ניהול תקופות מילואים, חישוב הפרשים מול תקבולי ביטוח לאומי וייצוא להתאמות שכר
+                        </p>
+                        <ul class="module-features">
+                            <li>ייבוא אינדקס עובדים מ-Meckano (זמין)</li>
+                            <li>טבלת תעריפי עובדים (בקרוב)</li>
+                            <li>איחוד ימי מילואים לתקופות (בקרוב)</li>
+                            <li>חישוב הפרש מול ב"ל + ייצוא לשכר (בקרוב)</li>
+                        </ul>
+                    </div>
 
                 </div>
             </section>
@@ -694,7 +713,8 @@
                 'exceptions': 'exceptions-module.html',
                 'comparison': 'comparison_table.html',
                 'upload': 'upload_module.html',
-                'summary': 'summary_report.html'
+                'summary': 'summary_report.html',
+                'reserve': 'reserve/employees.html'
             };
 
             const file = moduleFiles[moduleName];

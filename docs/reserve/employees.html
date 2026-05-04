@@ -178,6 +178,76 @@
       cursor: pointer;
     }
     .small-link:hover { text-decoration: underline; }
+
+    .bulk-bar {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .bulk-bar label { font-weight: 600; color: #2b486a; font-size: 0.95rem; }
+    .bulk-bar input[type="date"] {
+      padding: 7px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+    .btn {
+      background: #30bced;
+      color: #fff;
+      border: 0;
+      padding: 8px 16px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+    .btn:hover { background: #1ea1d1; }
+    .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+    .btn-secondary {
+      background: transparent;
+      color: #30bced;
+      border: 1px solid #30bced;
+    }
+    .btn-secondary:hover { background: #f0f7ff; }
+
+    .save-indicator {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: #03543f;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .save-indicator.visible { opacity: 1; transform: translateY(0); }
+
+    .auto-save-banner {
+      background: #def7ec;
+      color: #03543f;
+      border: 1px solid #84e1bc;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.88rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
   </style>
 </head>
 <body>
@@ -201,9 +271,24 @@
 
     <div class="card" id="employeesCard" style="display:none;">
       <h2>👥 אינדקס עובדים <span id="empCount" class="badge"></span></h2>
+
+      <div class="auto-save-banner">
+        💾 <strong>שמירה אוטומטית פעילה</strong> — כל שינוי בטבלה נשמר מיידית בדפדפן. אין צורך בכפתור שמור.
+      </div>
+
+      <div class="bulk-bar">
+        <label>📅 הגדר תאריך תחילה לכולם:</label>
+        <input type="date" id="bulkStartDate" value="2026-01-01">
+        <button class="btn" id="bulkApplyStartDate">החל על כל העובדים</button>
+        <button class="btn btn-secondary" id="bulkApplyEmptyOnly">החל רק על שדות ריקים</button>
+        <span style="color:#6b7280; font-size:0.85rem; margin-right:auto;">
+          ניתן לעדכן בעתיד עובדים בודדים בלחיצה על התא
+        </span>
+      </div>
+
       <div class="toolbar">
         <input type="text" class="search" id="searchInput" placeholder="חיפוש לפי שם / מספר עובד / ת.ז....">
-        <span class="toolbar-hint">לחצי על תא לעריכה • שינויים נשמרים אוטומטית • שדה צהוב = שונה כעת</span>
+        <span class="toolbar-hint">לחצי על תא לעריכה • שדה צהוב = נשמר עכשיו</span>
       </div>
       <div class="table-wrap">
         <table id="empTable">
@@ -238,6 +323,8 @@
 
   </div>
 
+  <div class="save-indicator" id="saveIndicator">✓ נשמר</div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="js/em-index-store.js"></script>
   <script src="js/em-index-importer.js"></script>
@@ -250,6 +337,15 @@
       $('#alertArea').innerHTML = '<div class="alert alert-' + level + '">' + msg + '</div>';
     }
     function clearAlert() { $('#alertArea').innerHTML = ''; }
+
+    let _saveIndicatorTimer = null;
+    function flashSaved(text) {
+      const ind = $('#saveIndicator');
+      ind.textContent = text || '✓ נשמר';
+      ind.classList.add('visible');
+      clearTimeout(_saveIndicatorTimer);
+      _saveIndicatorTimer = setTimeout(() => ind.classList.remove('visible'), 1200);
+    }
 
     function renderMeta() {
       const meta = EmIndexStore.loadMeta();
@@ -354,7 +450,42 @@
       EmIndexStore.update(empNo, { [field]: value });
       input.classList.add('dirty');
       setTimeout(() => input.classList.remove('dirty'), 800);
+      flashSaved();
     });
+
+    // פעולה מרובה: הגדרת תאריך תחילה לכולם
+    function applyBulkStartDate(onlyEmpty) {
+      const date = $('#bulkStartDate').value;
+      if (!date) {
+        showAlert('error', '❌ יש לבחור תאריך לפני החלה.');
+        return;
+      }
+      const all = EmIndexStore.loadAll();
+      if (all.length === 0) return;
+
+      const target = onlyEmpty
+        ? all.filter(e => !e.start_date)
+        : all;
+
+      if (target.length === 0) {
+        showAlert('info', 'ℹ️ אין עובדים ללא תאריך תחילה — אין מה לעדכן.');
+        return;
+      }
+
+      const action = onlyEmpty
+        ? 'להגדיר ' + date + ' רק ל-' + target.length + ' עובדים שאין להם תאריך?'
+        : 'להגדיר ' + date + ' ככל ' + target.length + ' העובדים? (ידרוס תאריכים קיימים)';
+      if (!confirm(action)) return;
+
+      target.forEach(e => EmIndexStore.update(e.employee_no, { start_date: date }));
+      renderTable();
+      flashSaved('✓ עודכנו ' + target.length + ' עובדים');
+      clearAlert();
+      showAlert('success', '✅ הוגדר תאריך תחילה ' + date + ' ל-' + target.length + ' עובדים.');
+    }
+
+    $('#bulkApplyStartDate').addEventListener('click', () => applyBulkStartDate(false));
+    $('#bulkApplyEmptyOnly').addEventListener('click', () => applyBulkStartDate(true));
 
     // חיפוש
     $('#searchInput').addEventListener('input', renderTable);
