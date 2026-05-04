@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>קליטת תלושים משיקלולית | פנדה טק</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Heebo', Arial, sans-serif;
+      background: #e9eef3; color: #2b486a; direction: rtl;
+      margin: 0; padding: 20px; min-height: 100vh;
+    }
+    .container { max-width: 1300px; margin: 0 auto; }
+    .header {
+      background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
+      color: #fff; border-radius: 14px;
+      padding: 22px 28px; margin-bottom: 22px;
+      box-shadow: 0 4px 14px rgba(99,102,241,0.18);
+    }
+    .header h1 { margin: 0 0 6px 0; font-size: 1.65rem; font-weight: 700; }
+    .header .subtitle { opacity: 0.94; font-size: 0.95rem; line-height: 1.55; }
+    .back-link {
+      display: inline-block; color: #fff; text-decoration: none;
+      padding: 6px 14px; border-radius: 6px;
+      background: rgba(255,255,255,0.18); font-size: 0.88rem; margin-bottom: 14px;
+    }
+    .back-link:hover { background: rgba(255,255,255,0.28); }
+    .card {
+      background: #fff; border-radius: 12px;
+      padding: 22px 24px; margin-bottom: 18px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .card h2 { margin: 0 0 14px 0; font-size: 1.15rem; color: #2b486a; }
+
+    .period-row { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+    .period-row label { font-weight: 600; }
+    .period-row select { padding: 7px 11px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; }
+
+    .upload-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    }
+    .upload-tile {
+      border: 2px dashed #c7d2fe; border-radius: 10px;
+      padding: 22px 16px; text-align: center; cursor: pointer;
+      transition: all 0.2s; background: #fafbff;
+    }
+    .upload-tile:hover { border-color: #6366f1; background: #eef2ff; }
+    .upload-tile.has-file { border-color: #10b981; background: #ecfdf5; border-style: solid; }
+    .upload-tile.has-file .tile-status { color: #047857; font-weight: 600; }
+    .upload-tile input[type=file] { display: none; }
+    .tile-icon { font-size: 1.7rem; margin-bottom: 6px; }
+    .tile-title { font-weight: 700; font-size: 1.02rem; color: #4338ca; }
+    .tile-desc { color: #6b7280; font-size: 0.84rem; margin-top: 4px; }
+    .tile-status { margin-top: 10px; font-size: 0.86rem; color: #9ca3af; min-height: 20px; }
+    .tile-status .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 0.78rem; font-weight: 600;
+    }
+    .badge-ok { background: #d1fae5; color: #047857; }
+    .badge-empty { background: #f3f4f6; color: #6b7280; }
+    .badge-error { background: #fee2e2; color: #991b1b; }
+
+    .alert {
+      padding: 12px 16px; border-radius: 8px;
+      margin-top: 14px; font-size: 0.95rem; line-height: 1.55;
+      white-space: pre-line;
+    }
+    .alert-error   { background: #fde8e8; color: #9b1c1c; border: 1px solid #f8b4b4; }
+    .alert-success { background: #def7ec; color: #03543f; border: 1px solid #84e1bc; }
+    .alert-info    { background: #e1effe; color: #1e429f; border: 1px solid #a4cafe; }
+    .alert-warn    { background: #fef3c7; color: #78350f; border: 1px solid #fcd34d; }
+
+    .btn {
+      display: inline-block; padding: 10px 22px;
+      border: 0; border-radius: 6px; cursor: pointer;
+      font-size: 0.95rem; font-weight: 600; text-decoration: none;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: #6366f1; color: #fff; }
+    .btn-primary:hover { background: #4f46e5; }
+    .btn-primary:disabled { background: #c7d2fe; cursor: not-allowed; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+    .btn-secondary:hover { background: #d1d5db; }
+    .btn-danger { background: #fff; color: #b91c1c; border: 1px solid #fca5a5; }
+    .btn-danger:hover { background: #fee2e2; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    thead th {
+      background: #f3f4f6; padding: 9px 8px; text-align: right;
+      font-weight: 600; border-bottom: 2px solid #d1d5db;
+    }
+    tbody td { padding: 8px; border-bottom: 1px solid #f3f4f6; }
+    tbody tr:hover { background: #fafafa; }
+
+    .preview-employee { padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; }
+    .preview-employee h4 { margin: 0 0 8px 0; color: #4338ca; }
+    .comp-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .comp-pill { background: #f0f9ff; border: 1px solid #bae6fd; padding: 4px 10px; border-radius: 12px; font-size: 0.82rem; color: #075985; }
+    .comp-pill .amt { font-weight: 700; color: #0c4a6e; margin-right: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="../index.html">← דף הבית</a>
+
+    <div class="header">
+      <h1>💰 קליטת תלושי שכר משיקלולית</h1>
+      <div class="subtitle">
+        קליטת 4 דוחות חודשיים מתוכנת השכר "שיקלולית" של ט.מ.ל לאימות חריגים, ניצול חופשה/מחלה ובקרת רכיבי שכר.
+        <br><strong>איך מפיקים בשיקלולית:</strong> תפריט "4. דוחות → 5. דוחות פנימיים" → רכיבים לעובדים / הכנסות זקופות / ניכויי רשות / דו"ח העדרויות. ייצוא לאקסל מסרגל הדו"ח.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📅 חודש העלאה</h2>
+      <div class="period-row">
+        <label>חודש:</label>
+        <select id="monthSelect"></select>
+        <label>שנה:</label>
+        <select id="yearSelect"></select>
+        <span style="color:#6b7280;font-size:0.88rem;">— הגדירי לפני העלאת הקבצים</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📁 העלאת 4 הדוחות</h2>
+      <div class="upload-grid">
+        <label class="upload-tile" data-kind="components" for="file_components">
+          <div class="tile-icon">💵</div>
+          <div class="tile-title">רכיבים לעובדים</div>
+          <div class="tile-desc">שכר יסוד, ש"נ, היעדרות, מחלה — חובה</div>
+          <div class="tile-status"><span class="badge badge-empty">לא הועלה</span></div>
+          <input type="file" id="file_components" accept=".xlsx,.xls">
+        </label>
+        <label class="upload-tile" data-kind="imputed_income" for="file_imputed">
+          <div class="tile-icon">🚗</div>
+          <div class="tile-title">הכנסות זקופות</div>
+          <div class="tile-desc">שווי רכב, ק.ה., טלפון, ארוחות</div>
+          <div class="tile-status"><span class="badge badge-empty">לא הועלה</span></div>
+          <input type="file" id="file_imputed" accept=".xlsx,.xls">
+        </label>
+        <label class="upload-tile" data-kind="voluntary_deductions" for="file_deductions">
+          <div class="tile-icon">📉</div>
+          <div class="tile-title">ניכויי רשות</div>
+          <div class="tile-desc">מקדמה, קנסות, ביטוחים</div>
+          <div class="tile-status"><span class="badge badge-empty">לא הועלה</span></div>
+          <input type="file" id="file_deductions" accept=".xlsx,.xls">
+        </label>
+        <label class="upload-tile" data-kind="absences" for="file_absences">
+          <div class="tile-icon">🌴</div>
+          <div class="tile-title">דו"ח העדרויות</div>
+          <div class="tile-desc">חופשה, מחלה, הבראה, מילואים</div>
+          <div class="tile-status"><span class="badge badge-empty">לא הועלה</span></div>
+          <input type="file" id="file_absences" accept=".xlsx,.xls">
+        </label>
+      </div>
+
+      <div id="alertArea"></div>
+
+      <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-primary" id="saveBtn" disabled>💾 שמירה לארכיון</button>
+        <button class="btn btn-secondary" id="resetBtn">🗑️ ניקוי הטופס</button>
+      </div>
+    </div>
+
+    <div class="card" id="previewCard" style="display:none;">
+      <h2>👁️ תצוגה מקדימה</h2>
+      <div id="previewArea"></div>
+    </div>
+
+    <div class="card">
+      <h2>📚 ארכיון תלושים</h2>
+      <div id="archiveArea"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../shared/js/supabase-config.js"></script>
+  <script src="../shared/js/supabase-client.js"></script>
+  <script src="../shared/js/auth-bar.js"></script>
+  <script src="../shared/js/prevent-default-drop.js"></script>
+  <script src="js/shiklulit-parser.js"></script>
+  <script src="js/payslip-store.js"></script>
+  <script>
+    'use strict';
+
+    // ===== State =====
+    const parsed = { components: null, imputed_income: null, voluntary_deductions: null, absences: null };
+    const fileNames = {};
+
+    // ===== Period selectors =====
+    const monthSelect = document.getElementById('monthSelect');
+    const yearSelect = document.getElementById('yearSelect');
+    for (let m = 1; m <= 12; m++) {
+      const opt = document.createElement('option');
+      opt.value = m; opt.textContent = m;
+      monthSelect.appendChild(opt);
+    }
+    const now = new Date();
+    const currentY = now.getFullYear();
+    for (let y = currentY + 1; y >= currentY - 3; y--) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      yearSelect.appendChild(opt);
+    }
+    // ברירת מחדל: חודש קודם
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    monthSelect.value = lastMonth.getMonth() + 1;
+    yearSelect.value = lastMonth.getFullYear();
+
+    // ===== Alerts =====
+    function showAlert(msg, kind) {
+      const area = document.getElementById('alertArea');
+      area.innerHTML = '<div class="alert alert-' + (kind || 'info') + '">' + msg + '</div>';
+    }
+    function clearAlert() { document.getElementById('alertArea').innerHTML = ''; }
+
+    // ===== File handling =====
+    function setTileStatus(kind, statusHTML, css) {
+      const tile = document.querySelector('.upload-tile[data-kind="' + kind + '"]');
+      if (!tile) return;
+      const statusDiv = tile.querySelector('.tile-status');
+      statusDiv.innerHTML = statusHTML;
+      tile.classList.toggle('has-file', !!css && css === 'ok');
+    }
+
+    document.querySelectorAll('.upload-tile input[type=file]').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        const kind = input.parentElement.dataset.kind;
+        if (!file) return;
+        clearAlert();
+
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          try {
+            const result = ShiklulitParser.parseFile(ev.target.result, file.name);
+            // verify kind matches expected slot
+            if (result.meta.kind !== kind) {
+              setTileStatus(kind, '<span class="badge badge-error">סוג שגוי: ' + result.meta.kind + '</span>', 'error');
+              showAlert('הקובץ "' + file.name + '" זוהה כדוח מסוג "' + result.meta.kind +
+                '" אך הועלה למשבצת "' + kind + '". יש להעלות אותו למשבצת המתאימה.', 'error');
+              return;
+            }
+            parsed[kind] = result;
+            fileNames[kind] = file.name;
+            const summary = ShiklulitParser.summary(result);
+            const period = result.meta.period;
+            const periodStr = period ? (period.month + '/' + period.year) : '';
+            setTileStatus(kind,
+              '<span class="badge badge-ok">✓ ' + file.name + '</span><br>' +
+              '<small>' + summary.employee_count + ' עובדים' +
+              (summary.component_count ? ', ' + summary.component_count + ' רכיבים' : '') +
+              (periodStr ? ' (חודש ' + periodStr + ')' : '') + '</small>',
+              'ok');
+
+            // Auto-set period from first file with period info
+            if (period && !document.body.dataset.periodSet) {
+              monthSelect.value = period.month;
+              yearSelect.value = period.year;
+              document.body.dataset.periodSet = '1';
+            }
+
+            updateSaveButton();
+            renderPreview();
+          } catch (err) {
+            setTileStatus(kind, '<span class="badge badge-error">שגיאה</span>', 'error');
+            showAlert('שגיאה בקריאת הקובץ: ' + err.message, 'error');
+            console.error(err);
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+    });
+
+    function updateSaveButton() {
+      const btn = document.getElementById('saveBtn');
+      // נדרש לפחות דוח רכיבים
+      btn.disabled = !parsed.components;
+    }
+
+    // ===== Preview =====
+    function renderPreview() {
+      const card = document.getElementById('previewCard');
+      const area = document.getElementById('previewArea');
+      if (!parsed.components && !parsed.imputed_income && !parsed.voluntary_deductions && !parsed.absences) {
+        card.style.display = 'none';
+        return;
+      }
+      card.style.display = 'block';
+
+      // איחוד עובדים מכל הדוחות
+      const all = {};
+      ['components', 'imputed_income', 'voluntary_deductions'].forEach(k => {
+        if (!parsed[k]) return;
+        Object.values(parsed[k].employees).forEach(emp => {
+          if (!all[emp.employee_no]) {
+            all[emp.employee_no] = { ...emp, components: [] };
+          }
+          Object.values(emp.components || {}).forEach(c => {
+            all[emp.employee_no].components.push({ ...c, _report: k });
+          });
+        });
+      });
+
+      const empList = Object.values(all).sort((a, b) => a.employee_no - b.employee_no);
+      const sample = empList.slice(0, 3);
+
+      let html = '<p style="color:#6b7280;font-size:0.92rem;">' +
+        'נמצאו ' + empList.length + ' עובדים. הצגת 3 הראשונים:</p>';
+
+      sample.forEach(emp => {
+        html += '<div class="preview-employee">';
+        html += '<h4>#' + emp.employee_no + ' — ' + emp.full_name + ' <span style="color:#6b7280;font-weight:400;">(ת.ז ' + emp.national_id + ')</span></h4>';
+        html += '<div class="comp-list">';
+        emp.components.forEach(c => {
+          if (c.total === null || c.total === 0) return;
+          html += '<span class="comp-pill" title="' + c._report + '">' +
+            c.name + '<span class="amt">₪' + Math.round(c.total).toLocaleString() + '</span></span>';
+        });
+        html += '</div></div>';
+      });
+
+      // Absences sample
+      if (parsed.absences) {
+        const absEmps = Object.values(parsed.absences.employees);
+        html += '<p style="color:#6b7280;font-size:0.92rem;margin-top:18px;">' +
+          'דוח היעדרויות: ' + absEmps.length + ' עובדים, יתרות חופשה/מחלה/הבראה לתקופה.</p>';
+        if (absEmps.length) {
+          const e = absEmps[0];
+          html += '<div class="preview-employee">';
+          html += '<h4>דוגמה: #' + e.employee_no + ' — ' + e.full_name + '</h4>';
+          html += '<div style="font-size:0.88rem;line-height:1.7;">';
+          html += '🌴 <strong>חופשה:</strong> יתרת פתיחה ' + (e.vacation.prior || 0) +
+            ' | חודשים: ' + (e.vacation.monthly.length) + '<br>';
+          html += '🤒 <strong>מחלה:</strong> יתרת פתיחה ' + (e.sick.prior || 0) + '<br>';
+          html += '🏖️ <strong>הבראה:</strong> יתרת פתיחה ' + (e.recreation.prior || 0);
+          html += '</div></div>';
+        }
+      }
+
+      area.innerHTML = html;
+    }
+
+    // ===== Save =====
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      const year = parseInt(yearSelect.value, 10);
+      const month = parseInt(monthSelect.value, 10);
+
+      // אם יש מטא period בקבצים — אזהרה אם לא תואם
+      const mismatches = [];
+      ['components', 'imputed_income', 'voluntary_deductions'].forEach(k => {
+        if (parsed[k] && parsed[k].meta.period) {
+          const p = parsed[k].meta.period;
+          if (p.month !== month || p.year !== year) {
+            mismatches.push(k + ': ' + p.month + '/' + p.year);
+          }
+        }
+      });
+      if (mismatches.length) {
+        if (!confirm('שים לב: התקופה שנבחרה (' + month + '/' + year + ') לא תואמת לחלק מהקבצים:\n' +
+          mismatches.join('\n') + '\n\nלהמשיך בכל זאת?')) return;
+      }
+
+      try {
+        const payload = PayslipStore.buildPayload(parsed);
+        const meta = PayslipStore.save(year, month, payload);
+        showAlert('✅ נשמר בהצלחה: ' + meta.employee_count + ' עובדים לחודש ' + meta.period +
+          ' (' + (meta.size_bytes / 1024).toFixed(1) + ' KB)', 'success');
+        renderArchive();
+      } catch (e) {
+        showAlert('שגיאת שמירה: ' + e.message, 'error');
+      }
+    });
+
+    // ===== Reset =====
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      Object.keys(parsed).forEach(k => parsed[k] = null);
+      Object.keys(fileNames).forEach(k => delete fileNames[k]);
+      document.querySelectorAll('.upload-tile').forEach(tile => {
+        tile.classList.remove('has-file');
+        tile.querySelector('.tile-status').innerHTML = '<span class="badge badge-empty">לא הועלה</span>';
+        const inp = tile.querySelector('input[type=file]');
+        if (inp) inp.value = '';
+      });
+      delete document.body.dataset.periodSet;
+      clearAlert();
+      document.getElementById('previewCard').style.display = 'none';
+      updateSaveButton();
+    });
+
+    // ===== Archive =====
+    function renderArchive() {
+      const idx = PayslipStore.loadIndex();
+      const area = document.getElementById('archiveArea');
+      if (!idx.length) {
+        area.innerHTML = '<p style="color:#6b7280;">אין חודשים שמורים עדיין.</p>';
+        return;
+      }
+      let html = '<table><thead><tr>' +
+        '<th>חודש</th><th>נשמר ב</th><th>עובדים</th>' +
+        '<th>רכיבים</th><th>זקופות</th><th>ניכויים</th><th>היעדרויות</th>' +
+        '<th>גודל</th><th></th>' +
+        '</tr></thead><tbody>';
+      idx.forEach(m => {
+        const checkmark = (b) => b ? '✅' : '—';
+        html += '<tr>' +
+          '<td><strong>' + m.period + '</strong></td>' +
+          '<td>' + new Date(m.saved_at).toLocaleString('he-IL') + '</td>' +
+          '<td>' + m.employee_count + '</td>' +
+          '<td>' + checkmark(m.has_components) + '</td>' +
+          '<td>' + checkmark(m.has_imputed) + '</td>' +
+          '<td>' + checkmark(m.has_deductions) + '</td>' +
+          '<td>' + checkmark(m.has_absences) + '</td>' +
+          '<td>' + (m.size_bytes / 1024).toFixed(1) + ' KB</td>' +
+          '<td><button class="btn btn-danger" data-period="' + m.period +
+            '" data-year="' + m.year + '" data-month="' + m.month + '">מחק</button></td>' +
+          '</tr>';
+      });
+      html += '</tbody></table>';
+      area.innerHTML = html;
+
+      area.querySelectorAll('button[data-period]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (!confirm('למחוק את חודש ' + btn.dataset.period + '?')) return;
+          PayslipStore.remove(parseInt(btn.dataset.year, 10), parseInt(btn.dataset.month, 10));
+          renderArchive();
+        });
+      });
+    }
+
+    renderArchive();
+  </script>
+</body>
+</html>
