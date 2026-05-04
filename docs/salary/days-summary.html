@@ -131,17 +131,22 @@
     <div class="card">
       <div class="toolbar" style="margin-bottom:10px;">
         <input type="text" id="searchInput" placeholder="חיפוש לפי שם / מספר עובד..." style="min-width:260px;">
-        <label style="margin-right:auto; font-size:0.9rem;">
+        <label style="font-size:0.9rem;">
           <input type="checkbox" id="onlyWarnings"> הצגת אזהרות בלבד
         </label>
-        <button class="btn" id="exportXlsxBtn">📥 ייצוא Excel</button>
+        <div id="columnToggleArea"></div>
+        <button class="btn" id="exportXlsxBtn" style="margin-right:auto;">📥 ייצוא Excel</button>
         <button class="btn btn-secondary" id="exportCsvBtn">📥 ייצוא CSV</button>
+      </div>
+      <div style="font-size:0.82rem; color:#6b7280; margin-bottom:8px;">
+        💡 לחיצה על כותרת ממיינת. כפתור "עמודות" מסתיר/מציג עמודות. ההגדרות נזכרות בדפדפן.
       </div>
       <div id="reportArea"><div class="empty-state">טוענת נתונים…</div></div>
     </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="../shared/js/sortable-table.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../shared/js/supabase-config.js"></script>
   <script src="../shared/js/supabase-client.js"></script>
@@ -172,6 +177,7 @@
     }
 
     // Generate report for selected period
+    let _tableHelper = null;
     function generate() {
       clearAlert();
       const period = $('#periodSelect').value;
@@ -184,6 +190,13 @@
       const [year, month] = period.split('-').map(Number);
       const report = DaysSummaryEngine.build(arc.blocks, employees, year, month);
       _currentReport = report;
+      if (!_tableHelper && typeof SortableTable !== 'undefined') {
+        _tableHelper = SortableTable.create({
+          columns:    _currentReport.columns,
+          storageKey: 'pandatech-days-summary-state',
+        });
+        _tableHelper.renderColumnToggleButton($('#columnToggleArea'), renderReport);
+      }
       renderReport();
     }
 
@@ -214,7 +227,6 @@
         return;
       }
 
-      const cols = _currentReport.columns;
       // Column groups for coloring (per spec)
       const groups = {
         employee_no:'col-emp', employee_name:'col-emp',
@@ -226,8 +238,15 @@
         status:'col-status', notes:'col-status',
       };
 
-      const head = '<tr>' + cols.map(c => '<th class="' + (groups[c.key]||'') + '">' + c.label + '</th>').join('') + '</tr>';
-      const body = rows.map(r => '<tr>' + cols.map(c => {
+      // מיון + סינון עמודות מוסתרות
+      const cols = _tableHelper ? _tableHelper.getVisibleColumns() : _currentReport.columns;
+      const sortedRows = _tableHelper ? _tableHelper.sort(rows) : rows;
+
+      const head = '<tr>' + cols.map(c => {
+        const indicator = _tableHelper ? _tableHelper.getSortIndicator(c.key) : '';
+        return '<th class="' + (groups[c.key]||'') + '" data-sort-key="' + c.key + '">' + c.label + ' ' + indicator + '</th>';
+      }).join('') + '</tr>';
+      const body = sortedRows.map(r => '<tr>' + cols.map(c => {
         let v = r[c.key];
         const g = groups[c.key] || '';
         let cls = g;
@@ -253,6 +272,8 @@
 
       $('#reportArea').innerHTML =
         '<div class="table-wrap"><table class="report-table"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>';
+
+      if (_tableHelper) _tableHelper.attachSortHandlers($('#reportArea thead'), renderReport);
     }
 
     function roundDisplay(n) {

@@ -56,14 +56,19 @@
     <div class="card">
       <div class="toolbar" style="margin-bottom:10px;">
         <input type="text" id="searchInput" placeholder="חיפוש בשם / מס' / מחלקה..." style="min-width:240px;">
+        <div id="columnToggleArea"></div>
         <button class="btn" id="exportXlsxBtn" style="margin-right:auto;">📥 ייצוא Excel</button>
         <button class="btn btn-secondary" id="exportCsvBtn">📥 CSV</button>
+      </div>
+      <div style="font-size:0.82rem; color:#6b7280; margin-bottom:8px;">
+        💡 לחיצה על כותרת ממיינת. כפתור "עמודות" מסתיר/מציג עמודות.
       </div>
       <div id="reportArea"><div class="empty-state">טוענת נתונים…</div></div>
     </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="../shared/js/sortable-table.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../shared/js/supabase-config.js"></script>
   <script src="../shared/js/supabase-client.js"></script>
@@ -94,6 +99,7 @@
       if (idx.length === 0) showAlert('warn', '⚠️ אין דוחות בארכיון. <a href="upload.html">העלי קובץ Meckano</a> כדי להתחיל.');
     }
 
+    let _tableHelper = null;
     function generate() {
       clearAlert();
       const period = $('#periodSelect').value;
@@ -103,6 +109,13 @@
       const employees = (typeof EmIndexStore !== 'undefined') ? EmIndexStore.loadAll() : [];
       const [year, month] = period.split('-').map(Number);
       _currentReport = UsedVacationEngine.build(arc.blocks, employees, year, month);
+      if (!_tableHelper && typeof SortableTable !== 'undefined') {
+        _tableHelper = SortableTable.create({
+          columns: _currentReport.columns,
+          storageKey: 'pandatech-used-vacation-state',
+        });
+        _tableHelper.renderColumnToggleButton($('#columnToggleArea'), renderReport);
+      }
       renderReport();
     }
 
@@ -122,15 +135,18 @@
         '<span class="pill purple">סה"כ חופשה לחיוב: '+roundDisplay(_currentReport.total_charged)+'</span>';
 
       if (rows.length === 0) { $('#reportArea').innerHTML = '<div class="empty-state">אין שורות תואמות.</div>'; return; }
-      const cols = _currentReport.columns;
-      const head = '<tr>' + cols.map(c => '<th>'+c.label+'</th>').join('') + '</tr>';
-      const body = rows.map(r => '<tr>' + cols.map(c => {
+      const cols = _tableHelper ? _tableHelper.getVisibleColumns() : _currentReport.columns;
+      const sortedRows = _tableHelper ? _tableHelper.sort(rows) : rows;
+      const head = '<tr>' + cols.map(c => {
+        const indicator = _tableHelper ? _tableHelper.getSortIndicator(c.key) : '';
+        return '<th data-sort-key="' + c.key + '">' + c.label + ' ' + indicator + '</th>';
+      }).join('') + '</tr>';
+      const body = sortedRows.map(r => '<tr>' + cols.map(c => {
         const v = r[c.key];
         if (c.key === 'detail') return '<td class="detail">' + escapeHtml(v) + '</td>';
         if (c.key === 'employee_name' || c.key === 'department' || c.key === 'employee_no') {
           return '<td>' + escapeHtml(v) + '</td>';
         }
-        // numeric
         if (v === null || v === undefined || v === 0) {
           return '<td class="num zero">0</td>';
         }
@@ -138,6 +154,7 @@
         return '<td class="'+cls+'">' + roundDisplay(v) + '</td>';
       }).join('') + '</tr>').join('');
       $('#reportArea').innerHTML = '<div class="table-wrap"><table><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
+      if (_tableHelper) _tableHelper.attachSortHandlers($('#reportArea thead'), renderReport);
     }
 
     function exportXlsx() {

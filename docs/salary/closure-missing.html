@@ -76,14 +76,19 @@
 
     <div class="card">
       <div class="toolbar" style="margin-bottom:10px;">
+        <div id="columnToggleArea"></div>
         <button class="btn" id="exportXlsxBtn" style="margin-right:auto;">📥 ייצוא Excel</button>
         <button class="btn btn-secondary" id="exportCsvBtn">📥 CSV</button>
+      </div>
+      <div style="font-size:0.82rem; color:#6b7280; margin-bottom:8px;">
+        💡 לחיצה על כותרת ממיינת. כפתור "עמודות" מסתיר/מציג עמודות.
       </div>
       <div id="reportArea"><div class="empty-state">טוענת נתונים…</div></div>
     </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="../shared/js/sortable-table.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../shared/js/supabase-config.js"></script>
   <script src="../shared/js/supabase-client.js"></script>
@@ -128,6 +133,15 @@
       renderReport();
     }
 
+    let _tableHelper = null;
+    const CM_COLUMNS = [
+      { key: 'employee_name', label: 'שם עובד' },
+      { key: 'days_count',    label: 'מס\' ימים' },
+      { key: 'dates',         label: 'פירוט תאריכים' },
+      { key: 'missing_kind',  label: 'מה חסר' },
+      { key: 'status',        label: 'סטטוס' },
+    ];
+
     function renderReport() {
       if (!_currentReport) return;
       const r = _currentReport;
@@ -138,21 +152,47 @@
             '<span class="pill warn">' + r.total_days_missing + ' ימים</span>') +
         (r.excluded.length > 0 ? '<span class="pill">' + r.excluded.length + ' מוחרגים</span>' : '');
 
+      // אתחול helper פעם אחת
+      if (!_tableHelper && typeof SortableTable !== 'undefined') {
+        _tableHelper = SortableTable.create({
+          columns: CM_COLUMNS,
+          storageKey: 'pandatech-closure-missing-state',
+        });
+        _tableHelper.renderColumnToggleButton($('#columnToggleArea'), renderReport);
+      }
+
+      // הכנת rows במבנה גנרי כדי לאפשר מיון
+      const flatRows = (r.rows || []).map(row => ({
+        employee_name: row.employee_name + ' (' + row.employee_no + ')',
+        employee_no:   row.employee_no,
+        days_count:    row.issues.length,
+        dates:         row.issues.map(i => i.day_label).join(', '),
+        missing_kind:  [...new Set(row.issues.map(i => i.missing))].join(' / '),
+        status:        'דרוש מילוי',
+      }));
+
       let html = '';
-      if (r.rows.length === 0) {
+      if (flatRows.length === 0) {
         html += '<div class="empty-state">✅ אין חוסר סגירה לחודש זה.</div>';
       } else {
-        html += '<table><thead><tr><th>שם עובד</th><th style="width:80px;">מס\' ימים</th><th>פירוט תאריכים</th><th>מה חסר</th><th style="width:120px;">סטטוס</th></tr></thead><tbody>';
-        r.rows.forEach(row => {
-          const dates = row.issues.map(i => i.day_label).join(', ');
-          const missing = [...new Set(row.issues.map(i => i.missing))].join(' / ');
-          html += '<tr>' +
-            '<td><strong>' + escapeHtml(row.employee_name) + '</strong> (' + row.employee_no + ')</td>' +
-            '<td class="count">' + row.issues.length + '</td>' +
-            '<td class="dates">' + escapeHtml(dates) + '</td>' +
-            '<td>' + escapeHtml(missing) + '</td>' +
-            '<td class="status"><span class="badge-status">דרוש מילוי</span></td>' +
-          '</tr>';
+        const cols = _tableHelper ? _tableHelper.getVisibleColumns() : CM_COLUMNS;
+        const sorted = _tableHelper ? _tableHelper.sort(flatRows) : flatRows;
+        const head = '<tr>' + cols.map(c => {
+          const indicator = _tableHelper ? _tableHelper.getSortIndicator(c.key) : '';
+          let widthAttr = '';
+          if (c.key === 'days_count') widthAttr = ' style="width:80px;"';
+          if (c.key === 'status') widthAttr = ' style="width:120px;"';
+          return '<th data-sort-key="' + c.key + '"' + widthAttr + '>' + c.label + ' ' + indicator + '</th>';
+        }).join('') + '</tr>';
+        html += '<table><thead>' + head + '</thead><tbody>';
+        sorted.forEach(row => {
+          html += '<tr>' + cols.map(c => {
+            if (c.key === 'employee_name') return '<td><strong>' + escapeHtml(row.employee_name) + '</strong></td>';
+            if (c.key === 'days_count')    return '<td class="count">' + row.days_count + '</td>';
+            if (c.key === 'dates')         return '<td class="dates">' + escapeHtml(row.dates) + '</td>';
+            if (c.key === 'status')        return '<td class="status"><span class="badge-status">' + row.status + '</span></td>';
+            return '<td>' + escapeHtml(row[c.key]) + '</td>';
+          }).join('') + '</tr>';
         });
         html += '</tbody></table>';
       }
@@ -165,6 +205,7 @@
       }
 
       $('#reportArea').innerHTML = html;
+      if (_tableHelper) _tableHelper.attachSortHandlers($('#reportArea thead'), renderReport);
     }
 
     function exportXlsx() {
