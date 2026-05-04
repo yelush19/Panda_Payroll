@@ -286,6 +286,16 @@
         </span>
       </div>
 
+      <div class="bulk-bar" style="background:#fef9c3; border-color:#fde68a;">
+        <label>💾 גיבוי הנתונים (חשוב!):</label>
+        <button class="btn" id="exportBackup">📥 הורדת קובץ גיבוי</button>
+        <button class="btn btn-secondary" id="importBackup">📤 טעינת קובץ גיבוי</button>
+        <input type="file" id="importBackupInput" accept=".json" style="display:none;">
+        <span style="color:#854d0e; font-size:0.85rem; margin-right:auto;">
+          הנתונים שמורים בדפדפן זה בלבד. מומלץ להוריד גיבוי בסיום עבודה.
+        </span>
+      </div>
+
       <div class="toolbar">
         <input type="text" class="search" id="searchInput" placeholder="חיפוש לפי שם / מספר עובד / ת.ז....">
         <span class="toolbar-hint">לחצי על תא לעריכה • שדה צהוב = נשמר עכשיו</span>
@@ -486,6 +496,62 @@
 
     $('#bulkApplyStartDate').addEventListener('click', () => applyBulkStartDate(false));
     $('#bulkApplyEmptyOnly').addEventListener('click', () => applyBulkStartDate(true));
+
+    // ייצוא גיבוי לקובץ JSON
+    $('#exportBackup').addEventListener('click', () => {
+      const employees = EmIndexStore.loadAll();
+      if (employees.length === 0) {
+        showAlert('error', '❌ אין נתונים לגיבוי. ייבאי קובץ קודם.');
+        return;
+      }
+      const meta = EmIndexStore.loadMeta();
+      const backup = {
+        backup_version: 1,
+        backup_type: 'reserve_employees_index',
+        created_at: new Date().toISOString(),
+        meta: meta,
+        employees: employees,
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = 'panda_reserve_employees_backup_' + stamp + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      flashSaved('✓ גיבוי הורד');
+    });
+
+    // יבוא גיבוי מקובץ JSON
+    $('#importBackup').addEventListener('click', () => $('#importBackupInput').click());
+    $('#importBackupInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onerror = () => showAlert('error', '❌ שגיאת קריאת קובץ הגיבוי.');
+      reader.onload = (ev) => {
+        try {
+          const backup = JSON.parse(ev.target.result);
+          if (backup.backup_type !== 'reserve_employees_index' || !Array.isArray(backup.employees)) {
+            throw new Error('הקובץ אינו קובץ גיבוי תקין של אינדקס עובדים.');
+          }
+          if (!confirm('לטעון ' + backup.employees.length + ' עובדים מהגיבוי?\nזה ידרוס את הנתונים הקיימים בדפדפן.')) return;
+          EmIndexStore.saveAll(backup.employees, backup.meta || { sourceFile: file.name, count: backup.employees.length });
+          renderMeta();
+          renderTable();
+          clearAlert();
+          showAlert('success', '✅ נטענו ' + backup.employees.length + ' עובדים מהגיבוי.');
+        } catch (err) {
+          showAlert('error', '❌ ' + err.message);
+        } finally {
+          e.target.value = '';
+        }
+      };
+      reader.readAsText(file);
+    });
 
     // חיפוש
     $('#searchInput').addEventListener('input', renderTable);
