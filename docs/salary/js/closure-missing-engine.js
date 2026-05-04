@@ -167,10 +167,25 @@ window.ClosureMissingEngine = (function() {
 
       // הערה ידנית בכותרות הבלוק - דורש בדיקה (יילנה כתבה משהו ב-Meckano)
       const hasAnnotation = block.unknown_columns && block.unknown_columns.length > 0;
+      const events = block.events || {};
 
       // הפקת הדוח לעובד
       const r = buildEmployeeReport(block, emp, periodYear, periodMonth);
       const daysPresent = (block.summary && block.summary.days_present) || 0;
+
+      // "תקציב הסבר" - ימי חל"ת + היעדרות שמופיעים בסיכום החודשי גם אם לא
+      // מתויגים פר-יום. אם מספר הימים החסרים <= תקציב, אנחנו מניחים שהם
+      // הוסברו ע"י הסיכום ולא מתריעים. (תפס מקרים כמו לוי דביש שיש לו
+      // events.absence=2 והדיווח היומי ריק.)
+      const explainBudget = (events.chalat || 0) + (events.absence || 0);
+      if (r.issues.length > 0 && r.issues.length <= explainBudget) {
+        excluded.push({
+          employee_no: block.employee_no,
+          employee_name: empName,
+          reason: 'ימים חסרים מוסברים בסיכום (חל"ת=' + (events.chalat||0) + ', היעדרות=' + (events.absence||0) + ')',
+        });
+        return;
+      }
 
       // 6. אין סוג עובד הוגדר באינדקס + days_present=0 → דורש בדיקה (לא לסגור אוטומטית)
       if (!empType && daysPresent === 0) {
