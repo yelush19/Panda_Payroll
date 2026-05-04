@@ -84,19 +84,30 @@ window.DaysSummaryEngine = (function() {
     if (exclusion.exclude) {
       status = '— ' + exclusion.reason;
     } else {
-      // ימי א-ה אפקטיביים - לוקח בחשבון start_date/end_date אם בחודש המעובד
-      const maxWorkDays = (typeof EmployeeRules !== 'undefined' && EmployeeRules.effectiveMaxWorkDays)
-        ? EmployeeRules.effectiveMaxWorkDays(employee, periodYear, periodMonth)
-        : ((typeof MonthConfig !== 'undefined' && MonthConfig.calculateMaxWorkDays) ? MonthConfig.calculateMaxWorkDays(periodYear, periodMonth) : 22);
-      const expected = maxWorkDays - (events.chalat || 0) - (events.absence || 0) - sickKizuz;
-      const actual   = summary.days_paid || 0;
-      const diff = actual - expected;
-      if (Math.abs(diff) < 0.01) {
-        status = '✓';
-      } else if (diff < 0) {
-        status = '⚠ ' + diff.toFixed(1) + ' (חוסר סגירה?)';
+      // אם העובד התחיל / סיים בחודש המעובד - לא מחשבים פער (חשבון לוח שנה
+      // עם חגים באמצע חודש חלקי הוא מקור לטעויות. סטטוס אינפורמטיבי).
+      const startDate = employee && employee.start_date ? new Date(employee.start_date) : null;
+      const endDate   = employee && employee.end_date   ? new Date(employee.end_date)   : null;
+      const startedThisMonth = startDate && startDate.getFullYear() === periodYear && startDate.getMonth() + 1 === periodMonth;
+      const endedThisMonth   = endDate   && endDate.getFullYear()   === periodYear   && endDate.getMonth() + 1   === periodMonth;
+
+      if (startedThisMonth) {
+        status = '— החל ב-' + employee.start_date + ' (חודש חלקי)';
+      } else if (endedThisMonth) {
+        status = '— סיים ב-' + employee.end_date + ' (חודש חלקי)';
       } else {
-        status = '⚠ +' + diff.toFixed(1) + ' (חריגה - בדקי)';
+        const maxWorkDays = (typeof MonthConfig !== 'undefined' && MonthConfig.calculateMaxWorkDays)
+          ? MonthConfig.calculateMaxWorkDays(periodYear, periodMonth) : 22;
+        const expected = maxWorkDays - (events.chalat || 0) - (events.absence || 0) - sickKizuz;
+        const actual   = summary.days_paid || 0;
+        const diff = actual - expected;
+        if (Math.abs(diff) < 0.01) {
+          status = '✓';
+        } else if (diff < 0) {
+          status = '⚠ ' + diff.toFixed(1) + ' (חוסר סגירה?)';
+        } else {
+          status = '⚠ +' + diff.toFixed(1) + ' (חריגה - בדקי)';
+        }
       }
     }
 
