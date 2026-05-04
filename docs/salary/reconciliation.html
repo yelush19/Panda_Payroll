@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>התאמת נוכחות מול תלוש | פנדה טק</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Heebo', Arial, sans-serif;
+      background: #e9eef3; color: #2b486a; direction: rtl;
+      margin: 0; padding: 20px; min-height: 100vh;
+    }
+    .container { max-width: 1600px; margin: 0 auto; }
+    .header {
+      background: linear-gradient(90deg, #0e7490 0%, #6366f1 100%);
+      color: #fff; border-radius: 14px;
+      padding: 22px 28px; margin-bottom: 22px;
+      box-shadow: 0 4px 14px rgba(14,116,144,0.18);
+    }
+    .header h1 { margin: 0 0 6px 0; font-size: 1.65rem; font-weight: 700; }
+    .header .subtitle { opacity: 0.92; font-size: 0.94rem; }
+    .back-link {
+      display: inline-block; color: #fff; text-decoration: none;
+      padding: 6px 14px; border-radius: 6px;
+      background: rgba(255,255,255,0.18); font-size: 0.88rem; margin-bottom: 14px;
+    }
+    .back-link:hover { background: rgba(255,255,255,0.28); }
+    .card {
+      background: #fff; border-radius: 12px;
+      padding: 22px 24px; margin-bottom: 18px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .card h2 { margin: 0 0 14px 0; font-size: 1.15rem; color: #2b486a; }
+    .period-row { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+    .period-row select { padding: 7px 11px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; }
+    .btn {
+      display: inline-block; padding: 9px 20px;
+      border: 0; border-radius: 6px; cursor: pointer;
+      font-size: 0.92rem; font-weight: 600;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: #0e7490; color: #fff; }
+    .btn-primary:hover { background: #155e75; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+    .btn-secondary:hover { background: #d1d5db; }
+
+    .summary-bar {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px; margin-bottom: 14px;
+    }
+    .summary-stat {
+      padding: 14px 16px; border-radius: 8px; text-align: center;
+      border: 1px solid;
+    }
+    .summary-stat .num { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+    .summary-stat .label { font-size: 0.85rem; margin-top: 4px; opacity: 0.85; }
+    .stat-match    { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+    .stat-warn     { background: #fef3c7; color: #78350f; border-color: #fcd34d; }
+    .stat-mismatch { background: #fee2e2; color: #7f1d1d; border-color: #fca5a5; }
+    .stat-na       { background: #f3f4f6; color: #374151; border-color: #d1d5db; }
+    .stat-info     { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+
+    .filter-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+    .filter-pill {
+      padding: 5px 13px; border-radius: 14px; cursor: pointer;
+      background: #f3f4f6; color: #374151; font-size: 0.85rem;
+      border: 1px solid #e5e7eb; user-select: none;
+    }
+    .filter-pill.active { background: #0e7490; color: #fff; border-color: #0e7490; }
+    .filter-pill:hover { background: #e5e7eb; }
+    .filter-pill.active:hover { background: #155e75; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    thead th {
+      background: #f3f4f6; padding: 9px 6px; text-align: center;
+      font-weight: 600; border-bottom: 2px solid #d1d5db;
+      position: sticky; top: 0; z-index: 1;
+    }
+    thead th.col-group { background: #e5e7eb; }
+    tbody td { padding: 7px 6px; border-bottom: 1px solid #f3f4f6; text-align: center; }
+    tbody tr:hover { background: #fafafa; }
+    tbody td.left { text-align: right; }
+    tbody td.label { background: #fafbff; font-weight: 600; }
+
+    .row-match    { background: #f0fdf4; }
+    .row-warn     { background: #fffbeb; }
+    .row-mismatch { background: #fef2f2; }
+    .row-na       { background: #fafafa; color: #6b7280; }
+
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
+    .b-match    { background: #d1fae5; color: #065f46; }
+    .b-warn     { background: #fef3c7; color: #78350f; }
+    .b-mismatch { background: #fee2e2; color: #7f1d1d; }
+    .b-na       { background: #f3f4f6; color: #6b7280; }
+
+    .cmp { font-size: 0.78rem; padding: 2px 6px; border-radius: 4px; }
+    .cmp-match    { background: #d1fae5; color: #065f46; }
+    .cmp-warn     { background: #fef3c7; color: #78350f; }
+    .cmp-mismatch { background: #fee2e2; color: #7f1d1d; }
+    .cmp-na       { color: #9ca3af; }
+
+    .empty-state { padding: 60px 20px; text-align: center; color: #6b7280; }
+    .empty-state h3 { margin: 0 0 12px 0; color: #374151; }
+    .empty-state a { color: #0e7490; font-weight: 600; }
+
+    .flag-list { font-size: 0.78rem; color: #7f1d1d; text-align: right; padding: 4px; line-height: 1.4; }
+    .flag-list .flag { display: block; }
+
+    .scroll-x { overflow-x: auto; max-width: 100%; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="../index.html">← דף הבית</a>
+
+    <div class="header">
+      <h1>🔄 דוח התאמת נוכחות מול תלוש</h1>
+      <div class="subtitle">השוואה אוטומטית של ימי עבודה / חופש / מילואים / מחלה / היעדרות בין דוח Meckano לרכיבי תלוש בשיקלולית.</div>
+    </div>
+
+    <div class="card">
+      <div class="period-row">
+        <label><strong>חודש:</strong></label>
+        <select id="monthSelect"></select>
+        <select id="yearSelect"></select>
+        <button class="btn btn-primary" id="runBtn">🔄 הפק דוח</button>
+        <span id="periodInfo" style="color:#6b7280;font-size:0.88rem;"></span>
+      </div>
+
+      <div id="dataAvailability" class="period-row" style="font-size:0.88rem;"></div>
+    </div>
+
+    <div id="reportArea"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../shared/js/supabase-config.js"></script>
+  <script src="../shared/js/supabase-client.js"></script>
+  <script src="../shared/js/auth-bar.js"></script>
+  <script src="../shared/js/month_config.js"></script>
+  <script src="../reserve/js/em-index-store.js"></script>
+  <script src="js/employee-rules.js"></script>
+  <script src="js/meckano-archive-store.js"></script>
+  <script src="js/meckano-report-parser.js"></script>
+  <script src="js/days-summary-engine.js"></script>
+  <script src="js/payslip-store.js"></script>
+  <script src="js/shiklulit-parser.js"></script>
+  <script src="js/reconciliation-engine.js"></script>
+  <script>
+    'use strict';
+
+    let currentReport = null;
+    let activeFilter = 'all';
+
+    const monthSelect = document.getElementById('monthSelect');
+    const yearSelect = document.getElementById('yearSelect');
+    for (let m = 1; m <= 12; m++) {
+      const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
+      monthSelect.appendChild(opt);
+    }
+    const cy = new Date().getFullYear();
+    for (let y = cy + 1; y >= cy - 3; y--) {
+      const opt = document.createElement('option'); opt.value = y; opt.textContent = y;
+      yearSelect.appendChild(opt);
+    }
+    // ברירת מחדל מ-MonthConfig אם יש
+    const conf = (typeof MonthConfig !== 'undefined') ? MonthConfig.loadSelectedMonth() : null;
+    if (conf) {
+      monthSelect.value = conf.month;
+      yearSelect.value = conf.year;
+    } else {
+      const lm = new Date(); lm.setMonth(lm.getMonth() - 1);
+      monthSelect.value = lm.getMonth() + 1;
+      yearSelect.value = lm.getFullYear();
+    }
+
+    function checkAvailability() {
+      const y = parseInt(yearSelect.value, 10);
+      const m = parseInt(monthSelect.value, 10);
+      const meck = (typeof MeckanoArchiveStore !== 'undefined') ? MeckanoArchiveStore.loadArchive(y, m) : null;
+      const pay = (typeof PayslipStore !== 'undefined') ? PayslipStore.load(y, m) : null;
+
+      const div = document.getElementById('dataAvailability');
+      let html = '';
+      if (meck) html += '<span style="color:#047857;">✅ Meckano (' + (meck.blocks ? meck.blocks.length : 0) + ' עובדים)</span>';
+      else html += '<span style="color:#9b1c1c;">❌ אין Meckano — <a href="upload.html" style="color:#dc2626;">העלי</a></span>';
+      html += ' &nbsp; ';
+      if (pay) html += '<span style="color:#047857;">✅ שיקלולית (' + (pay.employee_count || 0) + ' עובדים)</span>';
+      else html += '<span style="color:#9b1c1c;">❌ אין שיקלולית — <a href="payslip-upload.html" style="color:#dc2626;">העלי</a></span>';
+
+      div.innerHTML = html;
+      document.getElementById('runBtn').disabled = !(meck && pay);
+    }
+
+    monthSelect.addEventListener('change', checkAvailability);
+    yearSelect.addEventListener('change', checkAvailability);
+    checkAvailability();
+
+    document.getElementById('runBtn').addEventListener('click', () => {
+      const y = parseInt(yearSelect.value, 10);
+      const m = parseInt(monthSelect.value, 10);
+      try {
+        currentReport = ReconciliationEngine.build(y, m);
+        renderReport();
+      } catch (e) {
+        document.getElementById('reportArea').innerHTML =
+          '<div class="card"><div style="color:#9b1c1c;">שגיאה בהפקת הדוח: ' + e.message + '</div></div>';
+        console.error(e);
+      }
+    });
+
+    function renderReport() {
+      if (!currentReport) return;
+      const { rows, summary } = currentReport;
+      const area = document.getElementById('reportArea');
+
+      let html = '<div class="card">';
+      html += '<h2>📊 סיכום</h2>';
+      html += '<div class="summary-bar">';
+      html += '<div class="summary-stat stat-info"><div class="num">' + summary.total + '</div><div class="label">סה"כ עובדים</div></div>';
+      html += '<div class="summary-stat stat-info"><div class="num">' + summary.both + '</div><div class="label">בשני המקורות</div></div>';
+      html += '<div class="summary-stat stat-match"><div class="num">' + summary.match + '</div><div class="label">✅ תואם</div></div>';
+      html += '<div class="summary-stat stat-warn"><div class="num">' + summary.warn + '</div><div class="label">⚠️ דורש בדיקה</div></div>';
+      html += '<div class="summary-stat stat-mismatch"><div class="num">' + summary.mismatch + '</div><div class="label">❌ פער</div></div>';
+      html += '<div class="summary-stat stat-na"><div class="num">' + summary.meckano_only + '</div><div class="label">רק Meckano</div></div>';
+      html += '<div class="summary-stat stat-na"><div class="num">' + summary.shiklulit_only + '</div><div class="label">רק שיקלולית</div></div>';
+      html += '</div>';
+
+      html += '<div class="filter-row">';
+      const filters = [
+        ['all', 'הכל', summary.total],
+        ['mismatch', '❌ פער', summary.mismatch],
+        ['warn', '⚠️ בדיקה', summary.warn],
+        ['match', '✅ תואם', summary.match],
+        ['meckano_only', 'רק Meckano', summary.meckano_only],
+        ['shiklulit_only', 'רק שיקלולית', summary.shiklulit_only],
+      ];
+      filters.forEach(f => {
+        html += '<span class="filter-pill ' + (activeFilter === f[0] ? 'active' : '') + '" data-filter="' + f[0] + '">' +
+          f[1] + ' (' + f[2] + ')</span>';
+      });
+      html += '<button class="btn btn-secondary" onclick="exportCSV()" style="margin-right:auto;">📥 ייצוא CSV</button>';
+      html += '</div>';
+
+      html += '<div class="scroll-x"><table id="reconcileTable"><thead>';
+      html += '<tr>' +
+        '<th rowspan="2" style="min-width:50px;">#</th>' +
+        '<th rowspan="2" class="left" style="min-width:130px;">שם עובד</th>' +
+        '<th rowspan="2" style="min-width:60px;">סוג</th>' +
+        '<th colspan="3" class="col-group">ימי עבודה / חופש</th>' +
+        '<th colspan="2" class="col-group">מילואים</th>' +
+        '<th colspan="2" class="col-group">היעדרות לקיזוז</th>' +
+        '<th colspan="2" class="col-group">חופש (ימים)</th>' +
+        '<th colspan="2" class="col-group">יתרות בתלוש</th>' +
+        '<th rowspan="2" class="col-group" style="min-width:100px;">סטטוס</th>' +
+        '<th rowspan="2" style="min-width:200px;">דגלים</th>' +
+        '</tr>';
+      html += '<tr>' +
+        '<th>Meck<br><small>ימים</small></th>' +
+        '<th>Shik<br><small>ש"נ 125%</small></th>' +
+        '<th>Shik<br><small>ש"נ 150%</small></th>' +
+        '<th>Meck</th>' +
+        '<th>Shik</th>' +
+        '<th>Meck</th>' +
+        '<th>Shik</th>' +
+        '<th>Meck</th>' +
+        '<th>Shik</th>' +
+        '<th>חופש</th>' +
+        '<th>מחלה</th>' +
+        '</tr>';
+      html += '</thead><tbody>';
+
+      const filtered = rows.filter(r => {
+        if (activeFilter === 'all') return true;
+        if (activeFilter === 'meckano_only') return r.meckano && !r.shiklulit;
+        if (activeFilter === 'shiklulit_only') return !r.meckano && r.shiklulit;
+        return r.status === activeFilter;
+      });
+
+      filtered.forEach(r => {
+        const m = r.meckano, s = r.shiklulit;
+        const fmtNum = (v) => v == null ? '—' : (typeof v === 'number' ? Math.round(v * 100) / 100 : v);
+
+        html += '<tr class="row-' + r.status + '">';
+        html += '<td>' + r.employee_no + '</td>';
+        html += '<td class="left">' + r.employee_name + '</td>';
+        html += '<td><small>' + (r.employee_type || '—') + '</small></td>';
+        html += '<td>' + (m ? fmtNum(m.paid) : '—') + '</td>';
+        html += '<td>' + (s ? fmtNum(s.overtime_125_hrs) : '—') + '</td>';
+        html += '<td>' + (s ? fmtNum(s.overtime_150_hrs) : '—') + '</td>';
+        // מילואים
+        html += '<td' + cmpCell(r.compares.miluim) + '>' + (m ? fmtNum(m.miluim) : '—') + '</td>';
+        html += '<td>' + (s ? fmtNum(s.miluim_days) : '—') + '</td>';
+        // היעדרות לקיזוז
+        const meckAbs = m ? ((m.absence || 0) + (m.chalat || 0) + (m.sick_kizuz || 0)) : null;
+        html += '<td' + cmpCell(r.compares.absence) + '>' + (m ? fmtNum(meckAbs) : '—') + '</td>';
+        html += '<td>' + (s ? fmtNum(s.absence_days) : '—') + '</td>';
+        // חופש
+        html += '<td' + cmpCell(r.compares.vacation) + '>' + (m ? fmtNum(m.vacation_charged) : '—') + '</td>';
+        html += '<td>' + (s ? fmtNum(s.vacation_used_month) : '—') + '</td>';
+        // יתרות
+        html += '<td>' + (s ? fmtNum(s.vacation_balance) : '—') + '</td>';
+        html += '<td>' + (s ? fmtNum(s.sick_balance) : '—') + '</td>';
+        // סטטוס
+        const statusLabels = {
+          match: '<span class="badge b-match">✅ תואם</span>',
+          warn: '<span class="badge b-warn">⚠️ בדיקה</span>',
+          mismatch: '<span class="badge b-mismatch">❌ פער</span>',
+          na: '<span class="badge b-na">— חסר</span>',
+        };
+        html += '<td>' + (statusLabels[r.status] || '—') + '</td>';
+        // דגלים
+        html += '<td class="flag-list">';
+        if (r.flags.length) r.flags.forEach(f => html += '<span class="flag">• ' + f + '</span>');
+        else html += '<span style="color:#9ca3af;">—</span>';
+        html += '</td>';
+        html += '</tr>';
+      });
+
+      if (!filtered.length) {
+        html += '<tr><td colspan="15" class="empty-state">אין רשומות התואמות לסינון</td></tr>';
+      }
+
+      html += '</tbody></table></div>';
+      html += '</div>';
+
+      area.innerHTML = html;
+
+      // Filter buttons
+      area.querySelectorAll('.filter-pill').forEach(p => {
+        p.addEventListener('click', () => {
+          activeFilter = p.dataset.filter;
+          renderReport();
+        });
+      });
+    }
+
+    function cmpCell(cmp) {
+      if (!cmp) return '';
+      if (cmp.status === 'match') return ' class="cmp cmp-match"';
+      if (cmp.status === 'warn') return ' class="cmp cmp-warn"';
+      if (cmp.status === 'mismatch') return ' class="cmp cmp-mismatch"';
+      return '';
+    }
+
+    window.exportCSV = function() {
+      if (!currentReport) return;
+      const rows = currentReport.rows;
+      const header = ['מס\' עובד', 'שם', 'סוג',
+        'Meck ימים משולמים', 'Meck חופש', 'Meck מילואים', 'Meck היעדרות סה"כ',
+        'Shik ש"נ 125%', 'Shik ש"נ 150%', 'Shik חופש ניצול', 'Shik מילואים',
+        'Shik היעדרות', 'Shik יתרת חופש', 'Shik יתרת מחלה',
+        'סטטוס', 'דגלים'].join(',');
+      const lines = [header];
+      rows.forEach(r => {
+        const m = r.meckano || {}, s = r.shiklulit || {};
+        const meckAbs = (m.absence || 0) + (m.chalat || 0) + (m.sick_kizuz || 0);
+        const cell = (v) => v == null || v === '' ? '' : ('' + v).replace(/[,\n"]/g, ' ');
+        lines.push([
+          r.employee_no, '"' + cell(r.employee_name) + '"', cell(r.employee_type),
+          cell(m.paid), cell(m.vacation_charged), cell(m.miluim), cell(meckAbs),
+          cell(s.overtime_125_hrs), cell(s.overtime_150_hrs), cell(s.vacation_used_month), cell(s.miluim_days),
+          cell(s.absence_days), cell(s.vacation_balance), cell(s.sick_balance),
+          r.status, '"' + cell(r.flags.join(' | ')) + '"',
+        ].join(','));
+      });
+      const csv = '﻿' + lines.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'reconciliation-' + yearSelect.value + '-' + monthSelect.value + '.csv';
+      a.click();
+    };
+  </script>
+</body>
+</html>
