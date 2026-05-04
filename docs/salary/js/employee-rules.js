@@ -80,6 +80,78 @@ window.EmployeeRules = (function() {
   // ברירת מחדל - אם הסוג לא הוגדר, מתנהג כמו 'גלובלי' (החמורה ביותר)
   const DEFAULT_TYPE = 'גלובלי';
 
+  // ===== תאונת עבודה - חוקים מיוחדים =====
+  // כשעובד בתאונת עבודה, ה-12 הימים הראשונים משולמים ע"י המעסיק.
+  // מהיום ה-13 ואילך - הביטוח הלאומי משלם ישירות לעובד.
+  // התאונה יכולה להיות יותר מחודש - חיוני לעקוב אחרי התאריך ההתחלתי
+  // ב-special_status_from של האינדקס המרכזי, ולחשב ימים מצטברים על פני חודשים.
+  const WORK_ACCIDENT_NII_THRESHOLD_DAYS = 12;
+
+  // מחזיר אובייקט עם מצב תאונת עבודה לעובד בחודש מסוים.
+  // employee:    אובייקט מהאינדקס המרכזי (special_status, special_status_from, special_status_to)
+  // periodYear/Month: החודש שמעבדים (1-12)
+  // מחזיר:       { isActive, daysFromStartTotal, daysInThisMonth, paidByEmployer, paidByNII, daysToEmployerInMonth, daysToNIIInMonth }
+  function calculateWorkAccidentStatus(employee, periodYear, periodMonth) {
+    if (!employee || employee.special_status !== 'תאונת עבודה') {
+      return { isActive: false };
+    }
+    const fromStr = employee.special_status_from;
+    const toStr   = employee.special_status_to;
+    if (!fromStr) return { isActive: false, missing_from_date: true };
+
+    const startDate = new Date(fromStr);
+    if (isNaN(startDate.getTime())) return { isActive: false, invalid_from_date: true };
+
+    // טווח החודש המעובד
+    const periodStart = new Date(periodYear, periodMonth - 1, 1);
+    const periodEnd   = new Date(periodYear, periodMonth, 0); // יום אחרון בחודש
+
+    // האם התאונה חופפת את החודש?
+    const endDate = toStr ? new Date(toStr) : null;
+    if (endDate && endDate < periodStart) return { isActive: false, ended_before_period: true };
+    if (startDate > periodEnd) return { isActive: false, starts_after_period: true };
+
+    // ימים בחודש המעובד שבהם התאונה פעילה
+    const overlapStart = startDate > periodStart ? startDate : periodStart;
+    const overlapEnd   = (endDate && endDate < periodEnd) ? endDate : periodEnd;
+    const daysInThisMonth = daysBetween(overlapStart, overlapEnd) + 1;
+
+    // ימים מצטברים מתחילת התאונה עד תום ה-overlap (לקביעת מתי עוברים את הסף)
+    const daysFromStartToOverlapEnd = daysBetween(startDate, overlapEnd) + 1;
+    const daysFromStartToOverlapStart = daysBetween(startDate, overlapStart); // 0 אם החודש מתחיל בתאונה
+
+    // חלוקה בין מעסיק לב"ל בחודש המעובד
+    let daysToEmployerInMonth = 0, daysToNIIInMonth = 0;
+    if (daysFromStartToOverlapEnd <= WORK_ACCIDENT_NII_THRESHOLD_DAYS) {
+      // הכל עוד בטווח של 12 הימים הראשונים → מעסיק משלם
+      daysToEmployerInMonth = daysInThisMonth;
+    } else if (daysFromStartToOverlapStart >= WORK_ACCIDENT_NII_THRESHOLD_DAYS) {
+      // עברנו את הסף לפני שהחודש התחיל → ב"ל משלם הכל
+      daysToNIIInMonth = daysInThisMonth;
+    } else {
+      // הסף נופל באמצע החודש - חלוקה
+      daysToEmployerInMonth = WORK_ACCIDENT_NII_THRESHOLD_DAYS - daysFromStartToOverlapStart;
+      daysToNIIInMonth = daysInThisMonth - daysToEmployerInMonth;
+    }
+
+    return {
+      isActive: true,
+      from_date: fromStr,
+      to_date:   toStr || null,
+      days_from_start_total:    daysFromStartToOverlapEnd,
+      days_in_this_month:       daysInThisMonth,
+      days_paid_by_employer_in_month: daysToEmployerInMonth,
+      days_paid_by_nii_in_month:      daysToNIIInMonth,
+      passed_nii_threshold: daysFromStartToOverlapEnd > WORK_ACCIDENT_NII_THRESHOLD_DAYS,
+    };
+  }
+
+  function daysBetween(a, b) {
+    const ms = 1000 * 60 * 60 * 24;
+    return Math.floor((Date.UTC(b.getFullYear(), b.getMonth(), b.getDate()) -
+                       Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) / ms);
+  }
+
   function getRules(employeeType) {
     if (!employeeType || !RULES[employeeType]) return RULES[DEFAULT_TYPE];
     return RULES[employeeType];
@@ -94,5 +166,10 @@ window.EmployeeRules = (function() {
   // עזר: רשימת כל סוגי העובד הידועים
   function listTypes() { return Object.keys(RULES); }
 
-  return { getRules, shouldIncludeInReport, listTypes, RULES, DEFAULT_TYPE };
+  return {
+    getRules, shouldIncludeInReport, listTypes,
+    calculateWorkAccidentStatus,
+    WORK_ACCIDENT_NII_THRESHOLD_DAYS,
+    RULES, DEFAULT_TYPE,
+  };
 })();
