@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>מודול מילואים — אינדקס עובדים | פנדה טק</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Heebo', Arial, sans-serif;
+      background: #e9eef3;
+      color: #2b486a;
+      direction: rtl;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .container { max-width: 1500px; margin: 0 auto; }
+
+    .header {
+      background: linear-gradient(90deg, #30bced 0%, #528163 100%);
+      color: #fff;
+      border-radius: 14px;
+      padding: 22px 28px;
+      margin-bottom: 22px;
+      box-shadow: 0 4px 14px rgba(82,129,99,0.12);
+    }
+    .header h1 { margin: 0 0 6px 0; font-size: 1.8rem; font-weight: 700; }
+    .header .subtitle { opacity: 0.92; font-size: 1rem; }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 22px 24px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .card h2 {
+      margin: 0 0 14px 0;
+      font-size: 1.2rem;
+      color: #2b486a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .upload-zone {
+      border: 2px dashed #30bced;
+      border-radius: 10px;
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      display: block;
+    }
+    .upload-zone:hover { background: #f0f7ff; border-color: #1ea1d1; }
+    .upload-zone input { display: none; }
+    .upload-zone .main-text { font-size: 1.1rem; font-weight: 600; color: #2b486a; }
+    .upload-zone .sub-text { margin-top: 8px; font-size: 0.9rem; color: #6b7280; }
+
+    .meta-box {
+      background: #f0f7ff;
+      border: 1px solid #cfe5f5;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      margin-top: 14px;
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .meta-box span { color: #6b7280; }
+    .meta-box strong { color: #2b486a; }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-top: 14px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .alert code { background: rgba(0,0,0,0.06); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; }
+    .alert-error   { background: #fde8e8; color: #9b1c1c; border: 1px solid #f8b4b4; white-space: pre-line; }
+    .alert-success { background: #def7ec; color: #03543f; border: 1px solid #84e1bc; }
+    .alert-info    { background: #e1effe; color: #1e429f; border: 1px solid #a4cafe; }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .search {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      min-width: 260px;
+    }
+    .toolbar-hint {
+      margin-right: auto;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
+    .table-wrap {
+      max-height: 70vh;
+      overflow: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+    }
+    thead th {
+      background: #f3f4f6;
+      padding: 10px 8px;
+      text-align: right;
+      font-weight: 600;
+      border-bottom: 2px solid #d1d5db;
+      font-size: 0.85rem;
+      color: #374151;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody td {
+      padding: 4px 8px;
+      border-bottom: 1px solid #f1f3f5;
+      font-size: 0.9rem;
+    }
+    tbody tr:hover { background: #f9fafb; }
+
+    .cell-input, .cell-select {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      background: transparent;
+      font-family: inherit;
+      font-size: 0.9rem;
+      color: #2b486a;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .cell-input:hover, .cell-select:hover,
+    .cell-input:focus, .cell-select:focus {
+      border-color: #30bced;
+      background: #fbfdff;
+      outline: none;
+    }
+    .cell-input.dirty { background: #fff8db; }
+
+    .badge {
+      display: inline-block;
+      background: #e5e7eb;
+      color: #374151;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+
+    .empty-state {
+      padding: 40px 20px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    .small-link {
+      font-size: 0.85rem;
+      color: #1e429f;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .small-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <h1>מודול מילואים — אינדקס עובדים</h1>
+      <div class="subtitle">שלב 1: ייבוא רשימת העובדים מקובץ Meckano חודשי, עם השלמת שדות חסרים</div>
+    </div>
+
+    <div class="card">
+      <h2>📤 ייבוא קובץ Meckano</h2>
+      <label class="upload-zone" for="fileInput">
+        <div class="main-text">לחצי כאן או גררי קובץ Meckano חודשי (xlsx)</div>
+        <div class="sub-text">המערכת תקרא את גיליון <code>Em_Index</code> ותייבא את העובדים אוטומטית.</div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+      </label>
+      <div id="alertArea"></div>
+      <div id="metaArea"></div>
+    </div>
+
+    <div class="card" id="employeesCard" style="display:none;">
+      <h2>👥 אינדקס עובדים <span id="empCount" class="badge"></span></h2>
+      <div class="toolbar">
+        <input type="text" class="search" id="searchInput" placeholder="חיפוש לפי שם / מספר עובד / ת.ז....">
+        <span class="toolbar-hint">לחצי על תא לעריכה • שינויים נשמרים אוטומטית • שדה צהוב = שונה כעת</span>
+      </div>
+      <div class="table-wrap">
+        <table id="empTable">
+          <thead>
+            <tr>
+              <th style="width:80px;">מס' עובד</th>
+              <th style="width:110px;">ת.ז.</th>
+              <th style="width:200px;">שם מלא</th>
+              <th style="width:140px;">מחלקה</th>
+              <th style="width:130px;">סוג עובד</th>
+              <th style="width:130px;">תאריך תחילה</th>
+              <th style="width:130px;">תאריך סיום</th>
+              <th>הערות</th>
+            </tr>
+          </thead>
+          <tbody id="empTableBody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:14px; display:flex; gap:14px; align-items:center;">
+        <a class="small-link" id="clearLink">🗑️ מחיקת כל הנתונים השמורים</a>
+        <span style="color:#6b7280; font-size:0.85rem;">
+          הנתונים נשמרים בדפדפן שלך בלבד (אינם עוברים לשרת חיצוני).
+        </span>
+      </div>
+    </div>
+
+    <div class="card" id="emptyCard">
+      <div class="empty-state">
+        עדיין לא יובא קובץ. העלי קובץ Meckano חודשי כדי להתחיל.
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="js/em-index-store.js"></script>
+  <script src="js/em-index-importer.js"></script>
+  <script>
+    'use strict';
+
+    const $ = (sel) => document.querySelector(sel);
+
+    function showAlert(level, msg) {
+      $('#alertArea').innerHTML = '<div class="alert alert-' + level + '">' + msg + '</div>';
+    }
+    function clearAlert() { $('#alertArea').innerHTML = ''; }
+
+    function renderMeta() {
+      const meta = EmIndexStore.loadMeta();
+      const area = $('#metaArea');
+      if (!meta) { area.innerHTML = ''; return; }
+      const date = new Date(meta.importedAt);
+      area.innerHTML =
+        '<div class="meta-box">' +
+          '<span>מקור: <strong>' + (meta.sourceFile || '-') + '</strong></span>' +
+          '<span>יובא ב: <strong>' + date.toLocaleString('he-IL') + '</strong></span>' +
+          '<span>עובדים בקובץ: <strong>' + meta.count + '</strong></span>' +
+        '</div>';
+    }
+
+    function renderTable() {
+      const employees = EmIndexStore.loadAll();
+      const card = $('#employeesCard');
+      const empty = $('#emptyCard');
+
+      if (employees.length === 0) {
+        card.style.display = 'none';
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+      card.style.display = 'block';
+
+      $('#empCount').textContent = employees.length + ' עובדים';
+
+      const search = ($('#searchInput').value || '').trim().toLowerCase();
+      const filtered = !search ? employees : employees.filter(e =>
+        (e.full_name || '').toLowerCase().includes(search) ||
+        String(e.employee_no || '').includes(search) ||
+        String(e.national_id || '').includes(search)
+      );
+
+      const types = EmIndexImporter.EMPLOYEE_TYPES;
+      const tbody = $('#empTableBody');
+      tbody.innerHTML = filtered.map(emp => {
+        const optionsHtml = '<option value="">—</option>' + types.map(t =>
+          '<option value="' + t + '"' + (emp.employee_type === t ? ' selected' : '') + '>' + t + '</option>'
+        ).join('');
+        return '' +
+          '<tr data-emp="' + escapeAttr(emp.employee_no) + '">' +
+            '<td>' + escapeHtml(emp.employee_no) + '</td>' +
+            '<td>' + escapeHtml(emp.national_id) + '</td>' +
+            '<td>' + escapeHtml(emp.full_name) + '</td>' +
+            '<td><input class="cell-input" data-field="department" value="' + escapeAttr(emp.department) + '"></td>' +
+            '<td><select class="cell-select" data-field="employee_type">' + optionsHtml + '</select></td>' +
+            '<td><input class="cell-input" type="date" data-field="start_date" value="' + escapeAttr(emp.start_date) + '"></td>' +
+            '<td><input class="cell-input" type="date" data-field="end_date" value="' + escapeAttr(emp.end_date) + '"></td>' +
+            '<td><input class="cell-input" data-field="notes" value="' + escapeAttr(emp.notes) + '"></td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+    function escapeAttr(s) {
+      if (s === null || s === undefined) return '';
+      return String(s).replace(/"/g, '&quot;').replace(/&/g, '&amp;');
+    }
+
+    // ייבוא קובץ
+    $('#fileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      clearAlert();
+      showAlert('info', '⏳ מעבדת את הקובץ...');
+      try {
+        const result = await EmIndexImporter.parseFile(file);
+        EmIndexStore.saveAll(result.employees, {
+          sourceFile: file.name,
+          count: result.employees.length,
+        });
+        showAlert('success',
+          '✅ יובאו ' + result.employees.length + ' עובדים מגיליון <code>' + result.sheet + '</code>. ' +
+          'כעת ניתן להשלים את שדות מחלקה / סוג עובד / תאריכי תחילה וסיום בטבלה למטה.');
+        renderMeta();
+        renderTable();
+      } catch (err) {
+        showAlert('error', '❌ ' + err.message);
+      } finally {
+        e.target.value = ''; // לאפשר טעינה חוזרת של אותו קובץ
+      }
+    });
+
+    // עריכה inline - שמירה אוטומטית לכל שינוי
+    document.addEventListener('change', (e) => {
+      const input = e.target.closest('.cell-input, .cell-select');
+      if (!input) return;
+      const tr = input.closest('tr[data-emp]');
+      if (!tr) return;
+      const empNo = tr.dataset.emp;
+      const field = input.dataset.field;
+      const value = input.value;
+      EmIndexStore.update(empNo, { [field]: value });
+      input.classList.add('dirty');
+      setTimeout(() => input.classList.remove('dirty'), 800);
+    });
+
+    // חיפוש
+    $('#searchInput').addEventListener('input', renderTable);
+
+    // איפוס מלא
+    $('#clearLink').addEventListener('click', () => {
+      if (confirm('למחוק את כל אינדקס העובדים מהדפדפן?\nפעולה זו לא ניתנת לביטול.')) {
+        EmIndexStore.clearAll();
+        renderMeta();
+        renderTable();
+        clearAlert();
+        showAlert('info', '🗑️ הנתונים נמחקו. ניתן לייבא מחדש.');
+      }
+    });
+
+    // אתחול
+    renderMeta();
+    renderTable();
+  </script>
+</body>
+</html>
