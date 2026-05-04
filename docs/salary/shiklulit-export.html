@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ייצוא לשיקלולית | פנדה טק</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', 'Heebo', Arial, sans-serif; background: #e9eef3; color: #2b486a; direction: rtl; margin: 0; padding: 20px; min-height: 100vh; }
+    .container { max-width: 1500px; margin: 0 auto; }
+    .header { background: linear-gradient(90deg, #6b21a8 0%, #a855f7 100%); color: #fff; border-radius: 14px; padding: 22px 28px; margin-bottom: 22px; }
+    .header h1 { margin: 0 0 6px 0; font-size: 1.6rem; }
+    .header .sub { opacity: 0.92; font-size: 0.92rem; }
+    .back-link { display: inline-block; color: #fff; background: rgba(255,255,255,0.18); padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 0.88rem; margin-bottom: 14px; }
+    .card { background: #fff; border-radius: 12px; padding: 18px 22px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+
+    .warning-banner { background: #fef3c7; border: 1px solid #fcd34d; color: #78350f; padding: 14px 18px; border-radius: 10px; margin-bottom: 16px; line-height: 1.6; }
+    .warning-banner strong { font-size: 1rem; }
+
+    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    select { padding: 7px 11px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.92rem; }
+    .btn { padding: 9px 20px; border: 0; border-radius: 6px; cursor: pointer; font-size: 0.92rem; font-weight: 600; }
+    .btn-primary { background: #a855f7; color: #fff; }
+    .btn-primary:hover { background: #9333ea; }
+    .btn-primary:disabled { background: #c4b5fd; cursor: not-allowed; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+    .btn-success { background: #16a34a; color: #fff; }
+    .btn-success:hover { background: #15803d; }
+
+    .stats { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+    .stat-pill { background: #faf5ff; border: 1px solid #d8b4fe; padding: 6px 14px; border-radius: 8px; font-size: 0.88rem; color: #6b21a8; font-weight: 600; }
+
+    .filter-pill { padding: 4px 12px; border-radius: 12px; cursor: pointer; background: #f3f4f6; color: #374151; font-size: 0.84rem; user-select: none; border: 1px solid #e5e7eb; }
+    .filter-pill.active { background: #6b21a8; color: #fff; border-color: #6b21a8; }
+
+    .scroll-x { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+    thead th { background: #f3f4f6; padding: 8px 7px; text-align: center; font-weight: 700; border-bottom: 2px solid #d1d5db; position: sticky; top: 0; z-index: 1; white-space: nowrap; }
+    tbody td { padding: 6px; border-bottom: 1px solid #f3f4f6; text-align: center; }
+    tbody tr:hover { background: #fafafa; }
+    tbody tr.excluded { background: #f9fafb; opacity: 0.55; }
+    tbody td.left { text-align: right; padding-right: 10px; }
+    tbody td input[type=number] { width: 80px; padding: 3px 5px; border: 1px solid transparent; border-radius: 4px; text-align: center; background: transparent; }
+    tbody td input[type=number]:hover { background: #fff; border-color: #e5e7eb; }
+    tbody td input[type=number]:focus { background: #fff; border-color: #a855f7; outline: none; }
+
+    .badge-comp { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78rem; font-weight: 600; background: #f0f9ff; color: #075985; }
+    .empty { color: #d1d5db; }
+
+    .alert { padding: 12px 16px; border-radius: 8px; margin: 10px 0; font-size: 0.92rem; line-height: 1.55; }
+    .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="../index.html">← דף הבית</a>
+
+    <div class="header">
+      <h1>📤 ייצוא לשיקלולית — קליטה קיבוצית</h1>
+      <div class="sub">יצירת קובץ Excel מוכן לקליטה ב"קליטה קיבוצית" של שיקלולית — מבוסס Meckano + EmployeeRules</div>
+    </div>
+
+    <div class="warning-banner">
+      <strong>⚠ חשוב — קראי לפני שימוש ראשון:</strong>
+      <ol style="margin:8px 0 0 0; padding-right:20px;">
+        <li><strong>גיבוי בשיקלולית קודם.</strong> תפריט "פעולות מערכת → ביצוע גיבוי".</li>
+        <li><strong>בדקי קודם עם 1-2 עובדים בלבד.</strong> ייצאי קובץ קטן, קלטי בשיקלולית, ראי שזה עובד נכון, ואז הריצי על כולם.</li>
+        <li><strong>קודי הרכיבים</strong> שהמערכת משתמשת בהם תואמים לאקסולוגיה של פנדה טק (1=שכר יסוד, 51=ש"נ 125% וכו'). אם החברה אצלך משתמשת בקודים שונים — יש לעדכן ב-shiklulit-export-engine.js.</li>
+        <li><strong>לפי המחקר הרשמי של ט.מ.ל</strong> ייתכן וה-quantity צריכה להיות fixed-decimal (×100) — בודקים את זה בקובץ הניסיוני.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <strong>חודש:</strong>
+        <select id="monthSelect"></select>
+        <select id="yearSelect"></select>
+        <button class="btn btn-primary" id="buildBtn">🔄 הפק תנועות</button>
+        <span id="dataStatus" style="color:#6b7280; font-size:0.88rem;"></span>
+      </div>
+      <div id="alertArea"></div>
+    </div>
+
+    <div id="resultArea"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../shared/js/supabase-config.js"></script>
+  <script src="../shared/js/supabase-client.js"></script>
+  <script src="../shared/js/auth-bar.js"></script>
+  <script src="../shared/js/month_config.js"></script>
+  <script src="../reserve/js/em-index-store.js"></script>
+  <script src="../reserve/js/reserve-periods-store.js"></script>
+  <script src="js/employee-rules.js"></script>
+  <script src="js/meckano-archive-store.js"></script>
+  <script src="js/shiklulit-export-engine.js"></script>
+  <script>
+    'use strict';
+
+    let currentRows = [];
+    let activeFilter = 'all';
+
+    const monthSelect = document.getElementById('monthSelect');
+    const yearSelect = document.getElementById('yearSelect');
+    for (let m = 1; m <= 12; m++) {
+      const opt = document.createElement('option'); opt.value = m; opt.textContent = m;
+      monthSelect.appendChild(opt);
+    }
+    const cy = new Date().getFullYear();
+    for (let y = cy + 1; y >= cy - 3; y--) {
+      const opt = document.createElement('option'); opt.value = y; opt.textContent = y;
+      yearSelect.appendChild(opt);
+    }
+    const conf = (typeof MonthConfig !== 'undefined') ? MonthConfig.loadSelectedMonth() : null;
+    if (conf) { monthSelect.value = conf.month; yearSelect.value = conf.year; }
+    else {
+      const lm = new Date(); lm.setMonth(lm.getMonth() - 1);
+      monthSelect.value = lm.getMonth() + 1;
+      yearSelect.value = lm.getFullYear();
+    }
+
+    function checkAvailability() {
+      const y = parseInt(yearSelect.value, 10);
+      const m = parseInt(monthSelect.value, 10);
+      const meck = (typeof MeckanoArchiveStore !== 'undefined') ? MeckanoArchiveStore.loadArchive(y, m) : null;
+      const div = document.getElementById('dataStatus');
+      if (meck && meck.blocks) {
+        div.innerHTML = '<span style="color:#047857;">✅ Meckano: ' + meck.blocks.length + ' עובדים נטענו</span>';
+        document.getElementById('buildBtn').disabled = false;
+      } else {
+        div.innerHTML = '<span style="color:#9b1c1c;">❌ אין Meckano לחודש זה. <a href="upload.html">העלי</a></span>';
+        document.getElementById('buildBtn').disabled = true;
+      }
+    }
+
+    monthSelect.addEventListener('change', checkAvailability);
+    yearSelect.addEventListener('change', checkAvailability);
+    checkAvailability();
+
+    document.getElementById('buildBtn').addEventListener('click', () => {
+      const y = parseInt(yearSelect.value, 10);
+      const m = parseInt(monthSelect.value, 10);
+      try {
+        const result = ShiklulitExportEngine.build(y, m);
+        currentRows = result.rows;
+        renderResult(result.errors || []);
+      } catch (e) {
+        document.getElementById('alertArea').innerHTML =
+          '<div class="alert alert-error">שגיאה: ' + e.message + '</div>';
+        console.error(e);
+      }
+    });
+
+    function renderResult(errors) {
+      const area = document.getElementById('resultArea');
+      if (!currentRows.length) {
+        area.innerHTML = '<div class="card"><p style="color:#6b7280;">לא נוצרו תנועות לחודש זה.</p></div>';
+        return;
+      }
+
+      // Summary stats
+      const empCount = new Set(currentRows.map(r => r.employee_no)).size;
+      const txCount = currentRows.length;
+      const compStats = {};
+      currentRows.forEach(r => {
+        const k = r._component_name;
+        compStats[k] = (compStats[k] || 0) + 1;
+      });
+
+      let html = '<div class="card">';
+      html += '<div class="stats">';
+      html += '<span class="stat-pill">📊 ' + txCount + ' תנועות</span>';
+      html += '<span class="stat-pill">👥 ' + empCount + ' עובדים</span>';
+      Object.keys(compStats).forEach(name => {
+        html += '<span class="stat-pill">' + name + ': ' + compStats[name] + '</span>';
+      });
+      html += '</div>';
+
+      if (errors.length) {
+        html += '<div class="alert alert-info"><strong>הערות:</strong><br>' + errors.join('<br>') + '</div>';
+      }
+
+      html += '<div class="toolbar">';
+      const filters = [['all', 'הכל'], ['51', 'ש"נ 125%'], ['73', 'ש"נ 150%'], ['58', 'היעדרות'], ['885', 'מילואים'], ['110', 'תוס\' גלובלית']];
+      filters.forEach(f => {
+        html += '<span class="filter-pill ' + (activeFilter === f[0] ? 'active' : '') + '" data-filter="' + f[0] + '">' + f[1] + '</span>';
+      });
+      html += '<button class="btn btn-secondary" onclick="toggleAll(true)" style="margin-right:auto;">✓ סמן הכל</button>';
+      html += '<button class="btn btn-secondary" onclick="toggleAll(false)">✗ בטל הכל</button>';
+      html += '<button class="btn btn-success" onclick="downloadXlsx()">📥 הורדת קובץ Excel לשיקלולית</button>';
+      html += '</div>';
+
+      html += '<div class="scroll-x"><table><thead><tr>' +
+        '<th style="width:36px;"><input type="checkbox" id="selAll" checked></th>' +
+        '<th style="width:60px;">מס\' עובד</th>' +
+        '<th class="left" style="width:160px;">שם</th>' +
+        '<th style="width:60px;">חודש</th>' +
+        '<th style="width:60px;">שנה</th>' +
+        '<th style="width:80px;">קוד</th>' +
+        '<th style="width:140px;">רכיב</th>' +
+        '<th style="width:90px;">כמות</th>' +
+        '<th style="width:100px;">סכום</th>' +
+        '<th style="width:100px;">מתאריך</th>' +
+        '<th style="width:100px;">עד תאריך</th>' +
+        '<th class="left">הערה</th>' +
+        '</tr></thead><tbody id="txBody">';
+
+      currentRows.forEach((r, i) => {
+        if (activeFilter !== 'all' && String(r.component_code) !== activeFilter) return;
+        const cls = r._included ? '' : 'excluded';
+        html += '<tr class="' + cls + '" data-idx="' + i + '">';
+        html += '<td><input type="checkbox" class="row-incl" ' + (r._included ? 'checked' : '') + '></td>';
+        html += '<td>' + r.employee_no + '</td>';
+        html += '<td class="left">' + (r._employee_name || '') + '</td>';
+        html += '<td>' + r.month + '</td>';
+        html += '<td>' + r.year + '</td>';
+        html += '<td>' + r.component_code + '</td>';
+        html += '<td><span class="badge-comp">' + r._component_name + '</span></td>';
+        html += '<td><input type="number" step="0.01" data-field="qty" value="' + (r.qty || '') + '"></td>';
+        html += '<td><input type="number" step="0.01" data-field="amount" value="' + (r.amount || '') + '"></td>';
+        html += '<td>' + (r.date_from || '<span class="empty">—</span>') + '</td>';
+        html += '<td>' + (r.date_to || '<span class="empty">—</span>') + '</td>';
+        html += '<td class="left"><small>' + (r.note || '') + '</small></td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table></div>';
+      html += '</div>';
+
+      area.innerHTML = html;
+
+      // Wire filters
+      area.querySelectorAll('.filter-pill').forEach(p => {
+        p.addEventListener('click', () => {
+          activeFilter = p.dataset.filter;
+          renderResult(errors);
+        });
+      });
+
+      // Checkboxes
+      area.querySelectorAll('.row-incl').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const idx = parseInt(cb.closest('tr').dataset.idx, 10);
+          currentRows[idx]._included = cb.checked;
+          cb.closest('tr').classList.toggle('excluded', !cb.checked);
+          updateSelectAll();
+        });
+      });
+      const selAll = document.getElementById('selAll');
+      if (selAll) {
+        selAll.addEventListener('change', () => toggleAll(selAll.checked));
+      }
+      function updateSelectAll() {
+        const all = area.querySelectorAll('.row-incl');
+        const checked = area.querySelectorAll('.row-incl:checked');
+        if (selAll) selAll.checked = all.length === checked.length;
+      }
+
+      // Edit qty/amount inline
+      area.querySelectorAll('input[data-field]').forEach(inp => {
+        inp.addEventListener('change', () => {
+          const idx = parseInt(inp.closest('tr').dataset.idx, 10);
+          const field = inp.dataset.field;
+          const val = inp.value === '' ? '' : parseFloat(inp.value);
+          currentRows[idx][field] = val;
+        });
+      });
+    }
+
+    window.toggleAll = function(state) {
+      currentRows.forEach(r => r._included = state);
+      const errors = []; // we don't re-validate
+      renderResult(errors);
+    };
+
+    window.downloadXlsx = function() {
+      const y = parseInt(yearSelect.value, 10);
+      const m = parseInt(monthSelect.value, 10);
+      const included = currentRows.filter(r => r._included);
+      if (!included.length) { alert('לא נבחרו תנועות לייצוא.'); return; }
+      try {
+        const result = ShiklulitExportEngine.exportToXlsx(included, y, m);
+        const alertArea = document.getElementById('alertArea');
+        alertArea.innerHTML = '<div class="alert alert-success">✅ הקובץ ' + result.file_name +
+          ' (' + result.row_count + ' שורות) הורד.<br>' +
+          '<strong>צעד הבא:</strong> פתחי את שיקלולית → "קליטה קיבוצית" → בחרי את הקובץ → הריצי בקרה לפני אישור.</div>';
+      } catch (e) {
+        document.getElementById('alertArea').innerHTML =
+          '<div class="alert alert-error">שגיאת ייצוא: ' + e.message + '</div>';
+      }
+    };
+  </script>
+</body>
+</html>
