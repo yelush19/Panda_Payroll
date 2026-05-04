@@ -144,6 +144,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="js/meckano-report-parser.js"></script>
   <script src="js/meckano-archive-store.js"></script>
+  <script src="js/manual-summary-validator.js"></script>
   <script>
     'use strict';
     const $ = (s) => document.querySelector(s);
@@ -171,6 +172,22 @@
     }
 
     // ===== זרימת ההעלאה =====
+    // Cache the parsed workbook so validator can also read 1.סיכום ימים from it
+    let _lastWorkbook = null;
+    function readWorkbookOnce(file) {
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onerror = () => reject(new Error('שגיאת קריאת קובץ'));
+        r.onload = (e) => {
+          try {
+            _lastWorkbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+            resolve();
+          } catch (err) { reject(err); }
+        };
+        r.readAsArrayBuffer(file);
+      });
+    }
+
     $('#fileInput').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -179,6 +196,7 @@
       showAlert('info', '⏳ קוראת את הקובץ ומפרסרת...');
 
       try {
+        await readWorkbookOnce(file);
         const result = await MeckanoReportParser.parseFile(file);
         if (!result.blocks || result.blocks.length === 0) {
           showAlert('error', '❌ לא נמצאו בלוקי עובדים בגיליון report.');
@@ -212,6 +230,38 @@
           'נשמר בארכיון תחת <code>' + meta.period + '</code>.'
         );
 
+        // וולידציה אוטומטית מול גיליון '1.סיכום ימים' אם קיים
+        let validationHtml = '';
+        if (_lastWorkbook && typeof ManualSummaryValidator !== 'undefined') {
+          const v = ManualSummaryValidator.validate(_lastWorkbook, result.blocks);
+          if (v.sheet_found && v.stats) {
+            const s = v.stats;
+            const matchPct = (s.match_rate * 100).toFixed(1);
+            const allOk = s.mismatches === 0 && s.missing_in_archive === 0 && s.missing_in_manual === 0;
+            const cls = allOk ? 'success' : (s.mismatches === 0 ? 'warn' : 'error');
+            const icon = allOk ? '✅' : (s.mismatches === 0 ? '⚠️' : '⚠️');
+            validationHtml =
+              '<div class="alert alert-' + cls + '" style="margin-top:14px;">' +
+                '<strong>' + icon + ' השוואה אוטומטית מול גיליון "1.סיכום ימים":</strong> ' +
+                s.matches + '/' + s.total_field_checks + ' שדות תואמים (' + matchPct + '%). ' +
+                (s.mismatches > 0 ? 'אי-התאמות: ' + s.mismatches + '. ' : '') +
+                (s.missing_in_archive > 0 ? 'חסרים בארכיון: ' + s.missing_in_archive + '. ' : '') +
+                (s.missing_in_manual > 0 ? 'חסרים בגיליון הידני: ' + s.missing_in_manual + '. ' : '') +
+                ((s.mismatches > 0 || s.missing_in_archive > 0 || s.missing_in_manual > 0) ?
+                  ' <button class="btn btn-small btn-secondary" id="showValidDetails" style="margin-right:10px;">פירוט →</button>' : '') +
+              '</div>' +
+              '<div id="validationDetails" style="display:none; margin-top:10px;"></div>';
+
+            // Save details for click handler
+            window._lastValidation = v;
+          } else {
+            validationHtml =
+              '<div class="alert alert-info" style="margin-top:14px;">' +
+                'ℹ️ לא נמצא גיליון "1.סיכום ימים" — לא בוצעה השוואה אוטומטית.' +
+              '</div>';
+          }
+        }
+
         $('#summaryArea').innerHTML =
           '<div class="summary-grid">' +
             statBox('עובדים', result.total_blocks) +
@@ -224,7 +274,24 @@
             '<div class="alert alert-warn" style="margin-top:14px;">' +
               '⚠️ ' + blocksWithUnknowns + ' בלוקים מכילים הערות יד-אדם בכותרות (כגון "תאונת עבודה - כל החודש"). ' +
               'הערות אלו נשמרו בנפרד ולא משפיעות על הסיכומים.' +
-            '</div>' : '');
+            '</div>' : '') +
+          validationHtml;
+
+        // Wire validation details button
+        const detBtn = $('#showValidDetails');
+        if (detBtn) {
+          detBtn.addEventListener('click', () => {
+            const div = $('#validationDetails');
+            if (div.style.display === 'none') {
+              div.innerHTML = renderValidationDetails(window._lastValidation);
+              div.style.display = 'block';
+              detBtn.textContent = 'הסתר';
+            } else {
+              div.style.display = 'none';
+              detBtn.textContent = 'פירוט →';
+            }
+          });
+        }
 
         renderArchive();
       } catch (err) {
@@ -236,6 +303,42 @@
 
     function statBox(label, value) {
       return '<div class="stat"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>';
+    }
+
+    function renderValidationDetails(v) {
+      if (!v || !v.results) return '';
+      const mm = v.results.filter(r => r.status === 'mismatch');
+      const ma = v.results.filter(r => r.status === 'missing_in_archive');
+      const mn = v.results.filter(r => r.status === 'missing_in_manual');
+
+      let html = '<div class="card" style="margin:0;">';
+      if (mm.length > 0) {
+        html += '<h2>⚠️ אי-התאמות במספרים (' + mm.length + ' עובדים)</h2>';
+        html += '<table><thead><tr><th>מס\' עובד</th><th>שם</th><th>שדה</th><th>גיליון ידני</th><th>פארסר</th></tr></thead><tbody>';
+        mm.forEach(r => {
+          r.checks.filter(c => !c.ok).forEach(c => {
+            html += '<tr><td>' + r.employee_no + '</td><td>' + r.employee_name + '</td>' +
+                    '<td>' + c.field + '</td><td>' + c.manual + '</td><td>' + c.parsed + '</td></tr>';
+          });
+        });
+        html += '</tbody></table>';
+      }
+      if (ma.length > 0) {
+        html += '<h2 style="margin-top:18px;">📭 קיימים בגיליון הידני אך לא בארכיון</h2>';
+        html += '<ul style="margin:0;">';
+        ma.forEach(r => { html += '<li>' + r.employee_no + ' — ' + r.employee_name + '</li>'; });
+        html += '</ul>';
+        html += '<p style="font-size:0.85rem; color:#6b7280; margin-top:6px;">' +
+                'בדרך כלל מדובר בקבלנים שנרשמים בגיליון בלי מספר עובד. אינו פוגע בנכונות הפארסר.</p>';
+      }
+      if (mn.length > 0) {
+        html += '<h2 style="margin-top:18px;">📂 קיימים בארכיון אך אינם בגיליון הידני</h2>';
+        html += '<ul style="margin:0;">';
+        mn.forEach(r => { html += '<li>' + r.employee_no + ' — ' + r.employee_name + '</li>'; });
+        html += '</ul>';
+      }
+      html += '</div>';
+      return html;
     }
 
     // ===== ארכיון =====

@@ -272,29 +272,29 @@ window.MeckanoReportParser = (function() {
   }
 
   function extractSummaryRow(row, summary, events) {
-    // תויות ב-A (ערכים ב-C, אינדקס 2)
+    // סיכום ב-A: התווית עשויה לכלול סוגריים מסבירים ('הפחתה מדומה (ע.חג/חג)') → התאמה רכה
     const labelA = String(row[0] || '').trim();
     const valueC = row[2];
-    if (labelA) matchLabel(SUMMARY_LABELS_A, labelA, valueC, summary);
+    if (labelA) matchLabel(SUMMARY_LABELS_A, labelA, valueC, summary, /*loose=*/true);
 
-    // תוויות ב-E (ערכים ב-G, אינדקס 6)
+    // שעות ב-E: התאמה מדויקת
     const labelE = String(row[4] || '').trim();
     const valueG = row[6];
-    if (labelE) matchLabel(SUMMARY_LABELS_E, labelE, valueG, summary);
+    if (labelE) matchLabel(SUMMARY_LABELS_E, labelE, valueG, summary, /*loose=*/false);
 
-    // תוויות ב-I (ערכים ב-K, אינדקס 10)
+    // אירועים ב-I: התאמה מדויקת בלבד! חיוני, כי 'חופש' ו'חופש בע.חג' חולקים תחילית.
     const labelI = String(row[8] || '').trim();
     const valueK = row[10];
-    if (labelI) matchLabel(EVENT_LABELS_I, labelI, valueK, events);
+    if (labelI) matchLabel(EVENT_LABELS_I, labelI, valueK, events, /*loose=*/false);
   }
 
-  function matchLabel(defs, label, value, target) {
-    // התאמה גמישה: התווית בקובץ עשויה לכלול תוספות/סוגריים
-    // (כגון 'הפחתה מדומה (ע.חג/חג)') - לכן startsWith ולא eq.
+  function matchLabel(defs, label, value, target, loose) {
     const trimmed = label.trim();
     for (const [key, aliases] of Object.entries(defs)) {
       for (const alias of aliases) {
-        if (trimmed === alias || trimmed.startsWith(alias + ' ') || trimmed.startsWith(alias + '(')) {
+        const exactMatch = trimmed === alias;
+        const looseMatch = loose && (trimmed.startsWith(alias + ' ') || trimmed.startsWith(alias + '('));
+        if (exactMatch || looseMatch) {
           target[key] = numOrNull(value);
           return;
         }
