@@ -21,7 +21,15 @@ window.ClosureMissingEngine = (function() {
     'חופש ללא תשלום',
     'חופש בע.חג',
     'חופש בחוה"מ',
+    'טרם תחילת עבודה',     // מיכאל קייטלין - לפני start_date
+    'לפני תחילת עבודה',
+    'אחרי סיום עבודה',
+    'לפני קליטה',
   ];
+
+  // אם events.miluim >= הסף הזה - העובד במילואים ממושכים והדיווח היומי
+  // עשוי לא לכלול תיוג 'מילואים' פר-יום. נחריג אותו לחלוטין מהדוח.
+  const MILUIM_EXTENDED_THRESHOLD_DAYS = 15;
 
   // חוסר סגירה רלוונטי רק ל"יום חול" - ערב חג / חוה"מ ללא ניקוב נספרים
   // אוטומטית כחופש לחיוב ע"י Meckano (לפי הפעולה הידנית של יילנה).
@@ -33,6 +41,15 @@ window.ClosureMissingEngine = (function() {
     const trimmed = String(eventStr).trim();
     if (!trimmed) return false;
     return COVERING_EVENTS.some(e => trimmed.indexOf(e) !== -1);
+  }
+
+  // האם תאריך הוא חג ידוע מ-MonthConfig.HOLIDAYS_BY_YEAR?
+  // משמש לתפיסת מקרים שבהם Meckano תייגה יום חג כ"יום חול" בטעות.
+  function isKnownHoliday(year, month, dayNumber) {
+    if (typeof MonthConfig === 'undefined' || !MonthConfig.HOLIDAYS_BY_YEAR) return false;
+    const dateStr = year + '-' + String(month).padStart(2, '0') + '-' + String(dayNumber).padStart(2, '0');
+    const yearHolidays = MonthConfig.HOLIDAYS_BY_YEAR[year] || {};
+    return !!yearHolidays[dateStr];
   }
 
   function dayLabel(d) {
@@ -102,6 +119,8 @@ window.ClosureMissingEngine = (function() {
       if (ssFrom || ssTo) {
         if (isInRange(d.day_number, ssFrom, ssTo)) return;
       }
+      // אם התאריך הוא חג ידוע - להחריג. (Meckano מתייגת לפעמים חג כ"יום חול".)
+      if (isKnownHoliday(periodYear, periodMonth, d.day_number)) return;
       issues.push({
         day_label: dayLabel(d),
         day_type:  d.day_type,
@@ -125,24 +144,26 @@ window.ClosureMissingEngine = (function() {
     (employeesIndex || []).forEach(e => { empByNo[String(e.employee_no)] = e; });
 
     const rows = [];
-    const excluded = []; // עובדים שיוחרגו מהדוח (קבלנים / שעתיים / אינם פעילים)
+    const excluded     = []; // הוחרג בוודאות (קבלן / מנכ"ל / תאונה מלאה)
+    const needsReview  = []; // מקרים שדורשים אישור משתמשת לפני סגירה
 
     parsedBlocks.forEach(block => {
       const emp = empByNo[String(block.employee_no)] || null;
-      const empType = emp && emp.employee_type ? emp.employee_type : 'גלובלי';
-      const rules = (typeof EmployeeRules !== 'undefined') ? EmployeeRules.getRules(empType) : null;
+      const empType = emp && emp.employee_type ? emp.employee_type : null;
+      const rules = (empType && typeof EmployeeRules !== 'undefined') ? EmployeeRules.getRules(empType) : null;
+      const empName = emp && emp.full_name ? emp.full_name : block.employee_name;
 
-      // דלג על מי שפטור מבדיקת חוסר סגירה (קבלן/שעתי/מנכ"ל/פרויקט)
+      // 1. החרגה מובהקת: סוג עובד פטור מבדיקה (קבלן/שעתי/מנכ"ל/פרויקט)
       if (rules && rules.check_closure_gap === false) {
         excluded.push({
           employee_no: block.employee_no,
-          employee_name: emp && emp.full_name ? emp.full_name : block.employee_name,
-          reason: empType + ' - פטור מבדיקה'
+          employee_name: empName,
+          reason: empType + ' (לפי הגדרת סוג באינדקס)',
         });
         return;
       }
 
-      // דלג על תאונת עבודה מלאה לחודש
+      // 2. תאונת עבודה לכל החודש (לפי האינדקס)
       const accident = (typeof EmployeeRules !== 'undefined' && emp)
         ? EmployeeRules.calculateWorkAccidentStatus(emp, periodYear, periodMonth)
         : { isActive: false };
@@ -150,28 +171,71 @@ window.ClosureMissingEngine = (function() {
       if (accident.isActive && accident.days_in_this_month >= maxWork - 1) {
         excluded.push({
           employee_no: block.employee_no,
-          employee_name: emp && emp.full_name ? emp.full_name : block.employee_name,
-          reason: 'תאונת עבודה לכל החודש'
+          employee_name: empName,
+          reason: 'תאונת עבודה ' + accident.from_date + ' (לפי האינדקס)',
         });
         return;
       }
 
-      // דלג על עובדים שלא ניקבו ולו יום אחד בחודש (כנראה לא חייבים בדיווח שעון)
-      const daysPresent = (block.summary && block.summary.days_present) || 0;
-      if (daysPresent === 0) {
+      // 3. תאונת עבודה לפי הבלוק (אם כל הימים מסומנים 'תאונת עבודה')
+      const events = block.events || {};
+      const days = block.days || [];
+      const allWorkAccident = days.length > 0 && days.every(d => {
+        const e = String(d.event || '').trim();
+        const sug = String(d.day_type || '').trim();
+        return sug === 'סופ"ש' || e.includes('תאונת עבודה');
+      });
+      if (allWorkAccident) {
         excluded.push({
           employee_no: block.employee_no,
-          employee_name: emp && emp.full_name ? emp.full_name : block.employee_name,
-          reason: 'לא ניקב כלל בחודש (לבדוק - בעל תפקיד / חופשה ארוכה / עזיבה)'
+          employee_name: empName,
+          reason: 'תאונת עבודה כל החודש (לפי הדיווח היומי)',
         });
         return;
       }
 
+      // 4. מילואים ממושכים: events.miluim >= הסף - גם אם הדיווח היומי לא מתויג ככה
+      if ((events.miluim || 0) >= MILUIM_EXTENDED_THRESHOLD_DAYS) {
+        excluded.push({
+          employee_no: block.employee_no,
+          employee_name: empName,
+          reason: 'מילואים ממושכים (' + events.miluim + ' ימים)',
+        });
+        return;
+      }
+
+      // 5. הערה ידנית בכותרות הבלוק - דורש בדיקה (יילנה כתבה משהו ב-Meckano)
+      const hasAnnotation = block.unknown_columns && block.unknown_columns.length > 0;
+
+      // הפקת הדוח לעובד
       const r = buildEmployeeReport(block, emp, periodYear, periodMonth);
+      const daysPresent = (block.summary && block.summary.days_present) || 0;
+
+      // 6. אין סוג עובד הוגדר באינדקס + days_present=0 → דורש בדיקה (לא לסגור אוטומטית)
+      if (!empType && daysPresent === 0) {
+        needsReview.push({
+          employee_no: block.employee_no,
+          employee_name: empName,
+          reason: 'לא ניקב כלל ולא הוגדר סוג עובד באינדקס. סמני סוג / סטטוס מיוחד.',
+          potential_issues: r.issues.length,
+        });
+        return;
+      }
+
+      // 7. אין סוג עובד הוגדר + הערה ידנית בבלוק → דורש בדיקה
+      if (!empType && hasAnnotation) {
+        needsReview.push({
+          employee_no: block.employee_no,
+          employee_name: empName,
+          reason: 'הערה ידנית בכותרות הבלוק: ' + block.unknown_columns.map(u => u.value).join(' | '),
+          potential_issues: r.issues.length,
+        });
+        return;
+      }
+
       if (r.issues.length > 0) rows.push(r);
     });
 
-    // מיון: מי שיש לו יותר ימים חסרים - בראש
     rows.sort((a, b) => b.issues.length - a.issues.length);
 
     const totalDays = rows.reduce((s, r) => s + r.issues.length, 0);
@@ -182,9 +246,10 @@ window.ClosureMissingEngine = (function() {
       total_days_missing: totalDays,
       rows: rows,
       excluded: excluded,
+      needs_review: needsReview,
       generated_at: new Date().toISOString(),
     };
   }
 
-  return { build, isClosureMissing, COVERING_EVENTS };
+  return { build, isClosureMissing, COVERING_EVENTS, MILUIM_EXTENDED_THRESHOLD_DAYS };
 })();
