@@ -211,99 +211,144 @@
 
         .modules-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 10px;
+            margin-bottom: 30px;
         }
 
-        .module-card {
+        details.module-card {
             background: white;
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-            cursor: pointer;
-            position: relative;
+            border-radius: 10px;
+            border: 1.5px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
             overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
-        .module-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        details.module-card:hover {
             border-color: #30bced;
         }
 
-        .module-card.active {
-            border-color: #10b981;
-            background: linear-gradient(135deg, #f0fff4 0%, #ecfdf5 100%);
+        details.module-card[open] {
+            border-color: #30bced;
+            box-shadow: 0 4px 12px rgba(48, 188, 237, 0.12);
         }
 
-        .module-header {
+        details.module-card.foundational {
+            border-color: #10b981;
+            background: linear-gradient(180deg, #f0fff4 0%, #ffffff 60%);
+        }
+        details.module-card.foundational[open] {
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.18);
+        }
+
+        details.module-card > summary {
+            list-style: none;
+            padding: 12px 16px;
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 12px;
+            cursor: pointer;
+            user-select: none;
         }
+        details.module-card > summary::-webkit-details-marker { display: none; }
 
-        .module-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 12px;
+        details.module-card > summary .module-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 1.25rem;
             background: linear-gradient(135deg, #30bced, #528163);
             color: white;
-            box-shadow: 0 4px 15px rgba(48, 188, 237, 0.3);
+            flex-shrink: 0;
         }
 
-        .module-info h3 {
-            font-size: 1.4rem;
+        details.module-card.foundational > summary .module-icon {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        details.module-card .module-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        details.module-card .module-info h3 {
+            font-size: 1.05rem;
             color: #2b486a;
-            margin: 0 0 5px 0;
+            margin: 0;
             font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .module-status {
-            font-size: 0.9rem;
-            padding: 4px 12px;
-            border-radius: 20px;
+            font-size: 0.72rem;
+            padding: 2px 9px;
+            border-radius: 12px;
             font-weight: 600;
+            white-space: nowrap;
         }
 
-        .status-active {
-            background: #d1fae5;
-            color: #10b981;
+        .status-active     { background: #d1fae5; color: #047857; }
+        .status-foundational{ background: #dbeafe; color: #1e40af; }
+        .status-development{ background: #fef3c7; color: #92400e; }
+
+        details.module-card > summary::after {
+            content: "▾";
+            color: #9ca3af;
+            font-size: 0.9rem;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+        details.module-card[open] > summary::after { transform: rotate(180deg); }
+
+        details.module-card .module-content {
+            padding: 4px 16px 14px;
+            border-top: 1px solid #f1f5f9;
+            background: #fafbfc;
         }
 
         .module-desc {
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 20px;
+            color: #555;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            margin: 10px 0;
         }
 
         .module-features {
             list-style: none;
             padding: 0;
-            margin: 0;
+            margin: 0 0 12px 0;
         }
-
         .module-features li {
-            padding: 5px 0;
-            font-size: 0.9rem;
+            padding: 3px 0;
+            font-size: 0.85rem;
             color: #555;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
-
         .module-features li:before {
-            content: "✓";
+            content: "✓ ";
             color: #10b981;
             font-weight: bold;
         }
+
+        .module-open-btn {
+            background: #30bced;
+            color: white;
+            border: 0;
+            padding: 7px 18px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.88rem;
+        }
+        .module-open-btn:hover { background: #1ea1d1; }
+        details.module-card.foundational .module-open-btn { background: #10b981; }
+        details.module-card.foundational .module-open-btn:hover { background: #059669; }
 
         /* Quick Actions */
         .quick-actions {
@@ -483,185 +528,198 @@
                 </h2>
                 
                 <div class="modules-grid">
-                    <!-- Module 0: Mecano Converter - NEW! -->
-                    <div class="module-card active" onclick="openModule('mecano-converter')">
-                        <div class="module-header">
-                            <div class="module-icon">🔄</div>
-                            <div class="module-info">
-                                <h3>המרת מקאנו</h3>
-                                <span class="module-status status-active">פעיל</span>
-                            </div>
-                        </div>
-                        <p class="module-desc">
-                            המרת קובץ מקאנו גולמי לפורמט מוכן לבדיקת תלושים
-                        </p>
-                        <ul class="module-features">
-                            <li>קריאת קובץ מקאנו גולמי</li>
-                            <li>המרה לפורמט Excel/CSV</li>
-                            <li>ניקוי וסידור נתונים</li>
-                            <li>יצירת קובץ MECANO_TO_PAYROLL_READY</li>
-                        </ul>
-                    </div>
 
-                    <!-- Module 1: Upload System - MOVED HERE -->
-                    <div class="module-card active" onclick="openModule('upload')">
-                        <div class="module-header">
-                            <div class="module-icon">📤</div>
-                            <div class="module-info">
-                                <h3>מערכת טעינת קבצי שכר</h3>
-                                <span class="module-status status-active">פעיל</span>
-                            </div>
+                    <!-- אינדקס עובדים מרכזי - תשתית משותפת -->
+                    <details class="module-card foundational" open>
+                        <summary>
+                            <div class="module-icon">👥</div>
+                            <div class="module-info"><h3>אינדקס עובדים מרכזי</h3></div>
+                            <span class="module-status status-foundational">תשתית משותפת</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">
+                                רשימת העובדים המאסטר — משותפת בין כל מודולי המערכת. ייבוא אוטומטי מ-Meckano, השלמה ידנית של מחלקה / סוג / תאריכים / סטטוס מיוחד.
+                            </p>
+                            <ul class="module-features">
+                                <li>ייבוא Em_Index מקובץ Meckano חודשי</li>
+                                <li>סטטוס מיוחד עם תקופה (חופשת לידה / חל"ת / תאונת עבודה)</li>
+                                <li>פעולות מרובות לכל שדה</li>
+                                <li>גיבוי / שחזור JSON</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('employees-index')">פתח אינדקס ←</button>
                         </div>
-                        <p class="module-desc">
-                            טעינה מרכזית של קבצים לאחר המרת מקאנו לביצוע בדיקות מקיפות
-                        </p>
-                        <ul class="module-features">
-                            <li>טעינת קובץ MECANO_TO_PAYROLL_READY</li>
-                            <li>העלאת תלושים סופיים</li>
-                            <li>העלאת דוח חריגים</li>
-                            <li>הרצת בדיקות אוטומטיות</li>
-                        </ul>
-                    </div>
+                    </details>
+
+                    <!-- Module 0: Mecano Converter -->
+                    <details class="module-card">
+                        <summary>
+                            <div class="module-icon">🔄</div>
+                            <div class="module-info"><h3>המרת מקאנו</h3></div>
+                            <span class="module-status status-active">פעיל</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">המרת קובץ מקאנו גולמי לפורמט מוכן לבדיקת תלושים</p>
+                            <ul class="module-features">
+                                <li>קריאת קובץ מקאנו גולמי</li>
+                                <li>המרה לפורמט Excel/CSV</li>
+                                <li>ניקוי וסידור נתונים</li>
+                                <li>יצירת קובץ MECANO_TO_PAYROLL_READY</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('mecano-converter')">פתח מודול ←</button>
+                        </div>
+                    </details>
+
+                    <!-- Module 1: Upload System -->
+                    <details class="module-card">
+                        <summary>
+                            <div class="module-icon">📤</div>
+                            <div class="module-info"><h3>מערכת טעינת קבצי שכר</h3></div>
+                            <span class="module-status status-active">פעיל</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">טעינה מרכזית של קבצים לאחר המרת מקאנו לביצוע בדיקות מקיפות</p>
+                            <ul class="module-features">
+                                <li>טעינת קובץ MECANO_TO_PAYROLL_READY</li>
+                                <li>העלאת תלושים סופיים</li>
+                                <li>העלאת דוח חריגים</li>
+                                <li>הרצת בדיקות אוטומטיות</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('upload')">פתח מודול ←</button>
+                        </div>
+                    </details>
 
                     <!-- Module 2: Basic Checks -->
-                    <div class="module-card active" onclick="openModule('basic-checks')">
-                        <div class="module-header">
+                    <details class="module-card">
+                        <summary>
                             <div class="module-icon">📋</div>
-                            <div class="module-info">
-                                <h3>בדיקות בסיסיות</h3>
-                                <span class="module-status status-active">פעיל</span>
-                            </div>
+                            <div class="module-info"><h3>בדיקות בסיסיות</h3></div>
+                            <span class="module-status status-active">פעיל</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">בדיקת ימי עבודה, ארוחות, שעות נוספות והפרשות בסיסיות</p>
+                            <ul class="module-features">
+                                <li>בדיקת מקסימום ימי עבודה לפי חודש</li>
+                                <li>בדיקת ארוחות (40₪ × ימי עבודה)</li>
+                                <li>השוואה מול נתוני מקאנו</li>
+                                <li>8 בדיקות מתקדמות</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('basic-checks')">פתח מודול ←</button>
                         </div>
-                        <p class="module-desc">
-                            בדיקת ימי עבודה, ארוחות, שעות נוספות והפרשות בסיסיות
-                        </p>
-                        <ul class="module-features">
-                            <li>בדיקת מקסימום ימי עבודה לפי חודש</li>
-                            <li>בדיקת ארוחות (40₪ × ימי עבודה)</li>
-                            <li>השוואה מול נתוני מקאנו</li>
-                            <li>8 בדיקות מתקדמות</li>
-                        </ul>
-                    </div>
+                    </details>
 
-                    <!-- Module 2: New Employees -->
-                    <div class="module-card active" onclick="openModule('new-employees')">
-                        <div class="module-header">
+                    <!-- Module 3: New Employees -->
+                    <details class="module-card">
+                        <summary>
                             <div class="module-icon">👤</div>
-                            <div class="module-info">
-                                <h3>קליטת עובדים חדשים</h3>
-                                <span class="module-status status-active">פעיל</span>
-                            </div>
+                            <div class="module-info"><h3>קליטת עובדים חדשים</h3></div>
+                            <span class="module-status status-active">פעיל</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">זיהוי אוטומטי ובדיקת מסמכים נדרשים לעובדים חדשים</p>
+                            <ul class="module-features">
+                                <li>זיהוי אוטומטי מדוח חריגים</li>
+                                <li>בדיקת 4 מסמכים עיקריים</li>
+                                <li>דוח חסרים למשאבי אנוש</li>
+                                <li>הגדרות עובד מתקדמות</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('new-employees')">פתח מודול ←</button>
                         </div>
-                        <p class="module-desc">
-                            זיהוי אוטומטי ובדיקת מסמכים נדרשים לעובדים חדשים
-                        </p>
-                        <ul class="module-features">
-                            <li>זיהוי אוטומטי מדוח חריגים</li>
-                            <li>בדיקת 4 מסמכים עיקריים</li>
-                            <li>דוח חסרים למשאבי אנוש</li>
-                            <li>הגדרות עובד מתקדמות</li>
-                        </ul>
-                    </div>
+                    </details>
 
-                    <!-- Module 3: Pension & Benefits -->
-                    <div class="module-card active" onclick="openModule('pension')">
-                        <div class="module-header">
+                    <!-- Module 4: Pension -->
+                    <details class="module-card">
+                        <summary>
                             <div class="module-icon">💰</div>
-                            <div class="module-info">
-                                <h3>הפרשות ופנסיה</h3>
-                                <span class="module-status status-active">פעיל</span>
-                            </div>
+                            <div class="module-info"><h3>הפרשות ופנסיה</h3></div>
+                            <span class="module-status status-active">פעיל</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">זיהוי עובדים ללא הפרשה ודוח מרכז לטיפול במשרד</p>
+                            <ul class="module-features">
+                                <li>חישוב גמל מעסיק 6.5%</li>
+                                <li>חישוב פיצויים 8.33%</li>
+                                <li>זיהוי חסרי קה"ש</li>
+                                <li>טופס קוביות למשרד</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('pension')">פתח מודול ←</button>
                         </div>
-                        <p class="module-desc">
-                            זיהוי עובדים ללא הפרשה ודוח מרכז לטיפול במשרד
-                        </p>
-                        <ul class="module-features">
-                            <li>חישוב גמל מעסיק 6.5%</li>
-                            <li>חישוב פיצויים 8.33%</li>
-                            <li>זיהוי חסרי קה"ש</li>
-                            <li>טופס קוביות למשרד</li>
-                        </ul>
-                    </div>
+                    </details>
 
-                    <!-- Module 4: Comparison Table -->
-                    <div class="module-card active" onclick="openModule('comparison')">
-                        <div class="module-header">
+                    <!-- Module 5: Comparison -->
+                    <details class="module-card">
+                        <summary>
                             <div class="module-icon">🔍</div>
-                            <div class="module-info">
-                                <h3>השוואה מקאנו-תלושים</h3>
-                                <span class="module-status status-active">פעיל</span>
-                            </div>
+                            <div class="module-info"><h3>השוואה מקאנו-תלושים</h3></div>
+                            <span class="module-status status-active">פעיל</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">טבלת השוואה מרכזית עם הדגשת הפרשים בצבעים</p>
+                            <ul class="module-features">
+                                <li>השוואת ימי עבודה/שעות/ארוחות</li>
+                                <li>צביעה לפי חומרה (ירוק/כתום/אדום)</li>
+                                <li>סינונים מתקדמים</li>
+                                <li>ייצוא מתמחה</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('comparison')">פתח מודול ←</button>
                         </div>
-                        <p class="module-desc">
-                            טבלת השוואה מרכזית עם הדגשת הפרשים בצבעים
-                        </p>
-                        <ul class="module-features">
-                            <li>השוואת ימי עבודה/שעות/ארוחות</li>
-                            <li>צביעה לפי חומרה (ירוק/כתום/אדום)</li>
-                            <li>סינונים מתקדמים</li>
-                            <li>ייצוא מתמחה</li>
-                        </ul>
-                    </div>
+                    </details>
 
-                    <!-- Module 5: Summary Report -->
-                    <div class="module-card active" onclick="openModule('summary')">
-                        <div class="module-header">
+                    <!-- Module 6: Summary Report -->
+                    <details class="module-card">
+                        <summary>
                             <div class="module-icon">&#128202;</div>
-                            <div class="module-info">
-                                <h3>דוח סיכום</h3>
-                                <span class="module-status status-active">פעיל</span>
-                            </div>
+                            <div class="module-info"><h3>דוח סיכום</h3></div>
+                            <span class="module-status status-active">פעיל</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">ריכוז ממצאים מכל המודולים וייצוא ל-Excel</p>
+                            <ul class="module-features">
+                                <li>סיכום סטטוס כל המודולים</li>
+                                <li>ממצאים עיקריים</li>
+                                <li>טבלת עובדים מרכזית</li>
+                                <li>ייצוא Excel/CSV</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('summary')">פתח מודול ←</button>
                         </div>
-                        <p class="module-desc">
-                            ריכוז ממצאים מכל המודולים וייצוא ל-Excel
-                        </p>
-                        <ul class="module-features">
-                            <li>סיכום סטטוס כל המודולים</li>
-                            <li>ממצאים עיקריים</li>
-                            <li>טבלת עובדים מרכזית</li>
-                            <li>ייצוא Excel/CSV</li>
-                        </ul>
-                    </div>
+                    </details>
 
-                    <!-- Module 6: Exceptions Report -->
-                    <div class="module-card active" onclick="openModule('exceptions')">
-                        <div class="module-header">
+                    <!-- Module 7: Exceptions -->
+                    <details class="module-card">
+                        <summary>
                             <div class="module-icon">📄</div>
-                            <div class="module-info">
-                                <h3>דוח חריגים</h3>
-                                <span class="module-status status-active">פעיל</span>
-                            </div>
+                            <div class="module-info"><h3>דוח חריגים</h3></div>
+                            <span class="module-status status-active">פעיל</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">עיבוד בקשות מדוח חריגים וקטגוריזציה אוטומטית</p>
+                            <ul class="module-features">
+                                <li>חילוץ בקשות אוטומטי מ-PDF</li>
+                                <li>קטגוריזציה חכמה</li>
+                                <li>עריכה ידנית של בקשות</li>
+                                <li>אינטגרציה עם מודולים</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('exceptions')">פתח מודול ←</button>
                         </div>
-                        <p class="module-desc">
-                            עיבוד בקשות מדוח חריגים וקטגוריזציה אוטומטית
-                        </p>
-                        <ul class="module-features">
-                            <li>חילוץ בקשות אוטומטי מ-PDF</li>
-                            <li>קטגוריזציה חכמה</li>
-                            <li>עריכה ידנית של בקשות</li>
-                            <li>אינטגרציה עם מודולים</li>
-                        </ul>
-                    </div>
+                    </details>
 
-                    <!-- Module 7: Reserve Duty (NEW) -->
-                    <div class="module-card active" onclick="openModule('reserve')">
-                        <div class="module-header">
+                    <!-- Module 8: Reserve Duty -->
+                    <details class="module-card">
+                        <summary>
                             <div class="module-icon">🎖️</div>
-                            <div class="module-info">
-                                <h3>ניתוח מילואים</h3>
-                                <span class="module-status status-active">בפיתוח</span>
-                            </div>
+                            <div class="module-info"><h3>ניתוח מילואים</h3></div>
+                            <span class="module-status status-development">בפיתוח</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">ניהול תקופות מילואים, חישוב הפרשים מול תקבולי ב"ל וייצוא להתאמות שכר</p>
+                            <ul class="module-features">
+                                <li>ייבוא אינדקס עובדים מ-Meckano (זמין)</li>
+                                <li>טבלת תעריפי עובדים (בקרוב)</li>
+                                <li>איחוד ימי מילואים לתקופות (בקרוב)</li>
+                                <li>חישוב הפרש מול ב"ל + ייצוא לשכר (בקרוב)</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('reserve')">פתח מודול ←</button>
                         </div>
-                        <p class="module-desc">
-                            מודול חדש: ניהול תקופות מילואים, חישוב הפרשים מול תקבולי ביטוח לאומי וייצוא להתאמות שכר
-                        </p>
-                        <ul class="module-features">
-                            <li>ייבוא אינדקס עובדים מ-Meckano (זמין)</li>
-                            <li>טבלת תעריפי עובדים (בקרוב)</li>
-                            <li>איחוד ימי מילואים לתקופות (בקרוב)</li>
-                            <li>חישוב הפרש מול ב"ל + ייצוא לשכר (בקרוב)</li>
-                        </ul>
-                    </div>
+                    </details>
 
                 </div>
             </section>
@@ -706,32 +764,24 @@
         // Module navigation with correct file names
         function openModule(moduleName) {
             const moduleFiles = {
+                'employees-index':  'reserve/employees.html',
+                'reserve':          'reserve/employees.html',
                 'mecano-converter': '../mecanochecker/index.html',
-                'basic-checks': 'basic-checks.html',
-                'pension': 'pension_module.html',
-                'new-employees': 'new_employees_module.html',
-                'exceptions': 'exceptions-module.html',
-                'comparison': 'comparison_table.html',
-                'upload': 'upload_module.html',
-                'summary': 'summary_report.html',
-                'reserve': 'reserve/employees.html'
+                'basic-checks':     'basic-checks.html',
+                'pension':          'pension_module.html',
+                'new-employees':    'new_employees_module.html',
+                'exceptions':       'exceptions-module.html',
+                'comparison':       'comparison_table.html',
+                'upload':           'upload_module.html',
+                'summary':          'summary_report.html'
             };
 
             const file = moduleFiles[moduleName];
-            
             if (!file) {
                 alert('מודול לא נמצא!');
                 return;
             }
-
-            // Add loading effect
-            const moduleCard = event.currentTarget;
-            moduleCard.style.opacity = '0.7';
-            moduleCard.style.transform = 'scale(0.98)';
-            
-            setTimeout(() => {
-                window.location.href = file;
-            }, 200);
+            window.location.href = file;
         }
 
         // Add animation on load
