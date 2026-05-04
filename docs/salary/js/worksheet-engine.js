@@ -111,7 +111,7 @@ window.WorksheetEngine = (function() {
 
     return {
       employee_no:        block.employee_no,
-      employee_name:      employee && employee.full_name ? employee.full_name : block.employee_name,
+      employee_name:      block.employee_name || (employee && employee.full_name) || '',
       department:         (employee && employee.department) ? employee.department : (block.department || ''),
 
       days_present:       summary.days_present || 0,

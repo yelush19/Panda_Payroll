@@ -297,6 +297,21 @@
               '⚠️ ' + blocksWithUnknowns + ' בלוקים מכילים הערות יד-אדם בכותרות (כגון "תאונת עבודה - כל החודש"). ' +
               'הערות אלו נשמרו בנפרד ולא משפיעות על הסיכומים.' +
             '</div>' : '') +
+          (function() {
+            const counts = {};
+            result.blocks.forEach(b => { counts[b.employee_no] = (counts[b.employee_no] || 0) + 1; });
+            const dups = Object.entries(counts).filter(([n,c]) => c > 1);
+            if (dups.length === 0) return '';
+            const items = dups.map(([no, count]) => {
+              const blocks = result.blocks.filter(b => b.employee_no === no);
+              return '<li><strong>' + no + '</strong> מופיע ' + count + ' פעמים: ' +
+                blocks.map(b => b.employee_name + ' (' + (b.contract_type || '?') + ')').join(' / ') +
+                '</li>';
+            }).join('');
+            return '<div class="alert alert-warn" style="margin-top:14px;">' +
+              '⚠️ <strong>מספרי עובד חוזרים</strong> במקאנו - בדקי באינדקס:<ul style="margin:6px 0 0 0;">' + items + '</ul>' +
+              '</div>';
+          })() +
           validationHtml;
 
         // Wire validation details button
