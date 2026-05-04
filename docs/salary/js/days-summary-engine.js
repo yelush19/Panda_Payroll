@@ -56,6 +56,12 @@ window.DaysSummaryEngine = (function() {
     // לכן 'סה"כ חופשה' בגיליון הידני שווה ל-vacation_charged בלבד (לא חיבור).
     const vacationTotal    = vacationCharged;
 
+    // חישוב מחלה לקיזוז (חוק רצף 1/0.5/0.5/0)
+    const sickResult = (typeof EmployeeRules !== 'undefined' && EmployeeRules.calculateSickKizuz)
+      ? EmployeeRules.calculateSickKizuz(block.days || [])
+      : { total_kizuz: 0, streaks: [] };
+    const sickKizuz = sickResult.total_kizuz;
+
     // הערות אוטומטיות
     const notesParts = [];
     if (accidentStatus.isActive && accidentStatus.passed_nii_threshold) {
@@ -69,8 +75,8 @@ window.DaysSummaryEngine = (function() {
       notesParts.push('הערה ידנית: ' + block.unknown_columns.map(u => u.value).join(' | '));
     }
 
-    // סטטוס: ✓ אם ימים-משולמים תואמים לימי א-ה בחודש פחות חל"ת/היעדרות.
-    // (חישוב מלא יחושב ב-Phase F עם מחלה לקיזוז + חוסר סגירה.)
+    // סטטוס: ✓ אם ימים-משולמים תואמים לחישוב הצפוי
+    // צפוי = max_work_days - חל"ת - היעדרות - מחלה לקיזוז
     let status = '';
     if (rules && rules.check_closure_gap) {
       const maxWorkDays = (typeof MonthConfig !== 'undefined' && MonthConfig.calculateMaxWorkDays)
@@ -81,13 +87,13 @@ window.DaysSummaryEngine = (function() {
         : 0;
       const expected = accidentDays > 0
         ? accidentDays
-        : maxWorkDays - (events.chalat || 0) - (events.absence || 0);
+        : maxWorkDays - (events.chalat || 0) - (events.absence || 0) - sickKizuz;
       const actual   = summary.days_paid || 0;
       const diff = actual - expected;
       if (Math.abs(diff) < 0.01) {
         status = '✓';
       } else if (diff < 0) {
-        status = '⚠ ' + diff.toFixed(1) + ' (אולי חוסר סגירה / מחלה לקיזוז)';
+        status = '⚠ ' + diff.toFixed(1) + ' (חוסר סגירה?)';
       } else {
         status = '⚠ +' + diff.toFixed(1) + ' (חריגה - בדקי)';
       }
@@ -105,7 +111,7 @@ window.DaysSummaryEngine = (function() {
       miluim:             events.miluim              || 0,
       work_accident:      workAccidentDays,
       sick:               events.sick                || 0,
-      sick_kizuz:         null,                              // יחושב ב-Phase F
+      sick_kizuz:         sickKizuz,
       holiday:            events.holiday             || 0,
       eve_holiday:        events.eve_holiday         || 0,
       chol_hamoed:        events.chol_hamoed         || 0,

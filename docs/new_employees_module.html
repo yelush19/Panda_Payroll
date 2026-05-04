@@ -524,6 +524,7 @@
 
     <script src="../payrollchecker/shared/month_config.js"></script>
     <script src="../payrollchecker/shared/data_bus.js"></script>
+    <script src="reserve/js/em-index-store.js"></script>
     <script>
         // ========== AUTO DETECTION LOGIC ==========
         let uploadedFiles = {
@@ -936,13 +937,24 @@
         });
 
         function tryDetectFromDataBus() {
-            if (typeof DataBus === 'undefined' || typeof EmployeesData === 'undefined') return;
+            if (typeof DataBus === 'undefined') return;
 
             const mecano = DataBus.getLatestMecanoData();
             if (!mecano || !mecano.mappedData || mecano.mappedData.length === 0) return;
 
-            // רשימת השמות הידועים מ-employees_data.js
-            const knownNames = EmployeesData.map(emp => emp.name.trim().toLowerCase());
+            // רשימת השמות הידועים — מהאינדקס המרכזי החדש (EmIndexStore).
+            // Fallback ל-EmployeesData הישן אם האינדקס המרכזי ריק.
+            let knownNames = [];
+            if (typeof EmIndexStore !== 'undefined') {
+                const list = EmIndexStore.loadAll();
+                if (list && list.length > 0) {
+                    knownNames = list.map(e => (e.full_name || '').trim().toLowerCase());
+                }
+            }
+            if (knownNames.length === 0 && typeof EmployeesData !== 'undefined') {
+                knownNames = EmployeesData.map(emp => emp.name.trim().toLowerCase());
+            }
+            if (knownNames.length === 0) return; // אין מקור אמת לרשימת עובדים מוכרים
 
             // חפש שמות ממקאנו שלא נמצאים ברשימה הידועה
             const newFromMecano = [];

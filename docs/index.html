@@ -592,6 +592,48 @@
                         </div>
                     </details>
 
+                    <!-- Salary: Report 4 - Used Vacation -->
+                    <details class="module-card">
+                        <summary>
+                            <div class="module-icon">🌴</div>
+                            <div class="module-info"><h3>דוח 4: חופשה מנוצלת</h3></div>
+                            <span class="module-status status-active">פעיל</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">
+                                פירוט חופשה לחיוב לכל עובד: חופש קיים + חופש בע.חג (×0.5) + חופש בחוה"מ (×1) + פירוט תאריכים.
+                            </p>
+                            <ul class="module-features">
+                                <li>חישוב מתוך הימים היומיים (מקור אמת)</li>
+                                <li>פירוט בעברית: "ד-01: ע.חג -0.5; ה-23: חופש -1"</li>
+                                <li>סינון אוטומטי של קבלנים</li>
+                                <li>ייצוא Excel + CSV</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('salary-used-vacation')">פתח דוח ←</button>
+                        </div>
+                    </details>
+
+                    <!-- Salary: Report 3 - Closure Missing -->
+                    <details class="module-card">
+                        <summary>
+                            <div class="module-icon">🔴</div>
+                            <div class="module-info"><h3>דוח 3: חוסר סגירה</h3></div>
+                            <span class="module-status status-active">פעיל</span>
+                        </summary>
+                        <div class="module-content">
+                            <p class="module-desc">
+                                עובדים עם ימי חול ללא כניסה/יציאה ללא אירוע מסביר. כל יום כזה דורש בירור עם העובד.
+                            </p>
+                            <ul class="module-features">
+                                <li>סינון אוטומטי של קבלנים/שעתיים/בעלי תפקיד</li>
+                                <li>החרגה: עובדים שלא ניקבו כלל (מצריכים בדיקה)</li>
+                                <li>החרגה: ימים לפני start_date / אחרי end_date</li>
+                                <li>החרגה: ימים בתוך סטטוס מיוחד (לידה/חל"ת ארוך)</li>
+                            </ul>
+                            <button class="module-open-btn" onclick="openModule('salary-closure-missing')">פתח דוח ←</button>
+                        </div>
+                    </details>
+
                     <!-- Salary: Report 2 - Worksheet -->
                     <details class="module-card">
                         <summary>
@@ -831,6 +873,8 @@
                 'salary-upload':        'salary/upload.html',
                 'salary-days-summary':  'salary/days-summary.html',
                 'salary-worksheet':     'salary/worksheet.html',
+                'salary-closure-missing': 'salary/closure-missing.html',
+                'salary-used-vacation':   'salary/used-vacation.html',
                 'reserve':              'reserve/employees.html',
                 'mecano-converter': '../mecanochecker/index.html',
                 'basic-checks':     'basic-checks.html',

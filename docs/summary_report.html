@@ -316,6 +316,8 @@
     <script src="../payrollchecker/shared/month_config.js"></script>
     <script src="../payrollchecker/shared/data_bus.js"></script>
     <script src="../payrollchecker/shared/employees_data.js"></script>
+    <script src="reserve/js/em-index-store.js"></script>
+    <script src="salary/js/meckano-archive-store.js"></script>
     <script>
         // ========== SUMMARY REPORT MODULE ==========
         let reportData = {
@@ -497,7 +499,40 @@
                 { key: 'monthly', name: 'נתונים חודשיים', desc: 'נתוני עובדים לתקופה' }
             ];
 
-            container.innerHTML = modules.map(mod => {
+            // הוספת סטטוס למקורות החדשים: אינדקס מרכזי + ארכיון Meckano
+            const sharedSources = [];
+            if (typeof EmIndexStore !== 'undefined') {
+                const list = EmIndexStore.loadAll();
+                sharedSources.push({
+                    name: 'אינדקס עובדים מרכזי',
+                    desc: 'תשתית משותפת',
+                    available: list.length > 0,
+                    info: list.length > 0 ? list.length + ' עובדים' : 'ריק - יש לייבא Em_Index',
+                });
+            }
+            if (typeof MeckanoArchiveStore !== 'undefined') {
+                const idx = MeckanoArchiveStore.loadIndex();
+                sharedSources.push({
+                    name: 'ארכיון Meckano',
+                    desc: 'דוחות חודשיים שנקלטו',
+                    available: idx.length > 0,
+                    info: idx.length > 0 ? idx.length + ' חודשים בארכיון' : 'אין דוחות',
+                });
+            }
+
+            const sharedHtml = sharedSources.map(s => `
+                <div class="module-status-row" style="background:#f0f7ff;">
+                    <div>
+                        <span class="module-name">⭐ ${s.name}</span>
+                        <span style="color:#1e40af; font-size:0.8rem; margin-right:8px;">${s.desc} — ${s.info}</span>
+                    </div>
+                    <span class="status-badge ${s.available ? 'available' : 'missing'}">
+                        ${s.available ? 'זמין' : 'ריק'}
+                    </span>
+                </div>
+            `).join('');
+
+            const legacyHtml = modules.map(mod => {
                 const data = reportData.modules[mod.key] || { status: 'missing' };
                 const isAvailable = data.status === 'available';
                 const countInfo = data.count ? ` (${data.count} רשומות)` : '';
@@ -514,6 +549,8 @@
                     </div>
                 `;
             }).join('');
+
+            container.innerHTML = sharedHtml + legacyHtml;
         }
 
         function renderFindings() {

@@ -443,17 +443,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="../payrollchecker/shared/month_config.js"></script>
     <script src="../payrollchecker/shared/data_bus.js"></script>
+    <script src="reserve/js/em-index-store.js"></script>
     <script>
         // ========== EXCEPTIONS DATA ==========
         let exceptionsData = {};
         let employeesData = {};
 
-        // Sample employee data - in real app this would come from API
-        const sampleEmployees = [
+        // רשימת עובדים — קוראת מהאינדקס המרכזי החדש; אם אין/ריק - fallback לרשימה בסיסית.
+        // (תאמר בעבר "sampleEmployees" - 15 שמות קבועים מ-2025)
+        function getEmployeeNamesFromIndex() {
+            if (typeof EmIndexStore === 'undefined') return null;
+            const list = EmIndexStore.loadAll();
+            if (!list || list.length === 0) return null;
+            return list.map(e => e.full_name).filter(Boolean);
+        }
+
+        const FALLBACK_EMPLOYEE_NAMES = [
             "בנימין זהר", "אבישי לייבנזון", "חיים ראש", "דוד אחדות", "לוי דביש",
             "יורם שלמה", "ירדן אפל", "אורי אשתר", "איילה שירזי", "דוד לוי",
             "אברהם בנג'יו", "דור לוי", "צחי חנגל", "שלמה לסנר", "מיכאל רפאיל"
         ];
+
+        const sampleEmployees = getEmployeeNamesFromIndex() || FALLBACK_EMPLOYEE_NAMES;
 
         // Exception categories
         const exceptionCategories = [
