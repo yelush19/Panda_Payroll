@@ -29,7 +29,7 @@ window.SB = (function() {
         auth: {
           persistSession:      true,
           autoRefreshToken:    true,
-          detectSessionInUrl:  false,
+          detectSessionInUrl:  true,                   // נדרש לזרימת איפוס סיסמה / magic link
           storage:             window.localStorage,
           storageKey:          'pandatech-auth-session',
           flowType:            'pkce',
@@ -71,6 +71,23 @@ window.SB = (function() {
     await client.auth.signOut();
   }
 
+  // שולח מייל איפוס סיסמה. הלינק ב-email יחזיר ל-redirectTo עם code.
+  async function resetPasswordForEmail(email, redirectTo) {
+    if (!client) throw new Error('Supabase client not initialized');
+    const opts = redirectTo ? { redirectTo } : {};
+    const { data, error } = await client.auth.resetPasswordForEmail(email, opts);
+    if (error) throw error;
+    return data;
+  }
+
+  // עדכון סיסמה (חייב session פעיל - בד"כ אחרי קליק על לינק איפוס)
+  async function updatePassword(newPassword) {
+    if (!client) throw new Error('Supabase client not initialized');
+    const { data, error } = await client.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+    return data;
+  }
+
   // עוטף לדף שמחייב התחברות. אם לא מחובר - מפנה ללוגין.
   async function requireAuth(loginUrl) {
     const session = await getSession();
@@ -90,5 +107,7 @@ window.SB = (function() {
     signUp,
     signOut,
     requireAuth,
+    resetPasswordForEmail,
+    updatePassword,
   };
 })();

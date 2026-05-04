@@ -22,8 +22,8 @@
     .login-box .sub { color: #6b7280; font-size: 0.92rem; margin-bottom: 24px; }
     .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; }
     .tab {
-      padding: 10px 16px; cursor: pointer; border: none; background: none;
-      font-family: inherit; font-size: 0.95rem; font-weight: 600; color: #6b7280;
+      padding: 10px 14px; cursor: pointer; border: none; background: none;
+      font-family: inherit; font-size: 0.92rem; font-weight: 600; color: #6b7280;
       border-bottom: 3px solid transparent; margin-bottom: -2px;
     }
     .tab.active { color: #30bced; border-bottom-color: #30bced; }
@@ -46,6 +46,19 @@
     .alert-success { background: #def7ec; color: #03543f; border: 1px solid #84e1bc; }
     .alert-info    { background: #e1effe; color: #1e429f; border: 1px solid #a4cafe; }
     .footer-note { margin-top: 22px; font-size: 0.82rem; color: #9ca3af; text-align: center; }
+    .small-link {
+      display: block; margin-top: 14px; text-align: center;
+      font-size: 0.85rem; color: #1e40af;
+      cursor: pointer; background: none; border: 0; font-family: inherit; width: 100%;
+    }
+    .small-link:hover { text-decoration: underline; }
+    .recovery-banner {
+      background: linear-gradient(90deg, #fef3c7, #fef9c3);
+      border: 1px solid #fde047;
+      color: #78350f;
+      padding: 11px 14px; border-radius: 8px;
+      margin-bottom: 18px; font-size: 0.92rem; font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -53,9 +66,15 @@
     <h1>🔐 כניסה למערכת</h1>
     <div class="sub">פנדה טק - מערכת בדיקת תלושי שכר</div>
 
-    <div class="tabs">
+    <div class="tabs" id="tabs">
       <button class="tab active" data-tab="login">כניסה</button>
       <button class="tab" data-tab="signup">הרשמה</button>
+      <button class="tab" data-tab="forgot">שכחתי סיסמה</button>
+    </div>
+
+    <!-- Recovery banner (shown only when arriving from email link) -->
+    <div id="recoveryBanner" class="recovery-banner" style="display:none;">
+      🔑 הגעת מלינק איפוס סיסמה. הזיני סיסמה חדשה למטה.
     </div>
 
     <!-- Login form -->
@@ -69,6 +88,7 @@
         <span>ההתחברות נזכרת על המחשב הזה. לא תצטרכי להיכנס בכל פעם.</span>
       </div>
       <button type="submit" class="btn" id="loginBtn">כניסה</button>
+      <button type="button" class="small-link" id="forgotLink">שכחתי סיסמה — שלחי לי לינק לאיפוס</button>
     </form>
 
     <!-- Signup form -->
@@ -80,6 +100,28 @@
       <label for="signupPassword">סיסמה (לפחות 6 תווים)</label>
       <input type="password" id="signupPassword" required minlength="6" autocomplete="new-password">
       <button type="submit" class="btn" id="signupBtn">צרי חשבון</button>
+    </form>
+
+    <!-- Forgot password form -->
+    <form id="forgotForm" style="display:none;">
+      <p style="color:#6b7280; font-size:0.92rem; margin: 6px 0 4px;">
+        הקלידי את כתובת האימייל שלך, ואשלח אליך לינק לאיפוס סיסמה.
+      </p>
+      <label for="forgotEmail">אימייל</label>
+      <input type="email" id="forgotEmail" required autocomplete="email">
+      <button type="submit" class="btn" id="forgotBtn">שלחי לינק לאיפוס</button>
+    </form>
+
+    <!-- Reset password form (visible only after clicking email link) -->
+    <form id="resetForm" style="display:none;">
+      <p style="color:#374151; font-size:0.92rem; margin: 6px 0 4px;">
+        הזיני סיסמה חדשה. לפחות 6 תווים.
+      </p>
+      <label for="resetPassword">סיסמה חדשה</label>
+      <input type="password" id="resetPassword" required minlength="6" autocomplete="new-password">
+      <label for="resetPasswordConfirm">אישור סיסמה</label>
+      <input type="password" id="resetPasswordConfirm" required minlength="6" autocomplete="new-password">
+      <button type="submit" class="btn" id="resetBtn">שמרי סיסמה חדשה</button>
     </form>
 
     <div id="alertArea"></div>
@@ -95,30 +137,75 @@
   <script>
     'use strict';
     const $ = (s) => document.querySelector(s);
-
-    // אם כבר מחובר - הפנה לדף הבית
-    SB.getSession().then(session => {
-      if (session) {
-        const params = new URLSearchParams(location.search);
-        const next = params.get('next');
-        location.href = next || '../index.html';
-      }
-    });
-
-    // Tab switching
-    document.querySelectorAll('.tab').forEach(t => {
-      t.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-        t.classList.add('active');
-        $('#loginForm').style.display  = t.dataset.tab === 'login'  ? 'block' : 'none';
-        $('#signupForm').style.display = t.dataset.tab === 'signup' ? 'block' : 'none';
-        $('#alertArea').innerHTML = '';
-      });
-    });
+    const FORMS = {
+      login:  '#loginForm',
+      signup: '#signupForm',
+      forgot: '#forgotForm',
+      reset:  '#resetForm',
+    };
 
     function showAlert(level, msg) {
       $('#alertArea').innerHTML = '<div class="alert alert-' + level + '">' + msg + '</div>';
     }
+    function clearAlert() { $('#alertArea').innerHTML = ''; }
+
+    function showForm(name) {
+      Object.entries(FORMS).forEach(([k, sel]) => {
+        $(sel).style.display = k === name ? 'block' : 'none';
+      });
+      // Tabs - only the 3 main ones; reset is special
+      document.querySelectorAll('.tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === name);
+      });
+    }
+
+    // ========== Detect recovery flow ==========
+    // אחרי קליק על לינק איפוס מהמייל - URL מכיל ?code=... ו-Supabase מחליף
+    // אוטומטית ל-session. אנחנו מאזינים לאירוע PASSWORD_RECOVERY ומציגים מסך
+    // קביעת סיסמה חדשה.
+    let inRecoveryMode = false;
+
+    if (SB && SB.client) {
+      SB.client.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          inRecoveryMode = true;
+          $('#recoveryBanner').style.display = 'block';
+          $('#tabs').style.display = 'none';
+          showForm('reset');
+        }
+      });
+    }
+
+    // אם ה-URL מכיל code/recovery טוקן - לחכות שניה לפני בדיקת session
+    // (כדי לתת ל-Supabase להשלים את החילוף)
+    const hasRecoveryParams = location.search.includes('code=') || location.hash.includes('type=recovery');
+
+    setTimeout(async () => {
+      if (inRecoveryMode) return;  // הזרימה תוטפל ע"י onAuthStateChange
+      const session = await SB.getSession();
+      if (session && !hasRecoveryParams) {
+        // כבר מחובר רגיל → הפניה לדף הבית
+        const params = new URLSearchParams(location.search);
+        const next = params.get('next');
+        location.href = next || '../index.html';
+      }
+    }, hasRecoveryParams ? 800 : 50);
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(t => {
+      t.addEventListener('click', () => {
+        showForm(t.dataset.tab);
+        clearAlert();
+      });
+    });
+
+    // Forgot link in login form
+    $('#forgotLink').addEventListener('click', () => {
+      showForm('forgot');
+      clearAlert();
+    });
+
+    // ========== Form handlers ==========
 
     $('#loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -146,9 +233,7 @@
         const password = $('#signupPassword').value;
         const result = await SB.signUp(email, password, name);
         if (result.user && !result.session) {
-          showAlert('info',
-            '📧 חשבון נוצר. ב-Supabase ייתכן שצריך אימות אימייל. ' +
-            'בדקי את תיבת הדואר. אם לא - תיכנסי שוב דרך טאב "כניסה".');
+          showAlert('info', '📧 חשבון נוצר. בדקי את האימייל לאישור (אם הפעלת חובת אימות).');
         } else if (result.session) {
           showAlert('success', '✅ נרשמת והתחברת. מעביר...');
           setTimeout(() => { location.href = '../index.html'; }, 800);
@@ -160,12 +245,48 @@
       }
     });
 
+    $('#forgotForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = $('#forgotBtn'); btn.disabled = true; btn.textContent = '⏳ שולחת...';
+      try {
+        const email = $('#forgotEmail').value.trim();
+        // הלינק חוזר לאותו דף - login.html
+        const redirectTo = location.origin + location.pathname;
+        await SB.resetPasswordForEmail(email, redirectTo);
+        showAlert('success',
+          '📧 נשלח לינק לאיפוס סיסמה לכתובת ' + email + '. בדקי את ה-Inbox (וגם תיקיית הספאם). ' +
+          'הקליק על הלינק יחזיר אותך לכאן עם מסך לקביעת סיסמה חדשה.');
+        btn.textContent = '✓ נשלח';
+      } catch (err) {
+        showAlert('error', '❌ ' + translateError(err.message));
+        btn.disabled = false; btn.textContent = 'שלחי לינק לאיפוס';
+      }
+    });
+
+    $('#resetForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = $('#resetBtn'); btn.disabled = true; btn.textContent = '⏳ שומרת...';
+      try {
+        const p1 = $('#resetPassword').value;
+        const p2 = $('#resetPasswordConfirm').value;
+        if (p1 !== p2) throw new Error('הסיסמאות לא תואמות');
+        if (p1.length < 6) throw new Error('סיסמה חלשה (לפחות 6 תווים)');
+        await SB.updatePassword(p1);
+        showAlert('success', '✅ הסיסמה עודכנה. מעביר לדף הבית...');
+        setTimeout(() => { location.href = '../index.html'; }, 800);
+      } catch (err) {
+        showAlert('error', '❌ ' + translateError(err.message));
+        btn.disabled = false; btn.textContent = 'שמרי סיסמה חדשה';
+      }
+    });
+
     function translateError(msg) {
       const m = String(msg || '').toLowerCase();
       if (m.includes('invalid login')) return 'אימייל או סיסמה לא נכונים.';
       if (m.includes('email not confirmed')) return 'יש לאשר את האימייל לפני הכניסה.';
       if (m.includes('user already')) return 'משתמש קיים. נסי להתחבר במקום.';
       if (m.includes('password should')) return 'סיסמה חלשה מדי (לפחות 6 תווים).';
+      if (m.includes('not match')) return 'הסיסמאות לא תואמות.';
       return msg;
     }
   </script>
