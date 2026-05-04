@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>דוח 2: נייר עבודה | פנדה טק</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Heebo', Arial, sans-serif;
+      background: #e9eef3; color: #2b486a;
+      direction: rtl; margin: 0; padding: 20px; min-height: 100vh;
+    }
+    .container { max-width: 1900px; margin: 0 auto; }
+    .header {
+      background: linear-gradient(90deg, #30bced 0%, #528163 100%);
+      color: #fff; border-radius: 14px;
+      padding: 22px 28px; margin-bottom: 22px;
+      box-shadow: 0 4px 14px rgba(82,129,99,0.12);
+      display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    }
+    .header h1 { margin: 0; font-size: 1.6rem; font-weight: 700; }
+    .header .sub { opacity: 0.9; font-size: 0.92rem; }
+    .back-link {
+      background: rgba(255,255,255,0.18); color: #fff;
+      padding: 6px 12px; border-radius: 6px;
+      text-decoration: none; font-size: 0.88rem;
+    }
+    .back-link:hover { background: rgba(255,255,255,0.3); }
+
+    .card {
+      background: #fff; border-radius: 12px;
+      padding: 18px 22px; margin-bottom: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .toolbar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+    .toolbar select, .toolbar input {
+      padding: 7px 12px; border: 1px solid #cbd5e1;
+      border-radius: 6px; font-family: inherit; font-size: 0.95rem;
+    }
+    .btn { background: #30bced; color: #fff; border: 0; padding: 8px 16px; border-radius: 7px; cursor: pointer; font-weight: 600; font-family: inherit; font-size: 0.92rem; }
+    .btn:hover { background: #1ea1d1; }
+    .btn-secondary { background: transparent; color: #30bced; border: 1px solid #30bced; }
+    .btn-secondary:hover { background: #f0f7ff; }
+
+    .alert { padding: 12px 16px; border-radius: 8px; margin-top: 10px; font-size: 0.95rem; }
+    .alert-warn  { background: #fef3c7; color: #78350f; border: 1px solid #fcd34d; }
+    .alert-error { background: #fde8e8; color: #9b1c1c; border: 1px solid #f8b4b4; }
+    .empty-state { padding: 40px; text-align: center; color: #6b7280; }
+
+    .stats-bar { display: flex; gap: 12px; margin: 12px 0 4px; flex-wrap: wrap; }
+    .pill { background: #f3f4f6; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+    .pill.ok   { background: #d1fae5; color: #047857; }
+    .pill.warn { background: #fef3c7; color: #92400e; }
+
+    .table-wrap { max-height: 75vh; overflow: auto; border: 1px solid #e5e7eb; border-radius: 8px; }
+    table.report-table {
+      width: 100%; border-collapse: collapse; font-size: 0.82rem;
+      min-width: 1700px;
+    }
+    table.report-table th {
+      padding: 8px 6px; text-align: right;
+      font-weight: 600; font-size: 0.75rem;
+      border-bottom: 2px solid #cbd5e1;
+      position: sticky; top: 0; z-index: 1;
+      white-space: nowrap;
+    }
+    table.report-table td {
+      padding: 5px 7px; border-bottom: 1px solid #f1f5f9;
+      white-space: nowrap;
+    }
+    table.report-table tbody tr:hover { background: #f8fafc; }
+
+    /* Group colors */
+    th.g-employee, td.g-employee { background: #eef2ff; }
+    th.g-days,     td.g-days     { background: #f0fdf4; }
+    th.g-hours,    td.g-hours    { background: #ecfdf5; }
+    th.g-deduct,   td.g-deduct   { background: #fef2f2; }
+    th.g-events,   td.g-events   { background: #fef9c3; }
+    th.g-balance,  td.g-balance  { background: #dbeafe; font-weight: 600; }
+
+    td.gap-positive { color: #b91c1c; font-weight: 700; }
+    td.gap-negative { color: #b45309; font-weight: 700; }
+    td.gap-zero     { color: #047857; }
+
+    .num { text-align: center; font-variant-numeric: tabular-nums; }
+    .zero { color: #cbd5e1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📋 דוח 2: נייר עבודה</h1>
+      <span class="sub">23 עמודות + מאזן צפוי-מול-משולמים</span>
+      <a class="back-link" href="../index.html" style="margin-right:auto;">← דף הבית</a>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <label>חודש:</label>
+        <select id="periodSelect"><option value="">— בחרי —</option></select>
+        <button class="btn btn-secondary" id="refreshBtn">רענון</button>
+        <span style="color:#6b7280; font-size:0.85rem; margin-right:auto;">
+          הדוח מבוסס על הארכיון. החל מסך זה משלב את חוקי סוג העובד מהאינדקס המרכזי.
+        </span>
+      </div>
+      <div id="alertArea"></div>
+      <div class="stats-bar" id="statsBar"></div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar" style="margin-bottom:10px;">
+        <input type="text" id="searchInput" placeholder="חיפוש לפי שם / מספר עובד / מחלקה..." style="min-width:280px;">
+        <label style="font-size:0.9rem;">
+          <input type="checkbox" id="onlyGap"> רק עובדים עם פער ≠ 0
+        </label>
+        <button class="btn" id="exportXlsxBtn" style="margin-right:auto;">📥 ייצוא Excel</button>
+        <button class="btn btn-secondary" id="exportCsvBtn">📥 CSV</button>
+      </div>
+      <div id="reportArea"><div class="empty-state">טוענת נתונים…</div></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="../../payrollchecker/shared/month_config.js"></script>
+  <script src="../reserve/js/em-index-store.js"></script>
+  <script src="js/employee-rules.js"></script>
+  <script src="js/meckano-archive-store.js"></script>
+  <script src="js/worksheet-engine.js"></script>
+  <script>
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+    const MONTH_NAMES = ['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+    let _currentReport = null;
+
+    function showAlert(level, msg) { $('#alertArea').innerHTML = '<div class="alert alert-'+level+'">'+msg+'</div>'; }
+    function clearAlert() { $('#alertArea').innerHTML = ''; }
+
+    function populatePeriods() {
+      const sel = $('#periodSelect');
+      const idx = MeckanoArchiveStore.loadIndex();
+      sel.innerHTML = '<option value="">— בחרי —</option>' +
+        idx.map(m => '<option value="'+m.period+'">'+MONTH_NAMES[m.month]+' '+m.year+' ('+m.total_blocks+' עובדים)</option>').join('');
+      if (idx.length === 0) {
+        showAlert('warn', '⚠️ אין דוחות בארכיון. <a href="upload.html">העלי קובץ Meckano</a> כדי להתחיל.');
+      }
+    }
+
+    function generate() {
+      clearAlert();
+      const period = $('#periodSelect').value;
+      if (!period) { $('#reportArea').innerHTML = '<div class="empty-state">בחרי חודש כדי להפיק את הדוח.</div>'; return; }
+      const arc = MeckanoArchiveStore.loadByPeriod(period);
+      if (!arc) { showAlert('error', 'הארכיון לחודש זה לא נטען.'); return; }
+      const employees = (typeof EmIndexStore !== 'undefined') ? EmIndexStore.loadAll() : [];
+      const [year, month] = period.split('-').map(Number);
+      _currentReport = WorksheetEngine.build(arc.blocks, employees, year, month);
+      renderReport();
+    }
+
+    function renderReport() {
+      if (!_currentReport) return;
+      const search = ($('#searchInput').value || '').trim().toLowerCase();
+      const onlyGap = $('#onlyGap').checked;
+      let rows = _currentReport.rows;
+      if (search) {
+        rows = rows.filter(r =>
+          String(r.employee_no).includes(search) ||
+          (r.employee_name || '').toLowerCase().includes(search) ||
+          (r.department    || '').toLowerCase().includes(search)
+        );
+      }
+      if (onlyGap) rows = rows.filter(r => r._has_gap);
+
+      const totalRows = _currentReport.rows.length;
+      const okCount   = _currentReport.rows.filter(r => !r._has_gap).length;
+      const gapCount  = _currentReport.rows.filter(r => r._has_gap).length;
+      $('#statsBar').innerHTML =
+        '<span class="pill">סה"כ עובדים: '+totalRows+'</span>' +
+        '<span class="pill ok">מאזן 0: '+okCount+'</span>' +
+        (gapCount>0 ? '<span class="pill warn">פער ≠ 0: '+gapCount+'</span>' : '') +
+        '<span class="pill">ימי א-ה בחודש: '+_currentReport.period.max_work_days+'</span>';
+
+      if (rows.length === 0) {
+        $('#reportArea').innerHTML = '<div class="empty-state">אין שורות תואמות לחיפוש.</div>';
+        return;
+      }
+
+      const cols = _currentReport.columns;
+      const head = '<tr>' + cols.map(c => '<th class="g-'+c.group+'">'+c.label+'</th>').join('') + '</tr>';
+      const body = rows.map(r => '<tr>' + cols.map(c => {
+        let v = r[c.key];
+        let cls = 'g-' + c.group;
+        let display;
+        if (c.key === 'gap') {
+          if (v > 0.001) cls += ' gap-positive';
+          else if (v < -0.001) cls += ' gap-negative';
+          else cls += ' gap-zero';
+          display = v;
+        } else if (c.key === 'employee_no' || c.key === 'employee_name' || c.key === 'department') {
+          display = (v === null || v === undefined) ? '' : String(v);
+        } else {
+          if (v === null || v === undefined || v === 0 || v === '') {
+            cls += ' num zero';
+            display = (v === null) ? '—' : '0';
+          } else {
+            cls += ' num';
+            display = (typeof v === 'number') ? roundDisplay(v) : v;
+          }
+        }
+        return '<td class="'+cls+'">'+escapeHtml(display)+'</td>';
+      }).join('') + '</tr>').join('');
+
+      $('#reportArea').innerHTML = '<div class="table-wrap"><table class="report-table"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
+    }
+
+    function roundDisplay(n) { return parseFloat(n.toFixed(2)).toString(); }
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function exportXlsx() {
+      if (!_currentReport) return;
+      const cols = _currentReport.columns;
+      const aoa = [cols.map(c => c.label)];
+      _currentReport.rows.forEach(r => aoa.push(cols.map(c => {
+        const v = r[c.key];
+        return (v === null || v === undefined) ? '' : v;
+      })));
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!views'] = [{ RTL: true }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'נייר עבודה');
+      const period = _currentReport.period;
+      XLSX.writeFile(wb, 'נייר_עבודה_' + period.year + '-' + String(period.month).padStart(2,'0') + '.xlsx');
+    }
+    function exportCsv() {
+      if (!_currentReport) return;
+      const cols = _currentReport.columns;
+      const lines = [cols.map(c => c.label).join(',')];
+      _currentReport.rows.forEach(r => {
+        lines.push(cols.map(c => {
+          const v = r[c.key];
+          if (v === null || v === undefined) return '';
+          let s = String(v);
+          if (s.includes(',') || s.includes('"')) s = '"' + s.replace(/"/g,'""') + '"';
+          return s;
+        }).join(','));
+      });
+      const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const period = _currentReport.period;
+      a.href = url; a.download = 'נייר_עבודה_'+period.year+'-'+String(period.month).padStart(2,'0')+'.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    $('#periodSelect').addEventListener('change', generate);
+    $('#refreshBtn').addEventListener('click', () => { populatePeriods(); generate(); });
+    $('#searchInput').addEventListener('input', renderReport);
+    $('#onlyGap').addEventListener('change', renderReport);
+    $('#exportXlsxBtn').addEventListener('click', exportXlsx);
+    $('#exportCsvBtn').addEventListener('click', exportCsv);
+
+    populatePeriods();
+    const idx = MeckanoArchiveStore.loadIndex();
+    if (idx.length > 0) {
+      $('#periodSelect').value = idx[0].period;
+      generate();
+    }
+  </script>
+</body>
+</html>
