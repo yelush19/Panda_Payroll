@@ -84,9 +84,10 @@ window.DaysSummaryEngine = (function() {
     if (exclusion.exclude) {
       status = '— ' + exclusion.reason;
     } else {
-      const maxWorkDays = (typeof MonthConfig !== 'undefined' && MonthConfig.calculateMaxWorkDays)
-        ? MonthConfig.calculateMaxWorkDays(periodYear, periodMonth)
-        : 22;
+      // ימי א-ה אפקטיביים - לוקח בחשבון start_date/end_date אם בחודש המעובד
+      const maxWorkDays = (typeof EmployeeRules !== 'undefined' && EmployeeRules.effectiveMaxWorkDays)
+        ? EmployeeRules.effectiveMaxWorkDays(employee, periodYear, periodMonth)
+        : ((typeof MonthConfig !== 'undefined' && MonthConfig.calculateMaxWorkDays) ? MonthConfig.calculateMaxWorkDays(periodYear, periodMonth) : 22);
       const expected = maxWorkDays - (events.chalat || 0) - (events.absence || 0) - sickKizuz;
       const actual   = summary.days_paid || 0;
       const diff = actual - expected;

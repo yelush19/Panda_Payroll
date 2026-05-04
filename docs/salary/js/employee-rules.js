@@ -376,6 +376,42 @@ window.EmployeeRules = (function() {
   // עזר: רשימת כל סוגי העובד הידועים
   function listTypes() { return Object.keys(RULES); }
 
+  // ===== חישוב ימי א-ה אפקטיביים פר-עובד (לוקח בחשבון start_date / end_date) =====
+  // אם העובד התחיל / סיים באמצע החודש - max_work_days שלו קטן יותר.
+  function effectiveMaxWorkDays(employee, periodYear, periodMonth) {
+    if (typeof MonthConfig === 'undefined') return 22;
+    const maxFull = MonthConfig.calculateMaxWorkDays(periodYear, periodMonth);
+    if (!employee) return maxFull;
+
+    const periodStart = new Date(periodYear, periodMonth - 1, 1);
+    const periodEnd   = new Date(periodYear, periodMonth, 0);
+    const start = employee.start_date ? new Date(employee.start_date) : null;
+    const end   = employee.end_date   ? new Date(employee.end_date)   : null;
+
+    let from = periodStart, to = periodEnd;
+    if (start && start > periodStart) from = start;
+    if (end   && end   < periodEnd)   to   = end;
+    if (from > to) return 0;
+
+    // אם הטווח האפקטיבי = החודש המלא, החזר את הספירה המוכנה
+    if (from.getTime() === periodStart.getTime() && to.getTime() === periodEnd.getTime()) {
+      return maxFull;
+    }
+    // ספירה ידנית של ימי א-ה (Sun=0..Thu=4) באזור האפקטיבי, פחות חגים
+    let count = 0;
+    const cur = new Date(from);
+    const yearHolidays = (MonthConfig.HOLIDAYS_BY_YEAR && MonthConfig.HOLIDAYS_BY_YEAR[periodYear]) || {};
+    while (cur <= to) {
+      const dow = cur.getDay();
+      if (dow !== 5 && dow !== 6) {
+        const dateStr = cur.getFullYear() + '-' + String(cur.getMonth()+1).padStart(2,'0') + '-' + String(cur.getDate()).padStart(2,'0');
+        if (!yearHolidays[dateStr]) count++;
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+    return count;
+  }
+
   // ===== החרגה אחידה מבדיקת חוסר סגירה (משותף ל-days-summary + closure-missing) =====
   // מחזיר { exclude: bool, reason: string } - אם exclude=true, להחריג את העובד
   // מבדיקת חוסר סגירה לחלוטין. בדיוק אותם תנאים עבור שני הדוחות.
@@ -427,6 +463,7 @@ window.EmployeeRules = (function() {
     isHourlyEligibleForHolidayPay,
     applyGlobalBonusThreshold,
     shouldExcludeFromClosureCheck,
+    effectiveMaxWorkDays,
     HOURLY_OVERTIME_WEEKLY_THRESHOLD_HOURS,
     HOURLY_HOLIDAY_PAY_TENURE_MONTHS,
     WORK_ACCIDENT_NII_THRESHOLD_DAYS,
