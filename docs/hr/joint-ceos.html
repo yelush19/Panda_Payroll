@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>מנכ"לים משותפים — נתוני חודש | פנדה טק</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', 'Heebo', Arial, sans-serif; background: #e9eef3; color: #2b486a; direction: rtl; margin: 0; padding: 20px; min-height: 100vh; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .header {
+      background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
+      color: #fff; border-radius: 14px;
+      padding: 22px 28px; margin-bottom: 22px;
+      display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    }
+    .header h1 { margin: 0; font-size: 1.5rem; font-weight: 700; }
+    .header .sub { opacity: 0.92; font-size: 0.92rem; }
+    .back-link { background: rgba(255,255,255,0.2); color: #fff; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.88rem; }
+
+    .card { background: #fff; border-radius: 12px; padding: 22px 24px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .card h2 { margin: 0 0 14px 0; color: #4f46e5; font-size: 1.1rem; }
+    .toolbar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+    label { font-size: 0.92rem; font-weight: 600; color: #374151; }
+    select, input[type="number"], input[type="text"] {
+      padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 6px;
+      font-family: inherit; font-size: 0.95rem; background: #fff;
+    }
+    .btn { background: #6366f1; color: #fff; border: 0; padding: 8px 18px; border-radius: 7px; cursor: pointer; font-weight: 600; font-family: inherit; font-size: 0.95rem; }
+    .btn:hover { background: #4f46e5; }
+    .btn-secondary { background: transparent; color: #6366f1; border: 1px solid #6366f1; }
+    .alert { padding: 12px 16px; border-radius: 8px; margin: 10px 0; font-size: 0.95rem; }
+    .alert-success { background: #def7ec; color: #03543f; border: 1px solid #84e1bc; }
+    .alert-info { background: #e1effe; color: #1e429f; border: 1px solid #a4cafe; }
+    .alert-warn { background: #fef3c7; color: #78350f; border: 1px solid #fcd34d; }
+
+    .ceo-card {
+      background: #fff; border: 2px solid #e0e7ff; border-radius: 12px;
+      padding: 18px 22px; margin-bottom: 14px;
+    }
+    .ceo-card h3 { margin: 0 0 12px 0; color: #4f46e5; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+    .ceo-card .num { background: #e0e7ff; color: #3730a3; padding: 3px 10px; border-radius: 12px; font-size: 0.82rem; font-weight: 600; }
+    .grid {
+      display: grid; gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      margin-bottom: 12px;
+    }
+    .grid-item { display: flex; flex-direction: column; gap: 6px; }
+    .grid-item label { font-size: 0.85rem; color: #6b7280; font-weight: 500; }
+    .grid-item input { width: 100%; }
+    .meta-row { font-size: 0.82rem; color: #6b7280; padding-top: 8px; border-top: 1px solid #f3f4f6; }
+    .empty { padding: 30px; text-align: center; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>👔 מנכ"לים משותפים — נתוני חודש</h1>
+      <span class="sub">לעובדים שלא מדווחים ב-Meckano</span>
+      <a class="back-link" href="../index.html" style="margin-right:auto;">← דף הבית</a>
+    </div>
+
+    <div class="card">
+      <h2>📅 חודש</h2>
+      <div class="toolbar">
+        <label>חודש:</label>
+        <select id="periodSelect">
+          <option value="">— בחרי —</option>
+        </select>
+        <span style="font-size:0.85rem; color:#6b7280;">
+          הנתונים שמורים בדפדפן (לעבוד גם בלי Meckano).
+        </span>
+      </div>
+      <div id="alertArea"></div>
+    </div>
+
+    <div class="card" id="ceosCard" style="display:none;">
+      <h2>👤 רשימת מנכ"לים משותפים</h2>
+      <div id="ceosList"></div>
+
+      <div class="alert alert-info" style="margin-top:14px;">
+        ℹ️ <strong>מנכ"ל משותף:</strong> עובד שמסומן באינדקס עם <code>is_joint_ceo = true</code>
+        ופטור מדיווח שעון. הנתונים כאן מתעדים מה הוא דיווח לי בעל פה (חופש / מחלה / מילואים).
+      </div>
+    </div>
+
+    <div class="card" id="emptyCard">
+      <div class="empty">
+        <p><strong>עדיין לא הוגדרו מנכ"לים משותפים.</strong></p>
+        <p>כדי לסמן עובד כמנכ"ל משותף:</p>
+        <ol style="text-align:right; max-width:500px; margin: 16px auto;">
+          <li>פתחי <a href="../reserve/employees.html" style="color:#6366f1;">אינדקס עובדים</a></li>
+          <li>הגדירי לעובד "סוג עובד" = "מנכ"ל"</li>
+          <li>בקרוב: צ'קבוקס "מנכ"ל משותף שלא מדווח ב-Meckano"</li>
+        </ol>
+        <p style="font-size:0.88rem; color:#9ca3af;">
+          לעת עתה: כל עובד מסוג <code>מנכ"ל</code> נחשב כמנכ"ל משותף.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../shared/js/supabase-config.js"></script>
+  <script src="../shared/js/supabase-client.js"></script>
+  <script src="../shared/js/auth-bar.js"></script>
+  <script src="../reserve/js/em-index-store.js"></script>
+  <script src="../reserve/js/joint-ceos-store.js"></script>
+  <script src="../salary/js/meckano-archive-store.js"></script>
+  <script>
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+    const MONTH_NAMES = ['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+
+    function showAlert(level, msg) { $('#alertArea').innerHTML = '<div class="alert alert-'+level+'">'+msg+'</div>'; }
+    function clearAlert() { $('#alertArea').innerHTML = ''; }
+    function escapeHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // ימי א-ה בחודש (כולל חגים מנוכים)
+    function workDaysInMonth(year, month) {
+      if (typeof MonthConfig !== 'undefined') return MonthConfig.calculateMaxWorkDays(year, month);
+      return 22;
+    }
+
+    // עובדים שמסומנים כמנכ"ל
+    function getJointCeos() {
+      if (typeof EmIndexStore === 'undefined') return [];
+      const all = EmIndexStore.loadAll();
+      return all.filter(e => e.is_joint_ceo === true || e.employee_type === 'מנכ"ל');
+    }
+
+    function populatePeriods() {
+      const sel = $('#periodSelect');
+      const archived = (typeof MeckanoArchiveStore !== 'undefined') ? MeckanoArchiveStore.loadIndex() : [];
+      // הוסף גם את החודש הנוכחי אם לא כבר ברשימה
+      const now = new Date();
+      const currentPeriod = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2,'0');
+      const periods = new Set(archived.map(a => a.period));
+      periods.add(currentPeriod);
+      const sortedPeriods = Array.from(periods).sort().reverse();
+
+      sel.innerHTML = '<option value="">— בחרי —</option>' +
+        sortedPeriods.map(p => {
+          const [y, m] = p.split('-').map(Number);
+          return '<option value="'+p+'">'+MONTH_NAMES[m]+' '+y+'</option>';
+        }).join('');
+    }
+
+    function renderCeos() {
+      const period = $('#periodSelect').value;
+      if (!period) {
+        $('#ceosCard').style.display = 'none';
+        $('#emptyCard').style.display = 'block';
+        return;
+      }
+      const ceos = getJointCeos();
+      if (ceos.length === 0) {
+        $('#ceosCard').style.display = 'none';
+        $('#emptyCard').style.display = 'block';
+        return;
+      }
+      $('#ceosCard').style.display = 'block';
+      $('#emptyCard').style.display = 'none';
+
+      const [year, month] = period.split('-').map(Number);
+      const maxDays = workDaysInMonth(year, month);
+
+      const html = ceos.map(emp => {
+        const monthly = JointCeosStore.getMonthly(emp.employee_no, period);
+        const totalAbsent = (monthly.vacation_days || 0) + (monthly.sick_days || 0) + (monthly.miluim_days || 0);
+        const workedDays = Math.max(0, maxDays - totalAbsent);
+        return '<div class="ceo-card" data-emp="' + escapeHtml(emp.employee_no) + '">' +
+          '<h3><span class="num">#'+escapeHtml(emp.employee_no)+'</span> ' + escapeHtml(emp.full_name) + '</h3>' +
+          '<div class="grid">' +
+            '<div class="grid-item"><label>ימי א-ה אפשריים בחודש</label><input type="text" value="' + maxDays + '" readonly style="background:#f3f4f6;"></div>' +
+            '<div class="grid-item"><label>ימי חופש</label><input type="number" min="0" step="0.5" data-field="vacation_days" value="' + (monthly.vacation_days||0) + '"></div>' +
+            '<div class="grid-item"><label>ימי מחלה</label><input type="number" min="0" step="0.5" data-field="sick_days" value="' + (monthly.sick_days||0) + '"></div>' +
+            '<div class="grid-item"><label>ימי מילואים</label><input type="number" min="0" step="0.5" data-field="miluim_days" value="' + (monthly.miluim_days||0) + '"></div>' +
+            '<div class="grid-item"><label>ימי עבודה אפקטיביים</label><input type="text" value="' + workedDays + '" readonly style="background:#f3f4f6; font-weight:700; color:#4f46e5;" data-effective></div>' +
+          '</div>' +
+          '<div class="grid-item"><label>הערות</label><input type="text" data-field="notes" value="' + escapeHtml(monthly.notes || '') + '" placeholder="למשל: דיווח טלפוני 12.04"></div>' +
+          (monthly.updated_at
+            ? '<div class="meta-row">עדכון אחרון: ' + new Date(monthly.updated_at).toLocaleString('he-IL') + '</div>'
+            : '<div class="meta-row" style="color:#9ca3af;">עוד לא הוזנו נתונים לחודש זה</div>'
+          ) +
+        '</div>';
+      }).join('');
+
+      $('#ceosList').innerHTML = html;
+
+      // event handlers
+      document.querySelectorAll('.ceo-card').forEach(card => {
+        const empNo = card.dataset.emp;
+        const inputs = card.querySelectorAll('input[data-field]');
+        function recalc() {
+          const v = parseFloat(card.querySelector('[data-field="vacation_days"]').value) || 0;
+          const s = parseFloat(card.querySelector('[data-field="sick_days"]').value) || 0;
+          const m = parseFloat(card.querySelector('[data-field="miluim_days"]').value) || 0;
+          card.querySelector('[data-effective]').value = Math.max(0, maxDays - v - s - m);
+        }
+        inputs.forEach(input => {
+          input.addEventListener('change', () => {
+            const fields = {};
+            inputs.forEach(i => {
+              if (i.dataset.field === 'notes') fields[i.dataset.field] = i.value;
+              else fields[i.dataset.field] = parseFloat(i.value) || 0;
+            });
+            JointCeosStore.saveMonthly(empNo, period, fields);
+            recalc();
+            showAlert('success', '✓ נשמר');
+            setTimeout(clearAlert, 1500);
+          });
+          if (input.type === 'number') input.addEventListener('input', recalc);
+        });
+      });
+    }
+
+    $('#periodSelect').addEventListener('change', () => {
+      clearAlert();
+      renderCeos();
+    });
+
+    populatePeriods();
+    // אוטומטית בחירה של החודש הנוכחי
+    const now = new Date();
+    const currentPeriod = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2,'0');
+    $('#periodSelect').value = currentPeriod;
+    renderCeos();
+  </script>
+</body>
+</html>
