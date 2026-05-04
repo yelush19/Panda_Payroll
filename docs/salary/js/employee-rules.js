@@ -376,6 +376,45 @@ window.EmployeeRules = (function() {
   // עזר: רשימת כל סוגי העובד הידועים
   function listTypes() { return Object.keys(RULES); }
 
+  // ===== החרגה אחידה מבדיקת חוסר סגירה (משותף ל-days-summary + closure-missing) =====
+  // מחזיר { exclude: bool, reason: string } - אם exclude=true, להחריג את העובד
+  // מבדיקת חוסר סגירה לחלוטין. בדיוק אותם תנאים עבור שני הדוחות.
+  function shouldExcludeFromClosureCheck(block, employee, periodYear, periodMonth) {
+    const empType = employee && employee.employee_type;
+    const rules = empType ? getRules(empType) : null;
+
+    // 1. סוג עובד פטור (קבלן/שעתי/מנכ"ל/פרויקט)
+    if (rules && rules.check_closure_gap === false) {
+      return { exclude: true, reason: empType + ' (לפי הגדרת סוג באינדקס)' };
+    }
+
+    // 2. תאונת עבודה לכל החודש (לפי האינדקס)
+    const accident = calculateWorkAccidentStatus(employee, periodYear, periodMonth);
+    const monthDays = new Date(periodYear, periodMonth, 0).getDate();
+    if (accident.isActive && accident.days_in_this_month >= monthDays - 2) {
+      return { exclude: true, reason: 'תאונת עבודה ' + accident.from_date + ' (לפי האינדקס)' };
+    }
+
+    // 3. תאונת עבודה לפי הבלוק (כל הימים מסומנים תאונת עבודה)
+    const days = (block && block.days) || [];
+    const allWorkAccident = days.length > 0 && days.every(d => {
+      const e = String((d && d.event) || '').trim();
+      const sug = String((d && d.day_type) || '').trim();
+      return sug === 'סופ"ש' || e.indexOf('תאונת עבודה') !== -1;
+    });
+    if (allWorkAccident) {
+      return { exclude: true, reason: 'תאונת עבודה כל החודש (לפי הדיווח היומי)' };
+    }
+
+    // 4. מילואים ממושכים (events.miluim >= 15)
+    const miluim = (block && block.events && block.events.miluim) || 0;
+    if (miluim >= 15) {
+      return { exclude: true, reason: 'מילואים ממושכים (' + miluim + ' ימים)' };
+    }
+
+    return { exclude: false };
+  }
+
   return {
     getRules, shouldIncludeInReport, listTypes,
     calculateWorkAccidentStatus,
@@ -387,6 +426,7 @@ window.EmployeeRules = (function() {
     calculateSickKizuz,
     isHourlyEligibleForHolidayPay,
     applyGlobalBonusThreshold,
+    shouldExcludeFromClosureCheck,
     HOURLY_OVERTIME_WEEKLY_THRESHOLD_HOURS,
     HOURLY_HOLIDAY_PAY_TENURE_MONTHS,
     WORK_ACCIDENT_NII_THRESHOLD_DAYS,

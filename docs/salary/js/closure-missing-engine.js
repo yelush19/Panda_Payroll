@@ -150,61 +150,22 @@ window.ClosureMissingEngine = (function() {
     parsedBlocks.forEach(block => {
       const emp = empByNo[String(block.employee_no)] || null;
       const empType = emp && emp.employee_type ? emp.employee_type : null;
-      const rules = (empType && typeof EmployeeRules !== 'undefined') ? EmployeeRules.getRules(empType) : null;
-      const empName = emp && emp.full_name ? emp.full_name : block.employee_name;
+      const empName = block.employee_name || (emp && emp.full_name) || '';
 
-      // 1. החרגה מובהקת: סוג עובד פטור מבדיקה (קבלן/שעתי/מנכ"ל/פרויקט)
-      if (rules && rules.check_closure_gap === false) {
+      // החרגה אחידה - אותה לוגיקה כמו days-summary (משותף ב-employee-rules.js)
+      const exclusion = (typeof EmployeeRules !== 'undefined' && EmployeeRules.shouldExcludeFromClosureCheck)
+        ? EmployeeRules.shouldExcludeFromClosureCheck(block, emp, periodYear, periodMonth)
+        : { exclude: false };
+      if (exclusion.exclude) {
         excluded.push({
           employee_no: block.employee_no,
           employee_name: empName,
-          reason: empType + ' (לפי הגדרת סוג באינדקס)',
+          reason: exclusion.reason,
         });
         return;
       }
 
-      // 2. תאונת עבודה לכל החודש (לפי האינדקס)
-      const accident = (typeof EmployeeRules !== 'undefined' && emp)
-        ? EmployeeRules.calculateWorkAccidentStatus(emp, periodYear, periodMonth)
-        : { isActive: false };
-      const maxWork = (typeof MonthConfig !== 'undefined') ? MonthConfig.calculateMaxWorkDays(periodYear, periodMonth) : 22;
-      if (accident.isActive && accident.days_in_this_month >= maxWork - 1) {
-        excluded.push({
-          employee_no: block.employee_no,
-          employee_name: empName,
-          reason: 'תאונת עבודה ' + accident.from_date + ' (לפי האינדקס)',
-        });
-        return;
-      }
-
-      // 3. תאונת עבודה לפי הבלוק (אם כל הימים מסומנים 'תאונת עבודה')
-      const events = block.events || {};
-      const days = block.days || [];
-      const allWorkAccident = days.length > 0 && days.every(d => {
-        const e = String(d.event || '').trim();
-        const sug = String(d.day_type || '').trim();
-        return sug === 'סופ"ש' || e.includes('תאונת עבודה');
-      });
-      if (allWorkAccident) {
-        excluded.push({
-          employee_no: block.employee_no,
-          employee_name: empName,
-          reason: 'תאונת עבודה כל החודש (לפי הדיווח היומי)',
-        });
-        return;
-      }
-
-      // 4. מילואים ממושכים: events.miluim >= הסף - גם אם הדיווח היומי לא מתויג ככה
-      if ((events.miluim || 0) >= MILUIM_EXTENDED_THRESHOLD_DAYS) {
-        excluded.push({
-          employee_no: block.employee_no,
-          employee_name: empName,
-          reason: 'מילואים ממושכים (' + events.miluim + ' ימים)',
-        });
-        return;
-      }
-
-      // 5. הערה ידנית בכותרות הבלוק - דורש בדיקה (יילנה כתבה משהו ב-Meckano)
+      // הערה ידנית בכותרות הבלוק - דורש בדיקה (יילנה כתבה משהו ב-Meckano)
       const hasAnnotation = block.unknown_columns && block.unknown_columns.length > 0;
 
       // הפקת הדוח לעובד

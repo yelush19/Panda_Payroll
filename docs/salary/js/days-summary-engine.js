@@ -75,19 +75,19 @@ window.DaysSummaryEngine = (function() {
       notesParts.push('הערה ידנית: ' + block.unknown_columns.map(u => u.value).join(' | '));
     }
 
-    // סטטוס: ✓ אם ימים-משולמים תואמים לחישוב הצפוי
-    // צפוי = max_work_days - חל"ת - היעדרות - מחלה לקיזוז
+    // סטטוס: שימוש בעזר המשותף עם closure-missing - כך ששני הדוחות עקביים
     let status = '';
-    if (rules && rules.check_closure_gap) {
+    const exclusion = (typeof EmployeeRules !== 'undefined' && EmployeeRules.shouldExcludeFromClosureCheck)
+      ? EmployeeRules.shouldExcludeFromClosureCheck(block, employee, periodYear, periodMonth)
+      : { exclude: false };
+
+    if (exclusion.exclude) {
+      status = '— ' + exclusion.reason;
+    } else {
       const maxWorkDays = (typeof MonthConfig !== 'undefined' && MonthConfig.calculateMaxWorkDays)
         ? MonthConfig.calculateMaxWorkDays(periodYear, periodMonth)
         : 22;
-      const accidentDays = (accidentStatus.isActive && accidentStatus.days_in_this_month >= maxWorkDays - 2)
-        ? maxWorkDays
-        : 0;
-      const expected = accidentDays > 0
-        ? accidentDays
-        : maxWorkDays - (events.chalat || 0) - (events.absence || 0) - sickKizuz;
+      const expected = maxWorkDays - (events.chalat || 0) - (events.absence || 0) - sickKizuz;
       const actual   = summary.days_paid || 0;
       const diff = actual - expected;
       if (Math.abs(diff) < 0.01) {
@@ -97,8 +97,6 @@ window.DaysSummaryEngine = (function() {
       } else {
         status = '⚠ +' + diff.toFixed(1) + ' (חריגה - בדקי)';
       }
-    } else if (rules) {
-      status = '— ' + rules.label;
     }
 
     return {
