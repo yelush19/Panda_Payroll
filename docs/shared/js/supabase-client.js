@@ -17,13 +17,22 @@ window.SB = (function() {
     console.warn('SupabaseConfig not loaded. Make sure to include supabase-config.js before this file.');
   }
 
-  // Singleton client
+  // Singleton client.
+  // הגדרת הסשן מאפשרת התחברות מתמדת על אותו דפדפן:
+  //   persistSession=true  → הסשן נשמר ב-localStorage תחת מפתח ייחודי לפרויקט
+  //   autoRefreshToken=true → access token מתחדש אוטומטית לפני פקיעה (כל ~שעה)
+  //                            כל עוד refresh token תקף (~30 יום ברירת מחדל ב-Supabase),
+  //                            אין צורך להתחבר מחדש.
+  //   storageKey            → מפתח קבוע מונע התנגשות עם פרויקטים אחרים באותו host.
   const client = (typeof supabase !== 'undefined' && typeof SupabaseConfig !== 'undefined')
     ? supabase.createClient(SupabaseConfig.URL, SupabaseConfig.ANON_KEY, {
         auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: false,
+          persistSession:      true,
+          autoRefreshToken:    true,
+          detectSessionInUrl:  false,
+          storage:             window.localStorage,
+          storageKey:          'pandatech-auth-session',
+          flowType:            'pkce',
         },
       })
     : null;
