@@ -53,32 +53,52 @@ window.ManualSummaryValidator = (function() {
     const colByLabel = {};
     headers.forEach((h, i) => { if (h) colByLabel[h] = i; });
 
-    // אינדוקס בלוקי הפארסר לפי מס' עובד
+    // אינדוקס בלוקי הפארסר לפי מס' עובד + לפי שם (fallback)
     const blocksByNo = {};
-    parsedBlocks.forEach(b => { blocksByNo[String(b.employee_no)] = b; });
+    const blocksByName = {};
+    parsedBlocks.forEach(b => {
+      blocksByNo[String(b.employee_no)] = b;
+      const cleanName = normalizeName(b.employee_name);
+      if (cleanName) blocksByName[cleanName] = b;
+    });
 
     const results = [];
     let totalChecks = 0, matches = 0, mismatches = 0, missingInArchive = 0, missingInManual = 0;
     const seenManualNos = new Set();
+    const matchedBlockNos = new Set();
 
     for (let i = headerIdx + 1; i < rows.length; i++) {
       const row = rows[i] || [];
-      const empNoCell = row[colByLabel["מס' עובד"]];
+      const empNoCell  = row[colByLabel["מס' עובד"]];
+      const nameCell   = row[colByLabel['שם עובד']];
       if (empNoCell === null || empNoCell === undefined || empNoCell === '') continue;
-      const empNo = String(empNoCell).trim();
-      seenManualNos.add(empNo);
+      const empNoRaw  = String(empNoCell).trim();
+      const nameRaw   = String(nameCell || '').trim();
+      seenManualNos.add(empNoRaw);
 
-      const block = blocksByNo[empNo];
+      // התאמה ראשונה: לפי מספר עובד
+      let block = blocksByNo[empNoRaw];
+
+      // אם לא נמצא: fallback לפי שם (חשוב לקבלנים שנרשמים בלי מספר עובד)
+      if (!block && nameRaw) {
+        const possibleNames = extractNameCandidates(nameRaw);
+        for (const cand of possibleNames) {
+          const k = normalizeName(cand);
+          if (blocksByName[k]) { block = blocksByName[k]; break; }
+        }
+      }
+
       if (!block) {
         missingInArchive++;
         results.push({
-          employee_no: empNo,
-          employee_name: String(row[colByLabel['שם עובד']] || '').trim(),
+          employee_no: empNoRaw,
+          employee_name: nameRaw,
           status: 'missing_in_archive',
           checks: [],
         });
         continue;
       }
+      matchedBlockNos.add(String(block.employee_no));
 
       const checks = [];
       Object.entries(FIELD_MAP).forEach(([label, path]) => {
@@ -92,24 +112,25 @@ window.ManualSummaryValidator = (function() {
       });
 
       results.push({
-        employee_no:   empNo,
+        employee_no:   block.employee_no,    // המספר האמיתי מהארכיון
+        manual_emp_no: empNoRaw,             // איך הופיע בגיליון הידני (יכול להיות 'קבלן')
         employee_name: block.employee_name,
         status:        checks.every(c => c.ok) ? 'ok' : 'mismatch',
         checks:        checks,
       });
     }
 
-    // עובדים שיש בארכיון אבל אינם בגיליון הידני
+    // עובדים שיש בארכיון אבל אינם בגיליון הידני (לא נתפסו דרך name fallback)
     Object.keys(blocksByNo).forEach(no => {
-      if (!seenManualNos.has(no)) {
-        missingInManual++;
-        results.push({
-          employee_no:   no,
-          employee_name: blocksByNo[no].employee_name,
-          status:        'missing_in_manual',
-          checks:        [],
-        });
-      }
+      if (matchedBlockNos.has(no)) return;
+      if (seenManualNos.has(no)) return;
+      missingInManual++;
+      results.push({
+        employee_no:   no,
+        employee_name: blocksByNo[no].employee_name,
+        status:        'missing_in_manual',
+        checks:        [],
+      });
     });
 
     return {
@@ -130,6 +151,33 @@ window.ManualSummaryValidator = (function() {
 
   function readPath(obj, path) {
     return path.split('.').reduce((o, k) => (o == null ? null : o[k]), obj);
+  }
+
+  // נירמול שם להשוואה: מסיר רווחים מרובים, מתעלם מסוגריים/קידומות.
+  function normalizeName(s) {
+    if (!s) return '';
+    return String(s)
+      .replace(/\s+/g, ' ')
+      .replace(/["'״׳]/g, '')
+      .trim()
+      .toLowerCase();
+  }
+
+  // מחלץ שמות אפשריים מתוך תא בגיליון הידני.
+  // דוגמה: "קבלן (אמיר אורון)" → ["אמיר אורון"]
+  // דוגמה: "אמיר אורון - קבלן" → ["אמיר אורון"]
+  // דוגמה רגילה: "אבישי לייבנזון" → ["אבישי לייבנזון"]
+  function extractNameCandidates(raw) {
+    const out = [];
+    out.push(raw);
+    const inParens = raw.match(/[(](.*?)[)]/);
+    if (inParens) out.push(inParens[1]);
+    // הסרת קידומות שכיחות
+    out.push(raw.replace(/^\s*קבלן\s*[-–—:]?\s*/, '').trim());
+    out.push(raw.replace(/\s*[-–—]\s*קבלן\s*$/, '').trim());
+    // ניקוי סוגריים בכלל
+    out.push(raw.replace(/[()]/g, '').replace(/\s*קבלן\s*/, '').trim());
+    return [...new Set(out.filter(Boolean))];
   }
 
   function numOrNull(v) {
