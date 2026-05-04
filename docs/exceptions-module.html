@@ -441,12 +441,14 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="../payrollchecker/shared/month_config.js"></script>
-    <script src="../payrollchecker/shared/data_bus.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="shared/js/month_config.js"></script>
+    <script src="shared/js/data_bus.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="shared/js/supabase-config.js"></script>
     <script src="shared/js/supabase-client.js"></script>
     <script src="shared/js/auth-bar.js"></script>
+  <script src="shared/js/prevent-default-drop.js"></script>
     <script src="reserve/js/em-index-store.js"></script>
     <script>
         // ========== EXCEPTIONS DATA ==========
@@ -531,22 +533,119 @@
             const fileExtension = file.name.split('.').pop().toLowerCase();
 
             try {
+                let text = '';
                 if (fileExtension === 'pdf') {
                     const arrayBuffer = await file.arrayBuffer();
-                    const text = await extractTextFromPDF(arrayBuffer);
-                    parseExceptionsContent(text);
+                    text = await extractTextFromPDF(arrayBuffer);
+                } else if (fileExtension === 'docx') {
+                    if (typeof mammoth === 'undefined') {
+                        throw new Error('ספריית mammoth.js לא נטענה - לא ניתן לעבד .docx');
+                    }
+                    const arrayBuffer = await file.arrayBuffer();
+                    const result = await mammoth.extractRawText({ arrayBuffer });
+                    text = result.value;
+                } else if (fileExtension === 'doc') {
+                    throw new Error('פורמט .doc הישן לא נתמך. נא להמיר ל-.docx.');
                 } else {
-                    // txt / doc - קריאה כטקסט
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        parseExceptionsContent(e.target.result);
-                    };
-                    reader.readAsText(file);
+                    text = await file.text();
                 }
+                parseStructuredExceptions(text);
             } catch (error) {
                 document.getElementById('loadingSpinner').style.display = 'none';
                 alert(`שגיאה בעיבוד הקובץ: ${error.message}`);
             }
+        }
+
+        // ========== פארסר חכם למבנה דוח חריגים של פנדה ==========
+        // מבנה: כותרת מחלקה (מלמ/דרום/רפאל/מטה/תומר) → שם עובד → פסקאות בקשה
+        const DEPARTMENT_HEADERS = ['מלמ', 'מל"מ', 'דרום', 'רפאל', 'מטה', 'תומר', 'מנקה', 'קבלני משנה', 'רוה"מ'];
+
+        function isDepartmentHeader(line) {
+            const t = line.trim();
+            if (t.length > 12) return false;
+            return DEPARTMENT_HEADERS.includes(t);
+        }
+
+        // חיפוש שם עובד ברשימה (תומך גם בהיפוך first/last)
+        function matchEmployeeName(line, knownNames) {
+            const t = line.trim();
+            if (!t || t.length > 35 || t.length < 2) return null;
+            // התאמה ישירה
+            for (const name of knownNames) {
+                if (t === name) return name;
+                // גם הפוך
+                const parts = name.split(/\s+/).filter(Boolean);
+                if (parts.length >= 2 && t === parts.reverse().join(' ')) return name;
+            }
+            // התאמה רכה - שם בלבד אם יש "פרטי משפחה"
+            for (const name of knownNames) {
+                const partsA = name.split(/\s+/).filter(Boolean);
+                const partsB = t.split(/\s+/).filter(Boolean);
+                if (partsA.length === partsB.length && partsA.length >= 2) {
+                    const setA = new Set(partsA);
+                    if (partsB.every(p => setA.has(p))) return name;
+                }
+            }
+            return null;
+        }
+
+        function parseStructuredExceptions(rawText) {
+            exceptionsData = {};
+            employeesData = {};
+
+            // אתחל לכל העובדים ב-sampleEmployees כ"אין"
+            sampleEmployees.forEach(name => {
+                exceptionsData[name] = { hasRequest: false, request: 'אין', category: '', amount: 0, processed: false, department: '' };
+                employeesData[name] = { department: '', id: '' };
+            });
+
+            const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            let currentDept = '';
+            let currentEmployee = null;
+            let pendingRequest = [];
+
+            function flushPending() {
+                if (currentEmployee && pendingRequest.length > 0) {
+                    const text = pendingRequest.join(' • ');
+                    exceptionsData[currentEmployee] = {
+                        hasRequest: true,
+                        request: text,
+                        category: getCategoryFromRequest(text),
+                        amount: extractAmountFromRequest(text),
+                        processed: /\bבוצע\b|\bעודכן\b/.test(text),
+                        department: currentDept,
+                    };
+                    employeesData[currentEmployee] = { department: currentDept, id: '' };
+                }
+                pendingRequest = [];
+            }
+
+            lines.forEach(line => {
+                // 1. כותרת מחלקה
+                if (isDepartmentHeader(line)) {
+                    flushPending();
+                    currentEmployee = null;
+                    currentDept = line.trim();
+                    return;
+                }
+                // 2. שם עובד מהאינדקס
+                const matched = matchEmployeeName(line, sampleEmployees);
+                if (matched) {
+                    flushPending();
+                    currentEmployee = matched;
+                    return;
+                }
+                // 3. אחרת - חלק מהבקשה הנוכחית
+                if (currentEmployee) {
+                    pendingRequest.push(line);
+                }
+            });
+            flushPending();
+
+            displayExceptions();
+            updateSummaryStats();
+            showSections();
+            persistExceptionsData();
         }
 
         // חילוץ טקסט מ-PDF באמצעות PDF.js
