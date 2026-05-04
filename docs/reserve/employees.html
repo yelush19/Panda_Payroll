@@ -449,6 +449,16 @@
             (מסמנים בתיבות הסימון בטבלה)
           </span>
         </div>
+
+        <div class="bulk-bar" style="background:#ecfeff; border-color:#a5f3fc;">
+          <label>⏱️ תוספת גלובלית (שעות):</label>
+          <input type="number" step="0.01" min="0" id="bulkGlobalOT" placeholder="לדוג': 10">
+          <button class="btn" data-bulk-field="global_overtime_hours" data-bulk-mode="all">החל לעובדים שתסמני</button>
+          <button class="btn btn-secondary" id="loadKnownThresholds">טען סיפים ידועים (6 עובדים)</button>
+          <span style="font-size:0.82rem; color:#0e7490;">
+            (סף = שעות שהתוספת מכסה. מעליו - 125/150 משולמים)
+          </span>
+        </div>
       </details>
 
       <div class="bulk-bar" style="background:#fef9c3; border-color:#fde68a;">
@@ -481,6 +491,7 @@
               <th style="width:140px; background:#fff7ed;">סטטוס מיוחד</th>
               <th style="width:130px; background:#fff7ed;">מתאריך</th>
               <th style="width:130px; background:#fff7ed;">עד תאריך</th>
+              <th style="width:120px; background:#ecfeff;" title="תוספת גלובלית בגין שעות נוספות (סף)">תוספת גלובלית</th>
               <th>הערות</th>
             </tr>
           </thead>
@@ -607,6 +618,7 @@
             '<td><select class="cell-select" data-field="special_status">' + specialOptions + '</select></td>' +
             '<td><input class="cell-input" type="date" data-field="special_status_from" value="' + escapeAttr(emp.special_status_from) + '"></td>' +
             '<td><input class="cell-input" type="date" data-field="special_status_to" value="' + escapeAttr(emp.special_status_to) + '"></td>' +
+            '<td><input class="cell-input" type="number" step="0.01" min="0" data-field="global_overtime_hours" placeholder="—" value="' + (emp.global_overtime_hours == null ? '' : emp.global_overtime_hours) + '"></td>' +
             '<td><input class="cell-input" data-field="notes" value="' + escapeAttr(emp.notes) + '"></td>' +
           '</tr>';
       }).join('');
@@ -666,17 +678,19 @@
     // ====== פעולות מרובות גנריות ======
     // מיפוי field → input id שממנו נלקח הערך
     const BULK_INPUT_IDS = {
-      start_date:    'bulkStartDate',
-      end_date:      'bulkEndDate',
-      employee_type: 'bulkEmployeeType',
-      department:    'bulkDepartment',
+      start_date:             'bulkStartDate',
+      end_date:               'bulkEndDate',
+      employee_type:          'bulkEmployeeType',
+      department:             'bulkDepartment',
+      global_overtime_hours:  'bulkGlobalOT',
     };
 
     const FIELD_LABELS = {
-      start_date:    'תאריך תחילה',
-      end_date:      'תאריך סיום',
-      employee_type: 'סוג עובד',
-      department:    'מחלקה',
+      start_date:             'תאריך תחילה',
+      end_date:               'תאריך סיום',
+      employee_type:          'סוג עובד',
+      department:             'מחלקה',
+      global_overtime_hours:  'תוספת גלובלית',
     };
 
     function applyBulk(field, mode) {
@@ -689,26 +703,72 @@
       const all = EmIndexStore.loadAll();
       if (all.length === 0) return;
 
-      const target = mode === 'empty'
-        ? all.filter(e => !e[field])
-        : all;
+      // לתוספת גלובלית: רק לעובדים שסומנו ידנית (כי זה רלוונטי לעובדים ספציפיים)
+      let target;
+      if (field === 'global_overtime_hours') {
+        const selectedNos = Array.from(document.querySelectorAll('.row-select:checked')).map(cb => cb.dataset.emp);
+        if (selectedNos.length === 0) {
+          showAlert('error', '❌ לא סומנו עובדים. סמני בתיבות הסימון את העובדים עם תוספת גלובלית.');
+          return;
+        }
+        target = all.filter(e => selectedNos.includes(String(e.employee_no)));
+      } else if (mode === 'empty') {
+        target = all.filter(e => !e[field]);
+      } else {
+        target = all;
+      }
 
       if (target.length === 0) {
-        showAlert('info', 'ℹ️ אין עובדים ללא "' + FIELD_LABELS[field] + '" — אין מה לעדכן.');
+        showAlert('info', 'ℹ️ אין עובדים מתאימים — אין מה לעדכן.');
         return;
       }
 
-      const action = mode === 'empty'
-        ? 'להגדיר "' + FIELD_LABELS[field] + '" = ' + value + ' רק ל-' + target.length + ' עובדים שאין להם ערך?'
-        : 'להגדיר "' + FIELD_LABELS[field] + '" = ' + value + ' לכל ' + target.length + ' העובדים? (ידרוס ערכים קיימים)';
+      const action = (field === 'global_overtime_hours')
+        ? 'להגדיר "' + FIELD_LABELS[field] + '" = ' + value + ' שעות ל-' + target.length + ' עובדים שסומנו?'
+        : (mode === 'empty'
+            ? 'להגדיר "' + FIELD_LABELS[field] + '" = ' + value + ' רק ל-' + target.length + ' עובדים שאין להם ערך?'
+            : 'להגדיר "' + FIELD_LABELS[field] + '" = ' + value + ' לכל ' + target.length + ' העובדים? (ידרוס ערכים קיימים)');
       if (!confirm(action)) return;
 
-      target.forEach(e => EmIndexStore.update(e.employee_no, { [field]: value }));
+      // לתוספת גלובלית - ערך מספרי
+      const finalVal = (field === 'global_overtime_hours') ? Number(value) : value;
+      target.forEach(e => EmIndexStore.update(e.employee_no, { [field]: finalVal }));
       renderTable();
       flashSaved('✓ עודכנו ' + target.length + ' עובדים');
       clearAlert();
       showAlert('success', '✅ הוגדר "' + FIELD_LABELS[field] + '" = ' + value + ' ל-' + target.length + ' עובדים.');
     }
+
+    // טעינת סיפים ידועים לרשימת ה-6 העובדים
+    const KNOWN_OT_THRESHOLDS = {
+      '62':  { name: 'דור לוי',           threshold: 10.66 },
+      '64':  { name: 'צחי חנגל',          threshold: 10 },
+      '94':  { name: 'ניב טל',            threshold: 6 },
+      '97':  { name: 'משה בורך',          threshold: 13.5 },
+      '106': { name: 'אוראל שווקי',       threshold: 10 },
+      '115': { name: 'יענקל מונטבולינסקי', threshold: 10 },
+    };
+
+    function loadKnownThresholds() {
+      const all = EmIndexStore.loadAll();
+      const updates = [];
+      Object.entries(KNOWN_OT_THRESHOLDS).forEach(([empNo, info]) => {
+        const exists = all.some(e => String(e.employee_no) === empNo);
+        if (exists) updates.push({ no: empNo, ...info });
+      });
+      if (updates.length === 0) {
+        showAlert('warn', '⚠️ אף אחד מ-6 העובדים הידועים לא קיים באינדקס. ייבאי קובץ Meckano קודם.');
+        return;
+      }
+      const summary = updates.map(u => '  ' + u.no + ' ' + u.name + ' → ' + u.threshold + ' שעות').join('\n');
+      if (!confirm('לטעון סיפי תוספת גלובלית ל-' + updates.length + ' עובדים:\n\n' + summary + '\n\n(ידרוס ערכים קיימים)')) return;
+      updates.forEach(u => EmIndexStore.update(u.no, { global_overtime_hours: u.threshold }));
+      renderTable();
+      flashSaved('✓ טענו סיפים ל-' + updates.length + ' עובדים');
+      clearAlert();
+      showAlert('success', '✅ נטענו סיפי תוספת גלובלית ל-' + updates.length + ' עובדים.');
+    }
+    $('#loadKnownThresholds').addEventListener('click', loadKnownThresholds);
 
     // האזנה גנרית לכל הכפתורים עם data-bulk-field
     document.querySelectorAll('button[data-bulk-field]').forEach(btn => {
