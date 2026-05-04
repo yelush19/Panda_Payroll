@@ -152,6 +152,107 @@ window.EmployeeRules = (function() {
                        Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) / ms);
   }
 
+  // ===== חוקי שעתיים =====
+  // עובד שעתי שלא משלים 42 שעות בשבוע - אין לו שעות נוספות (הכל 100%)
+  const HOURLY_OVERTIME_WEEKLY_THRESHOLD_HOURS = 42;
+
+  // עובד שעתי זכאי לתשלום ימי חג רק לאחר 3 חודשי וותק (חוק ישראלי)
+  const HOURLY_HOLIDAY_PAY_TENURE_MONTHS = 3;
+
+  function isHourlyEligibleForHolidayPay(employee, periodYear, periodMonth) {
+    if (!employee || employee.employee_type !== 'שעתי') return false;
+    if (!employee.start_date) return false; // לא נדע - לדרוש ידני
+    const start = new Date(employee.start_date);
+    if (isNaN(start.getTime())) return false;
+    const periodStart = new Date(periodYear, periodMonth - 1, 1);
+    const monthsDiff = (periodStart.getFullYear() - start.getFullYear()) * 12 +
+                       (periodStart.getMonth() - start.getMonth());
+    return monthsDiff >= HOURLY_HOLIDAY_PAY_TENURE_MONTHS;
+  }
+
+  // ===== ספירות מתוך נתונים יומיים (תואם נוסחאות אקסל המעודכנות) =====
+  // חל"ת/היעדרות נספרים רק לימי עבודה - לא סופ"ש (תוקן ע"י יילנה ב-3 בלוקים).
+  // הנוסחה המקבילה ב-Excel: SUMPRODUCT(--ISNUMBER(SEARCH("חל""ת",event))*(sug<>"סופ""ש"))
+
+  function countEventOnBusinessDays(days, eventSubstring) {
+    if (!Array.isArray(days)) return 0;
+    let count = 0;
+    days.forEach(d => {
+      if (!d) return;
+      const event = String(d.event || '').trim();
+      const sug   = String(d.day_type || '').trim();
+      if (sug === 'סופ"ש') return;                    // סופ"ש לא נספר
+      if (event && event.indexOf(eventSubstring) !== -1) count++;
+    });
+    return count;
+  }
+
+  function countChalatBusinessDays(days)   { return countEventOnBusinessDays(days, 'חל"ת'); }
+  function countAbsenceBusinessDays(days)  { return countEventOnBusinessDays(days, 'היעדרות'); }
+
+  // ===== חופש בע.חג / חוה"מ =====
+  // נספרים רק לימים ש:
+  //  1. סוג היום הוא ערב חג / חול המועד
+  //  2. אין כניסה ויציאה (לא עבד)
+  //  3. אירוע אינו: חל"ת, מילואים, מחלה, תאונת עבודה, חופש ללא תשלום, היעדרות
+  //  4. אירוע אינו "חופש" (נספר בנפרד כ-"חופש קיים" - אחרת ספירה כפולה)
+  // חופש בע.חג: כל יום מתאים נספר כ-0.5; חופש בחוה"מ: כל יום נספר כ-1.
+
+  const VACATION_DAY_EVENT_BLOCKERS = [
+    'חופש',          // אם סומן 'חופש' זה כבר 'חופש קיים' - לא לספור פעמיים
+    'חל"ת',
+    'מילואים',
+    'מחלה',
+    'תאונת עבודה',
+    'חופש ללא תשלום',
+    'היעדרות',
+  ];
+
+  function isCleanNonWorkingDay(d) {
+    const entry = String(d.entry || '').trim();
+    const exit  = String(d.exit  || '').trim();
+    if (entry || exit) return false;                  // עבד - לא נספר
+    const event = String(d.event || '').trim();
+    if (!event) return true;
+    return !VACATION_DAY_EVENT_BLOCKERS.some(blocker => event.indexOf(blocker) !== -1);
+  }
+
+  function countVacationOnEveHolidays(days) {
+    if (!Array.isArray(days)) return 0;
+    let count = 0;
+    days.forEach(d => {
+      if (!d) return;
+      const sug = String(d.day_type || '').trim();
+      if (sug !== 'ערב חג') return;
+      if (isCleanNonWorkingDay(d)) count++;
+    });
+    return count * 0.5;
+  }
+
+  function countVacationOnCholHaMoed(days) {
+    if (!Array.isArray(days)) return 0;
+    let count = 0;
+    days.forEach(d => {
+      if (!d) return;
+      const sug = String(d.day_type || '').trim();
+      if (sug !== 'חול המועד') return;
+      if (isCleanNonWorkingDay(d)) count++;
+    });
+    return count * 1;
+  }
+
+  // ספירת ימי חג שמופיעים ביום מעובד (סוג=חג). שימושי לעובדים שעתיים שמקבלים חגים בנפרד.
+  function countHolidayDaysFromBlock(days) {
+    if (!Array.isArray(days)) return 0;
+    let count = 0;
+    days.forEach(d => {
+      if (!d) return;
+      const sug = String(d.day_type || '').trim();
+      if (sug === 'חג') count++;
+    });
+    return count;
+  }
+
   function getRules(employeeType) {
     if (!employeeType || !RULES[employeeType]) return RULES[DEFAULT_TYPE];
     return RULES[employeeType];
@@ -169,6 +270,14 @@ window.EmployeeRules = (function() {
   return {
     getRules, shouldIncludeInReport, listTypes,
     calculateWorkAccidentStatus,
+    countChalatBusinessDays,
+    countAbsenceBusinessDays,
+    countVacationOnEveHolidays,
+    countVacationOnCholHaMoed,
+    countHolidayDaysFromBlock,
+    isHourlyEligibleForHolidayPay,
+    HOURLY_OVERTIME_WEEKLY_THRESHOLD_HOURS,
+    HOURLY_HOLIDAY_PAY_TENURE_MONTHS,
     WORK_ACCIDENT_NII_THRESHOLD_DAYS,
     RULES, DEFAULT_TYPE,
   };
