@@ -114,7 +114,7 @@ window.UsedVacationEngine = (function() {
 
       rows.push({
         employee_no:        block.employee_no,
-        employee_name:      emp && emp.full_name ? emp.full_name : block.employee_name,
+        employee_name:      block.employee_name || (emp && emp.full_name) || '',
         department:         (emp && emp.department) ? emp.department : (block.department || ''),
         vacation_existing:  vacExisting,
         vacation_eve:       vacEve,

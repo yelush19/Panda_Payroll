@@ -132,7 +132,7 @@ window.ClosureMissingEngine = (function() {
 
     return {
       employee_no:    block.employee_no,
-      employee_name:  employee && employee.full_name ? employee.full_name : block.employee_name,
+      employee_name:  block.employee_name || (employee && employee.full_name) || '',
       department:     (employee && employee.department) ? employee.department : (block.department || ''),
       employee_type:  employee && employee.employee_type ? employee.employee_type : 'גלובלי',
       issues,
