@@ -266,6 +266,23 @@
           }
         }
 
+        // הוספת CTA לדוחות אחרי קליטה מוצלחת
+        const periodParam = '?period=' + meta.period;
+        const nextStepsHtml =
+          '<div style="background:linear-gradient(90deg,#ecfdf5,#f0fdf4); border:1px solid #86efac; border-radius:10px; padding:16px 18px; margin-top:14px;">' +
+            '<div style="font-weight:700; color:#047857; margin-bottom:10px; font-size:1rem;">' +
+              '🎯 מה הלאה?' +
+            '</div>' +
+            '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+              '<a href="days-summary.html" style="background:#10b981; color:#fff; padding:8px 14px; border-radius:7px; text-decoration:none; font-size:0.92rem; font-weight:600;">📊 דוח 1: סיכום ימים</a>' +
+              '<a href="worksheet.html" style="background:#10b981; color:#fff; padding:8px 14px; border-radius:7px; text-decoration:none; font-size:0.92rem; font-weight:600;">📋 דוח 2: נייר עבודה</a>' +
+              '<a href="closure-missing.html" style="background:#ef4444; color:#fff; padding:8px 14px; border-radius:7px; text-decoration:none; font-size:0.92rem; font-weight:600;">🔴 דוח 3: חוסר סגירה</a>' +
+              '<a href="used-vacation.html" style="background:#8b5cf6; color:#fff; padding:8px 14px; border-radius:7px; text-decoration:none; font-size:0.92rem; font-weight:600;">🌴 דוח 4: חופשה מנוצלת</a>' +
+              '<a href="../reserve/employees.html" style="background:#06b6d4; color:#fff; padding:8px 14px; border-radius:7px; text-decoration:none; font-size:0.92rem; font-weight:600;">👥 אינדקס עובדים</a>' +
+              '<a href="../index.html" style="background:transparent; color:#047857; border:1.5px solid #047857; padding:7px 14px; border-radius:7px; text-decoration:none; font-size:0.92rem; font-weight:600;">🏠 דף הבית</a>' +
+            '</div>' +
+          '</div>';
+
         $('#summaryArea').innerHTML =
           '<div class="summary-grid">' +
             statBox('עובדים', result.total_blocks) +
@@ -274,6 +291,7 @@
             statBox('בלוקים עם הערות', blocksWithUnknowns) +
             statBox('גודל בארכיון', formatBytes(meta.size_bytes)) +
           '</div>' +
+          nextStepsHtml +
           (blocksWithUnknowns > 0 ?
             '<div class="alert alert-warn" style="margin-top:14px;">' +
               '⚠️ ' + blocksWithUnknowns + ' בלוקים מכילים הערות יד-אדם בכותרות (כגון "תאונת עבודה - כל החודש"). ' +
