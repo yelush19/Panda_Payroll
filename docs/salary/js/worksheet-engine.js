@@ -36,6 +36,8 @@ window.WorksheetEngine = (function() {
     { key: 'hours_125',     label: 'שעות 125%',           group: 'hours' },
     { key: 'hours_150',     label: 'שעות 150%',           group: 'hours' },
     { key: 'miluim_work_hours', label: 'שעות עבודה במילואים', group: 'hours' },
+    { key: 'global_overtime_hours', label: 'תוספת גלובלית', group: 'hours' },
+    { key: 'global_overtime_used',  label: 'ניצול תוספת',   group: 'hours' },
 
     // קבוצת קיזוזים (אדום)
     { key: 'sick_kizuz',    label: 'מחלה לקיזוז',  group: 'deduct' },
@@ -78,6 +80,17 @@ window.WorksheetEngine = (function() {
       ? accident.days_in_this_month
       : (events.work_accident || 0);
 
+    // החלת תוספת גלובלית על 100/125/150 (אם הוגדר באינדקס)
+    const globalThreshold = (employee && Number(employee.global_overtime_hours)) || 0;
+    const otAdj = (typeof EmployeeRules !== 'undefined')
+      ? EmployeeRules.applyGlobalBonusThreshold(
+          summary.hours_125 || 0,
+          summary.hours_150 || 0,
+          summary.hours_100 || 0,
+          globalThreshold
+        )
+      : { effective_100: summary.hours_100 || 0, effective_125: summary.hours_125 || 0, effective_150: summary.hours_150 || 0, absorbed_by_bonus: 0 };
+
     const daysPaid = summary.days_paid || 0;
 
     // צפוי = max_work_days - חל"ת - היעדרות - מחלה לקיזוז
@@ -103,10 +116,12 @@ window.WorksheetEngine = (function() {
       miluim:             events.miluim             || 0,
 
       hours_paid:         summary.hours_paid || 0,
-      hours_100:          summary.hours_100 || 0,
-      hours_125:          summary.hours_125 || 0,
-      hours_150:          summary.hours_150 || 0,
+      hours_100:          otAdj.effective_100,
+      hours_125:          otAdj.effective_125,
+      hours_150:          otAdj.effective_150,
       miluim_work_hours:  summary.miluim_work_hours || 0,
+      global_overtime_hours: globalThreshold || 0,
+      global_overtime_used:  otAdj.absorbed_by_bonus,
 
       sick_kizuz:         null,                      // Phase F
       chalat:             chalatComputed,

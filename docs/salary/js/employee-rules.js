@@ -241,6 +241,59 @@ window.EmployeeRules = (function() {
     return count * 1;
   }
 
+  // ===== תוספת גלובלית בגין שעות נוספות =====
+  // עובדים מסוימים מקבלים תוספת גלובלית קבועה שמכסה כמות שעות נוספות (סף).
+  // הלוגיקה (לפי הסבר יילנה):
+  //   1. אם total(125+150) <= threshold → כל השעות מועברות ל-100% (התוספת מכסה אותן).
+  //   2. אם total(125+150) >  threshold → רק העודף נשאר ב-125/150,
+  //      וההפצה פרופורציונלית לפי היחס המקורי.
+  //
+  // input:   reported125, reported150, reported100, threshold
+  // output:  { effective_100, effective_125, effective_150, absorbed_by_bonus, total_extra }
+
+  function applyGlobalBonusThreshold(reported125, reported150, reported100, threshold) {
+    const r125 = Number(reported125) || 0;
+    const r150 = Number(reported150) || 0;
+    const r100 = Number(reported100) || 0;
+    const t    = Number(threshold)   || 0;
+    const totalExtra = r125 + r150;
+
+    if (t <= 0) {
+      return {
+        effective_100: r100,
+        effective_125: r125,
+        effective_150: r150,
+        absorbed_by_bonus: 0,
+        total_extra: totalExtra,
+      };
+    }
+
+    if (totalExtra <= t) {
+      // כל ה-125/150 נבלעים בתוספת ועוברים ל-100%
+      return {
+        effective_100: round2(r100 + totalExtra),
+        effective_125: 0,
+        effective_150: 0,
+        absorbed_by_bonus: round2(totalExtra),
+        total_extra: round2(totalExtra),
+      };
+    }
+
+    // יש עודף - מחלקים פרופורציונלי בין 125 ל-150
+    const excess = totalExtra - t;
+    const ratio125 = totalExtra > 0 ? r125 / totalExtra : 0;
+    const ratio150 = totalExtra > 0 ? r150 / totalExtra : 0;
+    return {
+      effective_100: round2(r100 + t),
+      effective_125: round2(excess * ratio125),
+      effective_150: round2(excess * ratio150),
+      absorbed_by_bonus: round2(t),
+      total_extra: round2(totalExtra),
+    };
+  }
+
+  function round2(n) { return parseFloat((+n || 0).toFixed(2)); }
+
   // ספירת ימי חג שמופיעים ביום מעובד (סוג=חג). שימושי לעובדים שעתיים שמקבלים חגים בנפרד.
   function countHolidayDaysFromBlock(days) {
     if (!Array.isArray(days)) return 0;
@@ -276,6 +329,7 @@ window.EmployeeRules = (function() {
     countVacationOnCholHaMoed,
     countHolidayDaysFromBlock,
     isHourlyEligibleForHolidayPay,
+    applyGlobalBonusThreshold,
     HOURLY_OVERTIME_WEEKLY_THRESHOLD_HOURS,
     HOURLY_HOLIDAY_PAY_TENURE_MONTHS,
     WORK_ACCIDENT_NII_THRESHOLD_DAYS,

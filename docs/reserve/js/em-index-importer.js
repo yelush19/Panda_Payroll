@@ -96,6 +96,11 @@ window.EmIndexImporter = (function() {
         special_status:      '',
         special_status_from: '',
         special_status_to:   '',
+        // תוספת גלובלית בגין שעות נוספות - סף שעות שהתוספת הקבועה מכסה.
+        // אם total(125+150) <= הסף → כל השעות ל-100%
+        // אם total(125+150) >  הסף → רק העודף נשאר, פרופורציונלית בין 125/150
+        // 0 / null = אין תוספת גלובלית (כל 125/150 משולמים)
+        global_overtime_hours: null,
         notes:         '',
 
         source: 'em_index',
