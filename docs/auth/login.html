@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>כניסה למערכת | פנדה טק</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Heebo', Arial, sans-serif;
+      background: linear-gradient(135deg, #30bced 0%, #528163 100%);
+      color: #2b486a; direction: rtl;
+      margin: 0; padding: 20px; min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-box {
+      background: #fff; border-radius: 16px;
+      padding: 36px 40px; max-width: 420px; width: 100%;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.18);
+    }
+    .login-box h1 { margin: 0 0 6px 0; font-size: 1.5rem; color: #2b486a; }
+    .login-box .sub { color: #6b7280; font-size: 0.92rem; margin-bottom: 24px; }
+    .tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; }
+    .tab {
+      padding: 10px 16px; cursor: pointer; border: none; background: none;
+      font-family: inherit; font-size: 0.95rem; font-weight: 600; color: #6b7280;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
+    }
+    .tab.active { color: #30bced; border-bottom-color: #30bced; }
+    label { display: block; margin: 14px 0 6px; font-size: 0.88rem; font-weight: 600; color: #374151; }
+    input {
+      width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1;
+      border-radius: 8px; font-family: inherit; font-size: 0.95rem;
+    }
+    input:focus { outline: none; border-color: #30bced; }
+    .btn {
+      width: 100%; background: #30bced; color: #fff; border: 0;
+      padding: 11px 16px; border-radius: 8px; cursor: pointer;
+      font-family: inherit; font-size: 1rem; font-weight: 600;
+      margin-top: 18px;
+    }
+    .btn:hover { background: #1ea1d1; }
+    .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+    .alert { padding: 11px 14px; border-radius: 8px; margin-top: 14px; font-size: 0.9rem; }
+    .alert-error   { background: #fde8e8; color: #9b1c1c; border: 1px solid #f8b4b4; }
+    .alert-success { background: #def7ec; color: #03543f; border: 1px solid #84e1bc; }
+    .alert-info    { background: #e1effe; color: #1e429f; border: 1px solid #a4cafe; }
+    .footer-note { margin-top: 22px; font-size: 0.82rem; color: #9ca3af; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h1>🔐 כניסה למערכת</h1>
+    <div class="sub">פנדה טק - מערכת בדיקת תלושי שכר</div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="login">כניסה</button>
+      <button class="tab" data-tab="signup">הרשמה</button>
+    </div>
+
+    <!-- Login form -->
+    <form id="loginForm">
+      <label for="loginEmail">אימייל</label>
+      <input type="email" id="loginEmail" required autocomplete="email">
+      <label for="loginPassword">סיסמה</label>
+      <input type="password" id="loginPassword" required autocomplete="current-password">
+      <button type="submit" class="btn" id="loginBtn">כניסה</button>
+    </form>
+
+    <!-- Signup form -->
+    <form id="signupForm" style="display:none;">
+      <label for="signupName">שם מלא</label>
+      <input type="text" id="signupName" required autocomplete="name">
+      <label for="signupEmail">אימייל</label>
+      <input type="email" id="signupEmail" required autocomplete="email">
+      <label for="signupPassword">סיסמה (לפחות 6 תווים)</label>
+      <input type="password" id="signupPassword" required minlength="6" autocomplete="new-password">
+      <button type="submit" class="btn" id="signupBtn">צרי חשבון</button>
+    </form>
+
+    <div id="alertArea"></div>
+
+    <div class="footer-note">
+      הגישה מאובטחת. הסיסמה מוצפנת אצל Supabase.
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../shared/js/supabase-config.js"></script>
+  <script src="../shared/js/supabase-client.js"></script>
+  <script>
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+
+    // אם כבר מחובר - הפנה לדף הבית
+    SB.getSession().then(session => {
+      if (session) {
+        const params = new URLSearchParams(location.search);
+        const next = params.get('next');
+        location.href = next || '../index.html';
+      }
+    });
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        $('#loginForm').style.display  = t.dataset.tab === 'login'  ? 'block' : 'none';
+        $('#signupForm').style.display = t.dataset.tab === 'signup' ? 'block' : 'none';
+        $('#alertArea').innerHTML = '';
+      });
+    });
+
+    function showAlert(level, msg) {
+      $('#alertArea').innerHTML = '<div class="alert alert-' + level + '">' + msg + '</div>';
+    }
+
+    $('#loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = $('#loginBtn'); btn.disabled = true; btn.textContent = '⏳ מתחבר...';
+      try {
+        const email = $('#loginEmail').value.trim();
+        const password = $('#loginPassword').value;
+        await SB.signInWithPassword(email, password);
+        showAlert('success', '✅ התחברות הצליחה. מעביר...');
+        const params = new URLSearchParams(location.search);
+        const next = params.get('next');
+        setTimeout(() => { location.href = next || '../index.html'; }, 600);
+      } catch (err) {
+        showAlert('error', '❌ ' + translateError(err.message));
+        btn.disabled = false; btn.textContent = 'כניסה';
+      }
+    });
+
+    $('#signupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = $('#signupBtn'); btn.disabled = true; btn.textContent = '⏳ יוצרת חשבון...';
+      try {
+        const name = $('#signupName').value.trim();
+        const email = $('#signupEmail').value.trim();
+        const password = $('#signupPassword').value;
+        const result = await SB.signUp(email, password, name);
+        if (result.user && !result.session) {
+          showAlert('info',
+            '📧 חשבון נוצר. ב-Supabase ייתכן שצריך אימות אימייל. ' +
+            'בדקי את תיבת הדואר. אם לא - תיכנסי שוב דרך טאב "כניסה".');
+        } else if (result.session) {
+          showAlert('success', '✅ נרשמת והתחברת. מעביר...');
+          setTimeout(() => { location.href = '../index.html'; }, 800);
+        }
+        btn.disabled = false; btn.textContent = 'צרי חשבון';
+      } catch (err) {
+        showAlert('error', '❌ ' + translateError(err.message));
+        btn.disabled = false; btn.textContent = 'צרי חשבון';
+      }
+    });
+
+    function translateError(msg) {
+      const m = String(msg || '').toLowerCase();
+      if (m.includes('invalid login')) return 'אימייל או סיסמה לא נכונים.';
+      if (m.includes('email not confirmed')) return 'יש לאשר את האימייל לפני הכניסה.';
+      if (m.includes('user already')) return 'משתמש קיים. נסי להתחבר במקום.';
+      if (m.includes('password should')) return 'סיסמה חלשה מדי (לפחות 6 תווים).';
+      return msg;
+    }
+  </script>
+</body>
+</html>
