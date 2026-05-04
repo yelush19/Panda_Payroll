@@ -163,6 +163,42 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_period ON public.audit_log(period);
 CREATE INDEX IF NOT EXISTS idx_audit_log_created ON public.audit_log(created_at DESC);
 
 -- =============================================================
+-- 5b. Payslip Archives (Shiklulit/TAMAL data per month)
+--     מקבילו של meckano_archives — לתלושי השכר משיקלולית.
+-- =============================================================
+
+CREATE TABLE IF NOT EXISTS public.payslip_archives (
+    id          BIGSERIAL PRIMARY KEY,
+    period      TEXT NOT NULL,                    -- 'YYYY-MM'
+    year        INT  NOT NULL,
+    month       INT  NOT NULL CHECK (month BETWEEN 1 AND 12),
+
+    -- 4 דוחות שיקלולית — כל אחד JSONB עם {meta, employees, components_dict}
+    components_report           JSONB,            -- "רכיבים לעובדים"
+    imputed_income_report       JSONB,            -- "הכנסות זקופות"
+    voluntary_deductions_report JSONB,            -- "ניכויי רשות"
+    absences_report             JSONB,            -- "דו"ח העדרויות"
+
+    -- מילון רכיבים מאוחד מכל הדוחות (קוד → שם)
+    all_components_dict JSONB,
+
+    employee_count INT,
+
+    -- אודיט
+    uploaded_at TIMESTAMPTZ DEFAULT now(),
+    uploaded_by UUID REFERENCES auth.users(id),
+
+    UNIQUE(period)                                -- חודש = רשומה אחת. ייבוא מחדש מעדכן.
+);
+
+CREATE INDEX IF NOT EXISTS idx_payslip_archives_period ON public.payslip_archives(period);
+CREATE INDEX IF NOT EXISTS idx_payslip_archives_year_month ON public.payslip_archives(year, month);
+
+-- RLS
+ALTER TABLE public.payslip_archives ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "auth all payslip" ON public.payslip_archives FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- =============================================================
 -- 6. Reserve Module Tables (Phase H — for future)
 -- =============================================================
 

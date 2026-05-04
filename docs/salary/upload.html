@@ -218,8 +218,8 @@
           return;
         }
 
-        // Save to archive
-        const meta = MeckanoArchiveStore.saveArchive(period.year, period.month, {
+        // Save to archive (+ push לרקע ל-Supabase אם מחובר)
+        const meta = MeckanoArchiveStore.saveArchiveAndSync(period.year, period.month, {
           file_name:     file.name,
           total_blocks:  result.total_blocks,
           sheet_name:    result.sheet_name,
@@ -502,6 +502,16 @@
 
     // אתחול
     renderArchive();
+
+    // סנכרון אינדקס מ-Supabase ברקע (אם מחובר)
+    if (typeof MeckanoArchiveStore.syncIndexFromSupabase === 'function') {
+      MeckanoArchiveStore.syncIndexFromSupabase().then(r => {
+        if (r.ok && r.added > 0) {
+          console.log('Meckano SB sync: ' + r.added + ' חודשים חדשים מהשרת');
+          renderArchive();
+        }
+      });
+    }
   </script>
 </body>
 </html>

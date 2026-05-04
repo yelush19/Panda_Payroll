@@ -230,15 +230,129 @@ window.PayslipStore = (function() {
     return { status: status, matches: matches.slice(0, 5), notes: '' };
   }
 
+  // ===== Supabase sync =====
+
+  function isSupabaseAvailable() {
+    return typeof SB !== 'undefined' && SB && SB.client;
+  }
+
+  async function pushArchiveToSupabase(year, month) {
+    if (!isSupabaseAvailable()) return { ok: false, reason: 'no_client' };
+    const session = await SB.getSession();
+    if (!session) return { ok: false, reason: 'no_session' };
+    const data = load(year, month);
+    if (!data) return { ok: false, reason: 'no_local_data' };
+    const reports = data.reports || {};
+    const payload = {
+      period: periodKey(year, month),
+      year: year,
+      month: month,
+      components_report:           reports.components || null,
+      imputed_income_report:       reports.imputed_income || null,
+      voluntary_deductions_report: reports.voluntary_deductions || null,
+      absences_report:             reports.absences || null,
+      all_components_dict:         data.all_components_dict || {},
+      employee_count:              data.employee_count || 0,
+    };
+    const { data: rows, error } = await SB.client
+      .from('payslip_archives')
+      .upsert(payload, { onConflict: 'period' })
+      .select();
+    if (error) {
+      console.warn('Payslip push to Supabase failed:', error);
+      return { ok: false, reason: 'error', error };
+    }
+    return { ok: true, period: payload.period };
+  }
+
+  async function syncIndexFromSupabase() {
+    if (!isSupabaseAvailable()) return { ok: false, reason: 'no_client' };
+    const session = await SB.getSession();
+    if (!session) return { ok: false, reason: 'no_session' };
+    const { data, error } = await SB.client
+      .from('payslip_archives')
+      .select('period, year, month, employee_count, uploaded_at')
+      .order('period', { ascending: false });
+    if (error) {
+      console.warn('Payslip index sync error:', error);
+      return { ok: false, reason: 'error', error };
+    }
+    const localIdx = loadIndex();
+    const localPeriods = new Set(localIdx.map(m => m.period));
+    let added = 0;
+    (data || []).forEach(remote => {
+      if (!localPeriods.has(remote.period)) {
+        localIdx.push({
+          year: remote.year,
+          month: remote.month,
+          period: remote.period,
+          saved_at: remote.uploaded_at,
+          employee_count: remote.employee_count,
+          size_bytes: 0,
+          remote_only: true,
+        });
+        added++;
+      }
+    });
+    localIdx.sort((a, b) => b.period.localeCompare(a.period));
+    saveIndex(localIdx);
+    return { ok: true, total: (data || []).length, added: added };
+  }
+
+  async function fetchArchiveFromSupabase(year, month) {
+    if (!isSupabaseAvailable()) return { ok: false, reason: 'no_client' };
+    const session = await SB.getSession();
+    if (!session) return { ok: false, reason: 'no_session' };
+    const { data, error } = await SB.client
+      .from('payslip_archives')
+      .select('*')
+      .eq('period', periodKey(year, month))
+      .maybeSingle();
+    if (error) {
+      console.warn('Payslip fetch from Supabase error:', error);
+      return { ok: false, reason: 'error', error };
+    }
+    if (!data) return { ok: false, reason: 'not_found' };
+    save(year, month, {
+      reports: {
+        components: data.components_report,
+        imputed_income: data.imputed_income_report,
+        voluntary_deductions: data.voluntary_deductions_report,
+        absences: data.absences_report,
+      },
+      all_components_dict: data.all_components_dict || {},
+      employee_count: data.employee_count || 0,
+    });
+    return { ok: true, period: data.period };
+  }
+
+  // שמירה + push אוטומטי
+  function saveAndSync(year, month, data) {
+    const meta = save(year, month, data);
+    if (isSupabaseAvailable()) {
+      pushArchiveToSupabase(year, month).then(r => {
+        if (r.ok) console.log('Payslip SB push: ' + r.period);
+        else console.warn('Payslip SB push:', r.reason);
+      });
+    }
+    return meta;
+  }
+
   return {
     loadIndex: loadIndex,
     load: load,
     save: save,
+    saveAndSync: saveAndSync,
     remove: remove,
     buildPayload: buildPayload,
     getEmployeeComponents: getEmployeeComponents,
     getEmployeeAbsences: getEmployeeAbsences,
     verifyException: verifyException,
     periodKey: periodKey,
+    // Supabase
+    pushArchiveToSupabase: pushArchiveToSupabase,
+    syncIndexFromSupabase: syncIndexFromSupabase,
+    fetchArchiveFromSupabase: fetchArchiveFromSupabase,
+    isSupabaseAvailable: isSupabaseAvailable,
   };
 })();

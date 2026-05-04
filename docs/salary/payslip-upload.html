@@ -366,9 +366,10 @@
 
       try {
         const payload = PayslipStore.buildPayload(parsed);
-        const meta = PayslipStore.save(year, month, payload);
+        const meta = PayslipStore.saveAndSync(year, month, payload);
+        const sbNote = PayslipStore.isSupabaseAvailable() ? ' • מסונכרן ל-Supabase ברקע ☁️' : '';
         showAlert('✅ נשמר בהצלחה: ' + meta.employee_count + ' עובדים לחודש ' + meta.period +
-          ' (' + (meta.size_bytes / 1024).toFixed(1) + ' KB)', 'success');
+          ' (' + (meta.size_bytes / 1024).toFixed(1) + ' KB)' + sbNote, 'success');
         renderArchive();
       } catch (e) {
         showAlert('שגיאת שמירה: ' + e.message, 'error');
@@ -432,6 +433,16 @@
     }
 
     renderArchive();
+
+    // סנכרון אינדקס מ-Supabase ברקע (אם מחובר)
+    if (typeof PayslipStore.syncIndexFromSupabase === 'function') {
+      PayslipStore.syncIndexFromSupabase().then(r => {
+        if (r.ok && r.added > 0) {
+          console.log('Payslip SB sync: ' + r.added + ' חודשים חדשים מהשרת');
+          renderArchive();
+        }
+      });
+    }
   </script>
 </body>
 </html>
