@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>דוח 3: חוסר סגירה | פנדה טק</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Heebo', Arial, sans-serif;
+      background: #e9eef3; color: #2b486a;
+      direction: rtl; margin: 0; padding: 20px; min-height: 100vh;
+    }
+    .container { max-width: 1300px; margin: 0 auto; }
+    .header {
+      background: linear-gradient(90deg, #ef4444 0%, #f59e0b 100%);
+      color: #fff; border-radius: 14px;
+      padding: 22px 28px; margin-bottom: 22px;
+      display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    }
+    .header h1 { margin: 0; font-size: 1.6rem; font-weight: 700; }
+    .header .sub { opacity: 0.92; font-size: 0.92rem; }
+    .back-link { background: rgba(255,255,255,0.2); color: #fff; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.88rem; }
+    .back-link:hover { background: rgba(255,255,255,0.3); }
+
+    .card { background: #fff; border-radius: 12px; padding: 18px 22px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .toolbar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+    .toolbar select { padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-size: 0.95rem; }
+    .btn { background: #30bced; color: #fff; border: 0; padding: 8px 16px; border-radius: 7px; cursor: pointer; font-weight: 600; font-family: inherit; font-size: 0.92rem; }
+    .btn:hover { background: #1ea1d1; }
+    .btn-secondary { background: transparent; color: #30bced; border: 1px solid #30bced; }
+
+    .alert { padding: 12px 16px; border-radius: 8px; margin-top: 10px; font-size: 0.95rem; }
+    .alert-warn { background: #fef3c7; color: #78350f; border: 1px solid #fcd34d; }
+    .empty-state { padding: 40px; text-align: center; color: #6b7280; }
+    .stats-bar { display: flex; gap: 12px; margin: 12px 0 4px; flex-wrap: wrap; }
+    .pill { background: #f3f4f6; padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+    .pill.danger { background: #fee2e2; color: #b91c1c; }
+    .pill.warn { background: #fef3c7; color: #92400e; }
+    .pill.ok { background: #d1fae5; color: #047857; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: #fef2f2; padding: 10px 8px; text-align: right; font-weight: 600; border-bottom: 2px solid #fca5a5; font-size: 0.88rem; }
+    tbody td { padding: 8px; border-bottom: 1px solid #fee2e2; font-size: 0.92rem; }
+    tbody tr:hover { background: #fff8f8; }
+    td.count { text-align: center; font-weight: 700; color: #b91c1c; }
+    td.dates { font-family: 'Courier New', monospace; font-size: 0.88rem; color: #7f1d1d; }
+    td.status { text-align: center; }
+    .badge-status { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.82rem; font-weight: 600; background: #fee2e2; color: #b91c1c; }
+
+    .excluded-section { margin-top: 16px; padding: 12px 16px; background: #f9fafb; border-radius: 8px; border-right: 4px solid #9ca3af; }
+    .excluded-section h3 { margin: 0 0 8px 0; color: #4b5563; font-size: 1rem; }
+    .excluded-section ul { margin: 0; padding-right: 18px; font-size: 0.88rem; color: #4b5563; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔴 דוח 3: חוסר סגירה</h1>
+      <span class="sub">עובדים עם ימים ללא כניסה/יציאה ללא אירוע מסביר</span>
+      <a class="back-link" href="../index.html" style="margin-right:auto;">← דף הבית</a>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <label>חודש:</label>
+        <select id="periodSelect"><option value="">— בחרי —</option></select>
+        <button class="btn btn-secondary" id="refreshBtn">רענון</button>
+        <span style="color:#6b7280; font-size:0.85rem; margin-right:auto;">
+          חוסר סגירה = יום חול ללא כניסה/יציאה וללא אירוע מסביר. דורש בירור עם העובד.
+        </span>
+      </div>
+      <div id="alertArea"></div>
+      <div class="stats-bar" id="statsBar"></div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar" style="margin-bottom:10px;">
+        <button class="btn" id="exportXlsxBtn" style="margin-right:auto;">📥 ייצוא Excel</button>
+        <button class="btn btn-secondary" id="exportCsvBtn">📥 CSV</button>
+      </div>
+      <div id="reportArea"><div class="empty-state">טוענת נתונים…</div></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="../../payrollchecker/shared/month_config.js"></script>
+  <script src="../reserve/js/em-index-store.js"></script>
+  <script src="js/employee-rules.js"></script>
+  <script src="js/meckano-archive-store.js"></script>
+  <script src="js/closure-missing-engine.js"></script>
+  <script>
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+    const MONTH_NAMES = ['','ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+    let _currentReport = null;
+
+    function showAlert(level, msg) { $('#alertArea').innerHTML = '<div class="alert alert-'+level+'">'+msg+'</div>'; }
+    function clearAlert() { $('#alertArea').innerHTML = ''; }
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function populatePeriods() {
+      const sel = $('#periodSelect');
+      const idx = MeckanoArchiveStore.loadIndex();
+      sel.innerHTML = '<option value="">— בחרי —</option>' +
+        idx.map(m => '<option value="'+m.period+'">'+MONTH_NAMES[m.month]+' '+m.year+'</option>').join('');
+      if (idx.length === 0) {
+        showAlert('warn', '⚠️ אין דוחות בארכיון. <a href="upload.html">העלי קובץ Meckano</a> כדי להתחיל.');
+      }
+    }
+
+    function generate() {
+      clearAlert();
+      const period = $('#periodSelect').value;
+      if (!period) { $('#reportArea').innerHTML = '<div class="empty-state">בחרי חודש כדי להפיק את הדוח.</div>'; return; }
+      const arc = MeckanoArchiveStore.loadByPeriod(period);
+      if (!arc) { showAlert('error', 'הארכיון לחודש זה לא נטען.'); return; }
+      const employees = (typeof EmIndexStore !== 'undefined') ? EmIndexStore.loadAll() : [];
+      const [year, month] = period.split('-').map(Number);
+      _currentReport = ClosureMissingEngine.build(arc.blocks, employees, year, month);
+      renderReport();
+    }
+
+    function renderReport() {
+      if (!_currentReport) return;
+      const r = _currentReport;
+      $('#statsBar').innerHTML =
+        (r.total_employees_with_issues === 0
+          ? '<span class="pill ok">✅ אין חוסר סגירה!</span>'
+          : '<span class="pill danger">🔴 ' + r.total_employees_with_issues + ' עובדים</span>' +
+            '<span class="pill warn">' + r.total_days_missing + ' ימים</span>') +
+        (r.excluded.length > 0 ? '<span class="pill">' + r.excluded.length + ' מוחרגים</span>' : '');
+
+      let html = '';
+      if (r.rows.length === 0) {
+        html += '<div class="empty-state">✅ אין חוסר סגירה לחודש זה.</div>';
+      } else {
+        html += '<table><thead><tr><th>שם עובד</th><th style="width:80px;">מס\' ימים</th><th>פירוט תאריכים</th><th>מה חסר</th><th style="width:120px;">סטטוס</th></tr></thead><tbody>';
+        r.rows.forEach(row => {
+          const dates = row.issues.map(i => i.day_label).join(', ');
+          const missing = [...new Set(row.issues.map(i => i.missing))].join(' / ');
+          html += '<tr>' +
+            '<td><strong>' + escapeHtml(row.employee_name) + '</strong> (' + row.employee_no + ')</td>' +
+            '<td class="count">' + row.issues.length + '</td>' +
+            '<td class="dates">' + escapeHtml(dates) + '</td>' +
+            '<td>' + escapeHtml(missing) + '</td>' +
+            '<td class="status"><span class="badge-status">דרוש מילוי</span></td>' +
+          '</tr>';
+        });
+        html += '</tbody></table>';
+      }
+
+      if (r.excluded.length > 0) {
+        html += '<div class="excluded-section">' +
+          '<h3>📋 עובדים מוחרגים מהדוח</h3>' +
+          '<ul>' + r.excluded.map(e => '<li>' + escapeHtml(e.employee_name || '') + ' (' + e.employee_no + ') — ' + escapeHtml(e.reason) + '</li>').join('') + '</ul>' +
+        '</div>';
+      }
+
+      $('#reportArea').innerHTML = html;
+    }
+
+    function exportXlsx() {
+      if (!_currentReport) return;
+      const aoa = [['שם עובד', "מס' עובד", "מס' ימים", 'פירוט תאריכים', 'מה חסר', 'סטטוס']];
+      _currentReport.rows.forEach(row => {
+        aoa.push([
+          row.employee_name, row.employee_no, row.issues.length,
+          row.issues.map(i => i.day_label).join(', '),
+          [...new Set(row.issues.map(i => i.missing))].join(' / '),
+          'דרוש מילוי',
+        ]);
+      });
+      // Excluded section as a separate block
+      if (_currentReport.excluded.length > 0) {
+        aoa.push([]);
+        aoa.push(['עובדים מוחרגים:']);
+        aoa.push(['שם', "מס' עובד", 'סיבה']);
+        _currentReport.excluded.forEach(e => aoa.push([e.employee_name || '', e.employee_no, e.reason]));
+      }
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!views'] = [{ RTL: true }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'חוסר סגירה');
+      const p = _currentReport.period;
+      XLSX.writeFile(wb, 'חוסר_סגירה_' + p.year + '-' + String(p.month).padStart(2,'0') + '.xlsx');
+    }
+    function exportCsv() {
+      if (!_currentReport) return;
+      const lines = [['שם עובד', "מס' עובד", "מס' ימים", 'פירוט תאריכים', 'מה חסר', 'סטטוס'].join(',')];
+      _currentReport.rows.forEach(row => {
+        const dates = row.issues.map(i => i.day_label).join(' | ');
+        const missing = [...new Set(row.issues.map(i => i.missing))].join(' / ');
+        lines.push(['"'+row.employee_name+'"', row.employee_no, row.issues.length, '"'+dates+'"', '"'+missing+'"', '"דרוש מילוי"'].join(','));
+      });
+      const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const p = _currentReport.period;
+      a.href = url; a.download = 'חוסר_סגירה_'+p.year+'-'+String(p.month).padStart(2,'0')+'.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    $('#periodSelect').addEventListener('change', generate);
+    $('#refreshBtn').addEventListener('click', () => { populatePeriods(); generate(); });
+    $('#exportXlsxBtn').addEventListener('click', exportXlsx);
+    $('#exportCsvBtn').addEventListener('click', exportCsv);
+
+    populatePeriods();
+    const idx = MeckanoArchiveStore.loadIndex();
+    if (idx.length > 0) {
+      $('#periodSelect').value = idx[0].period;
+      generate();
+    }
+  </script>
+</body>
+</html>
