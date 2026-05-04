@@ -530,6 +530,10 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../shared/js/supabase-config.js"></script>
+  <script src="../shared/js/supabase-client.js"></script>
+  <script src="../shared/js/auth-bar.js"></script>
   <script src="js/em-index-store.js"></script>
   <script src="js/em-index-importer.js"></script>
   <script src="../salary/js/meckano-archive-store.js"></script>
@@ -1127,10 +1131,48 @@
       });
     }
 
+    // ===== Supabase sync =====
+    async function offerSupabaseBootstrapIfNeeded() {
+      if (typeof EmIndexStore === 'undefined' || !EmIndexStore.init) return;
+      const status = await EmIndexStore.init();
+      if (status.mode === 'synced') {
+        renderMeta(); renderTable();
+        if (status.remote_count > 0) {
+          showAlert('success', '☁️ סונכרן מ-Supabase: ' + status.remote_count + ' עובדים. שינויים יישמרו אוטומטית בענן.');
+        }
+        return;
+      }
+      if (status.mode === 'needs-bootstrap') {
+        const banner = document.createElement('div');
+        banner.className = 'alert alert-info';
+        banner.style.marginTop = '10px';
+        banner.innerHTML = '☁️ <strong>הענן ריק.</strong> יש לך ' + status.local_count +
+          ' עובדים בדפדפן. להעלות אותם ל-Supabase כדי שיישמרו לתמיד וייגלו ממחשבים אחרים? ' +
+          '<button class="btn btn-small" id="bootstrapBtn" style="padding:4px 10px;">העלה לענן</button>';
+        $('#alertArea').appendChild(banner);
+        $('#bootstrapBtn').addEventListener('click', async () => {
+          $('#bootstrapBtn').disabled = true;
+          $('#bootstrapBtn').textContent = '⏳ מעלה...';
+          const r = await EmIndexStore.pushAllToSupabase();
+          if (r.ok) {
+            showAlert('success', '☁️ הועלו ' + r.count + ' עובדים ל-Supabase. הנתונים שמורים בענן.');
+            await EmIndexStore.syncFromSupabase();
+            renderMeta(); renderTable();
+          } else {
+            showAlert('error', '❌ העלאה נכשלה: ' + (r.reason || 'unknown'));
+          }
+        });
+      }
+      if (status.mode === 'unauthenticated') {
+        // auth-bar will redirect to login automatically
+      }
+    }
+
     // אתחול
     renderMeta();
     renderTable();
     offerAutoFillIfNeeded();
+    offerSupabaseBootstrapIfNeeded();
   </script>
 </body>
 </html>
