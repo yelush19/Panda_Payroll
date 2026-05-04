@@ -443,6 +443,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="../payrollchecker/shared/month_config.js"></script>
     <script src="../payrollchecker/shared/data_bus.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="shared/js/supabase-config.js"></script>
+    <script src="shared/js/supabase-client.js"></script>
+    <script src="shared/js/auth-bar.js"></script>
     <script src="reserve/js/em-index-store.js"></script>
     <script>
         // ========== EXCEPTIONS DATA ==========
@@ -450,7 +454,6 @@
         let employeesData = {};
 
         // רשימת עובדים — קוראת מהאינדקס המרכזי החדש; אם אין/ריק - fallback לרשימה בסיסית.
-        // (תאמר בעבר "sampleEmployees" - 15 שמות קבועים מ-2025)
         function getEmployeeNamesFromIndex() {
             if (typeof EmIndexStore === 'undefined') return null;
             const list = EmIndexStore.loadAll();
@@ -464,7 +467,22 @@
             "אברהם בנג'יו", "דור לוי", "צחי חנגל", "שלמה לסנר", "מיכאל רפאיל"
         ];
 
-        const sampleEmployees = getEmployeeNamesFromIndex() || FALLBACK_EMPLOYEE_NAMES;
+        const _indexNames = getEmployeeNamesFromIndex();
+        const sampleEmployees = _indexNames || FALLBACK_EMPLOYEE_NAMES;
+        const _usingIndex = !!_indexNames;
+
+        // באנר סטטוס מקור נתונים
+        document.addEventListener('DOMContentLoaded', function() {
+            const banner = document.createElement('div');
+            banner.style.cssText = _usingIndex
+                ? 'background:#dbeafe; color:#1e40af; padding:10px 16px; border-radius:8px; margin:14px 0; font-size:0.92rem; border:1px solid #93c5fd;'
+                : 'background:#fef3c7; color:#78350f; padding:10px 16px; border-radius:8px; margin:14px 0; font-size:0.92rem; border:1px solid #fcd34d;';
+            banner.innerHTML = _usingIndex
+                ? '☁️ <strong>מציג נתונים אקטואליים</strong>: רשימת ' + sampleEmployees.length + ' עובדים מהאינדקס המרכזי.'
+                : '⚠️ <strong>אינדקס מרכזי ריק</strong>: משתמש ברשימת ברירת מחדל של 15 עובדים מ-2025. <a href="reserve/employees.html" style="color:#92400e;">פתחי את האינדקס המרכזי</a> כדי לטעון את העובדים העדכניים.';
+            const target = document.querySelector('.upload-section') || document.querySelector('.container');
+            if (target) target.parentNode.insertBefore(banner, target);
+        });
 
         // Exception categories
         const exceptionCategories = [
