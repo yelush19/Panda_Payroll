@@ -102,6 +102,10 @@ window.EmIndexImporter = (function() {
         // 0 / null = אין תוספת גלובלית (כל 125/150 משולמים)
         global_overtime_hours: null,
 
+        // מנכ"ל משותף שלא מדווח ב-Meckano. הנתונים שלו (חופש/מחלה/מילואים)
+        // נמסרים ידנית בכל חודש דרך JointCeosStore.
+        is_joint_ceo: false,
+
         // ===== Phase HR - רכיבי שכר (additive, ברירת מחדל null/false) =====
         base_salary:                  null,
         hourly_rate:                  null,

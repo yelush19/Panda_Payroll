@@ -482,6 +482,13 @@
 
     <script src="../payrollchecker/shared/month_config.js"></script>
     <script src="../payrollchecker/shared/data_bus.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="shared/js/supabase-config.js"></script>
+    <script src="shared/js/supabase-client.js"></script>
+    <script src="shared/js/auth-bar.js"></script>
+    <script src="reserve/js/em-index-store.js"></script>
+    <script src="salary/js/meckano-archive-store.js"></script>
+    <script src="shared/js/legacy-employees-adapter.js"></script>
     <script>
         // ========== PENSION DATA & LOGIC ==========
         const _bc = (typeof MonthConfig !== 'undefined') ? MonthConfig.BUSINESS_CONSTANTS : {};
@@ -491,10 +498,11 @@
             advancedStudy: _bc.advancedStudyRate || 0.075
         };
 
-        // Enhanced employee data with pension information
-        const employeesData = {
-            1: { 
-                name: "בנימין זהר", 
+        // נתוני ברירת מחדל (37 עובדים מ-2025) - יידרסו ע"י LegacyAdapter אם יש
+        // נתונים באינדקס המרכזי וארכיון Meckano. השינוי const→let מאפשר דריסה.
+        let employeesData = {
+            1: {
+                name: "בנימין זהר",
                 dept: "בעלי מניות", 
                 id: "317607316", 
                 startDate: "01/12/2006",
@@ -772,6 +780,29 @@
         let pensionResults = {};
         let filteredEmployees = [];
 
+        // טוען נתוני עובדים מהאינדקס המרכזי + ארכיון Meckano (אם זמינים)
+        function loadFromAdapter() {
+            if (typeof LegacyAdapter === 'undefined') return false;
+            const periods = LegacyAdapter.listAvailablePeriods();
+            if (periods.length === 0) return false;
+            const period = periods[0].period;
+            const data = LegacyAdapter.installGlobals(period);
+            if (data) {
+                employeesData = data;
+                console.log('pension: נטענו ' + Object.keys(data).length + ' עובדים (' + period + ')');
+                showAdapterBanner(period, Object.keys(data).length);
+                return true;
+            }
+            return false;
+        }
+        function showAdapterBanner(period, count) {
+            const container = document.querySelector('.module-month-picker') || document.querySelector('h1') || document.body;
+            const banner = document.createElement('div');
+            banner.style.cssText = 'background:#dbeafe; color:#1e40af; padding:8px 14px; border-radius:8px; margin:10px 0; font-size:0.92rem; border:1px solid #93c5fd;';
+            banner.innerHTML = '☁️ מציג נתונים אקטואליים מהאינדקס המרכזי (חודש ' + period + ', ' + count + ' עובדים).';
+            container.parentNode.insertBefore(banner, container.nextSibling);
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             // אתחול בורר חודש
@@ -787,6 +818,9 @@
                 const title = document.getElementById('pensionTitle');
                 if (title) title.textContent = `מודול הפרשות ופנסיה - ${e.detail.periodDisplay}`;
             });
+
+            // ניסיון לטעון מנתוני האינדקס/ארכיון
+            loadFromAdapter();
 
             runPensionAnalysis();
             renderEmployeesList();

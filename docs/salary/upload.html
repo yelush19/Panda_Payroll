@@ -149,6 +149,8 @@
   <script src="js/meckano-report-parser.js"></script>
   <script src="js/meckano-archive-store.js"></script>
   <script src="js/manual-summary-validator.js"></script>
+  <script src="../reserve/js/reserve-periods-engine.js"></script>
+  <script src="../reserve/js/reserve-periods-store.js"></script>
   <script>
     'use strict';
     const $ = (s) => document.querySelector(s);
@@ -224,6 +226,18 @@
           blocks:        result.blocks,
         });
 
+        // חילוץ אוטומטי של תקופות מילואים
+        let reservesSummary = null;
+        if (typeof ReservePeriodsEngine !== 'undefined' && typeof ReservePeriodsStore !== 'undefined') {
+          try {
+            const detected = ReservePeriodsEngine.build(result.blocks, period.year, period.month);
+            const merged = ReservePeriodsStore.mergeFromDetection(detected.periods);
+            reservesSummary = { ...detected.stats, merged };
+          } catch (e) {
+            console.warn('Reserve periods detection failed:', e);
+          }
+        }
+
         // הצגת סיכום
         const totalDays = result.blocks.reduce((s, b) => s + b.days.length, 0);
         const blocksWithUnknowns = result.blocks.filter(b => b.unknown_columns.length > 0).length;
@@ -292,6 +306,18 @@
             statBox('גודל בארכיון', formatBytes(meta.size_bytes)) +
           '</div>' +
           nextStepsHtml +
+          (reservesSummary && reservesSummary.total_employees > 0 ?
+            '<div class="alert alert-info" style="margin-top:14px;">' +
+              '🎖️ <strong>חולצו אוטומטית תקופות מילואים:</strong> ' +
+              reservesSummary.total_employees + ' עובדים, ' +
+              reservesSummary.total_periods + ' תקופות, ' +
+              reservesSummary.total_calendar_days + ' ימים קלנדריים (' +
+              reservesSummary.total_work_days + ' ימי עבודה). ' +
+              'נשמרו: ' + reservesSummary.merged.added + ' חדשות, ' +
+              reservesSummary.merged.updated + ' עודכנו, ' +
+              reservesSummary.merged.skipped + ' דולגו (כבר sent). ' +
+              '<br><small>ייצוא לתשלום ב-ב"ל יבוצע במודול מילואים בעתיד.</small>' +
+            '</div>' : '') +
           (blocksWithUnknowns > 0 ?
             '<div class="alert alert-warn" style="margin-top:14px;">' +
               '⚠️ ' + blocksWithUnknowns + ' בלוקים מכילים הערות יד-אדם בכותרות (כגון "תאונת עבודה - כל החודש"). ' +
