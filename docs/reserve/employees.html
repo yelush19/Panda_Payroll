@@ -1020,9 +1020,57 @@
       }
     });
 
+    // ====== מילוי-עצמי של מחלקה מהארכיון Meckano ======
+    // לכל עובד באינדקס שאין לו מחלקה אבל יש לו דיווח Meckano - לקחת את המחלקה משם
+    function autoFillDepartmentsFromMeckano() {
+      if (typeof MeckanoArchiveStore === 'undefined') return { updated: 0, candidates: 0 };
+      const employees = EmIndexStore.loadAll();
+      let updated = 0, candidates = 0;
+      employees.forEach(emp => {
+        if (emp.department && emp.department.trim()) return; // יש כבר
+        const arc = MeckanoArchiveStore.findEmployeeAcrossPeriods(emp.employee_no);
+        if (arc.length === 0) return;
+        // הכי עדכני
+        arc.sort((a, b) => b.period.localeCompare(a.period));
+        const dept = arc[0].block && arc[0].block.department ? String(arc[0].block.department).trim() : '';
+        if (!dept) return;
+        candidates++;
+        EmIndexStore.update(emp.employee_no, { department: dept });
+        updated++;
+      });
+      return { updated, candidates };
+    }
+
+    // אם יש דיווחי Meckano בארכיון אבל מחלקות חסרות - להציע מילוי
+    function offerAutoFillIfNeeded() {
+      if (typeof MeckanoArchiveStore === 'undefined') return;
+      const idx = MeckanoArchiveStore.loadIndex();
+      if (idx.length === 0) return;
+      const employees = EmIndexStore.loadAll();
+      const missingDept = employees.filter(e => !e.department || !e.department.trim());
+      if (missingDept.length === 0) return;
+      // בדוק כמה מהם יש בארכיון Meckano
+      const haveInArchive = missingDept.filter(e => MeckanoArchiveStore.findEmployeeAcrossPeriods(e.employee_no).length > 0);
+      if (haveInArchive.length === 0) return;
+
+      const banner = document.createElement('div');
+      banner.className = 'alert alert-info';
+      banner.style.marginTop = '10px';
+      banner.innerHTML = '🔄 ניתן למלא אוטומטית מחלקה ל-<strong>' + haveInArchive.length + ' עובדים</strong> מתוך ארכיון Meckano. ' +
+        '<button class="btn btn-small" id="autoFillBtn" style="padding:4px 10px;">מלא אוטומטית</button>';
+      $('#alertArea').appendChild(banner);
+
+      $('#autoFillBtn').addEventListener('click', () => {
+        const r = autoFillDepartmentsFromMeckano();
+        renderTable();
+        showAlert('success', '✅ עודכנה מחלקה ל-' + r.updated + ' עובדים (מתוך ' + r.candidates + ' מועמדים).');
+      });
+    }
+
     // אתחול
     renderMeta();
     renderTable();
+    offerAutoFillIfNeeded();
   </script>
 </body>
 </html>

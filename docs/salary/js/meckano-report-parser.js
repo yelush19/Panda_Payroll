@@ -212,7 +212,7 @@ window.MeckanoReportParser = (function() {
   function parseMetaRows(nameRow, dateRow) {
     const name        = String(nameRow[0] || '').trim();
     const company     = String(nameRow[3] || '').trim();
-    const department  = String(nameRow[6] || '').trim();
+    const department  = String(nameRow[7] || '').trim();   // נמצא בעמודה H (אינדקס 7)
     const dateRange   = String(dateRow[0] || '').trim();
     const empNoCell   = dateRow[5];
     const employee_no = empNoCell !== null && empNoCell !== undefined && empNoCell !== ''
