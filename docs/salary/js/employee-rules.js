@@ -294,6 +294,62 @@ window.EmployeeRules = (function() {
 
   function round2(n) { return parseFloat((+n || 0).toFixed(2)); }
 
+  // ===== חוק רצף מחלה הישראלי =====
+  // יום 1 ברצף מחלה = 1 יום קיזוז (0% תשלום)
+  // ימים 2-3 ברצף = 0.5 קיזוז כל אחד (50% תשלום)
+  // יום 4+ = 0 קיזוז (100% תשלום)
+  //
+  // רצף = ימים רצופים שסומנו 'מחלה'. סופי שבוע, חגים, ע.חג וחוה"מ באמצע
+  // לא קוטעים את הספירה (אבל גם לא נחשבים כיום מחלה). רק יום אחר (עבודה/חופש/מילואים/וכו')
+  // קוטע את הרצף ומאפס את הספירה.
+  //
+  // מחזיר: { total_kizuz, streaks: [{ start_day, end_day, length, kizuz }] }
+
+  const NEUTRAL_DAY_TYPES = ['סופ"ש', 'חג', 'ערב חג', 'חול המועד'];
+
+  function calculateSickKizuz(days) {
+    if (!Array.isArray(days)) return { total_kizuz: 0, streaks: [] };
+    // ודא סדר עולה לפי day_number (בלוקי Meckano כבר ממוינים, אבל ליתר ביטחון)
+    const sorted = [...days].sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
+
+    let totalKizuz = 0;
+    const streaks = [];
+    let streakPos = 0;
+    let currentStreak = null;
+
+    sorted.forEach(d => {
+      const sug = String(d.day_type || '').trim();
+      const event = String(d.event || '').trim();
+      const isSick = event.indexOf('מחלה') !== -1;
+      const isNeutral = !isSick && NEUTRAL_DAY_TYPES.includes(sug);
+
+      if (isSick) {
+        streakPos++;
+        let kizuz = 0;
+        if (streakPos === 1) kizuz = 1.0;
+        else if (streakPos === 2 || streakPos === 3) kizuz = 0.5;
+        // streakPos >= 4 → kizuz = 0
+        totalKizuz += kizuz;
+        if (!currentStreak) {
+          currentStreak = { start_day: d.day_number, end_day: d.day_number, length: 0, kizuz: 0, days: [] };
+          streaks.push(currentStreak);
+        }
+        currentStreak.end_day = d.day_number;
+        currentStreak.length++;
+        currentStreak.kizuz = round2(currentStreak.kizuz + kizuz);
+        currentStreak.days.push((d.day_letter || '') + '-' + String(d.day_number).padStart(2, '0'));
+      } else if (isNeutral) {
+        // שקוף - לא מתקדם, לא שובר
+      } else {
+        // יום אחר (עבודה רגילה / חופש / מילואים / וכו') - קוטע
+        streakPos = 0;
+        currentStreak = null;
+      }
+    });
+
+    return { total_kizuz: round2(totalKizuz), streaks };
+  }
+
   // ספירת ימי חג שמופיעים ביום מעובד (סוג=חג). שימושי לעובדים שעתיים שמקבלים חגים בנפרד.
   function countHolidayDaysFromBlock(days) {
     if (!Array.isArray(days)) return 0;
@@ -328,6 +384,7 @@ window.EmployeeRules = (function() {
     countVacationOnEveHolidays,
     countVacationOnCholHaMoed,
     countHolidayDaysFromBlock,
+    calculateSickKizuz,
     isHourlyEligibleForHolidayPay,
     applyGlobalBonusThreshold,
     HOURLY_OVERTIME_WEEKLY_THRESHOLD_HOURS,

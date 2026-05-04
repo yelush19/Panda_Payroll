@@ -93,13 +93,18 @@ window.WorksheetEngine = (function() {
 
     const daysPaid = summary.days_paid || 0;
 
+    // חישוב מחלה לקיזוז (חוק רצף 1/0.5/0.5/0)
+    const sickResult = (typeof EmployeeRules !== 'undefined' && EmployeeRules.calculateSickKizuz)
+      ? EmployeeRules.calculateSickKizuz(days)
+      : { total_kizuz: 0, streaks: [] };
+    const sickKizuz = sickResult.total_kizuz;
+
     // צפוי = max_work_days - חל"ת - היעדרות - מחלה לקיזוז
     // (תאונת עבודה לכל החודש = max_work_days, ללא ניכויים)
     let expected;
     if (accident.isActive && accident.days_in_this_month >= maxWorkDays - 1) {
       expected = maxWorkDays;
     } else {
-      const sickKizuz = 0; // יחושב ב-Phase F לפי חוק רצף מחלה (1/0.5/0.5/0)
       expected = maxWorkDays - chalatComputed - absenceComputed - sickKizuz;
     }
     const gap = round2(daysPaid - expected);
@@ -123,7 +128,7 @@ window.WorksheetEngine = (function() {
       global_overtime_hours: globalThreshold || 0,
       global_overtime_used:  otAdj.absorbed_by_bonus,
 
-      sick_kizuz:         null,                      // Phase F
+      sick_kizuz:         sickKizuz,
       chalat:             chalatComputed,
       absence:            absenceComputed,
 
