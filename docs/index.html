@@ -495,30 +495,95 @@
 
             <!-- System Status -->
             <section class="system-status">
-                <h2 style="text-align: center; margin-bottom: 25px; color: #2b486a;">סטטוס המערכת</h2>
+                <h2 style="text-align: center; margin-bottom: 25px; color: #2b486a;">📊 סטטוס המערכת — חודש <span id="liveMonthLabel">...</span></h2>
                 <div class="status-grid">
                     <div class="status-card">
-                        <div class="status-number" style="color: #10b981;">7</div>
-                        <div class="status-label">מודולים פעילים</div>
-                        <div class="status-time">מוכנים לשימוש</div>
+                        <div class="status-number" id="liveEmployeeCount" style="color: #30bced;">—</div>
+                        <div class="status-label">עובדים באינדקס</div>
+                        <div class="status-time">מקור-אמת מרכזי</div>
                     </div>
                     <div class="status-card">
-                        <div class="status-number" style="color: #30bced;">37</div>
-                        <div class="status-label">עובדים במערכת</div>
-                        <div class="status-time" id="statusMonthDisplay"></div>
+                        <div class="status-number" id="liveMeckanoStatus" style="color: #f59e0b;">—</div>
+                        <div class="status-label">Meckano</div>
+                        <div class="status-time" id="liveMeckanoNote">בדיקה...</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-number" id="liveShiklulitStatus" style="color: #6366f1;">—</div>
+                        <div class="status-label">תלושי שיקלולית</div>
+                        <div class="status-time" id="liveShiklulitNote">בדיקה...</div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-number" id="liveReserveCount" style="color: #16a34a;">—</div>
+                        <div class="status-label">תקופות מילואים</div>
+                        <div class="status-time" id="liveReserveNote">פתוחות לטיפול</div>
                     </div>
                     <div class="status-card">
                         <div id="maxWorkDaysDisplay" class="status-number" style="color: #ef4444;"></div>
                         <div class="status-label">ימי עבודה מקסימום</div>
                         <div class="status-time">לחודש הנבחר</div>
                     </div>
-                    <div class="status-card">
-                        <div class="status-number" style="color: #f59e0b;">95%</div>
-                        <div class="status-label">דיוק בדיקות</div>
-                        <div class="status-time">אוטומטי</div>
-                    </div>
                 </div>
             </section>
+
+            <!-- Live status updater script -->
+            <script>
+              function updateLiveStatus() {
+                try {
+                  const conf = (typeof MonthConfig !== 'undefined') ? MonthConfig.loadSelectedMonth() : null;
+                  if (conf) {
+                    document.getElementById('liveMonthLabel').textContent = conf.month + '/' + conf.year;
+                  }
+                  // עובדים
+                  if (typeof EmIndexStore !== 'undefined') {
+                    const list = EmIndexStore.loadAll();
+                    document.getElementById('liveEmployeeCount').textContent = list.length || '—';
+                  }
+                  // Meckano
+                  if (conf && typeof MeckanoArchiveStore !== 'undefined') {
+                    const arc = MeckanoArchiveStore.loadArchive(conf.year, conf.month);
+                    if (arc && arc.blocks) {
+                      document.getElementById('liveMeckanoStatus').textContent = '✅';
+                      document.getElementById('liveMeckanoStatus').style.color = '#10b981';
+                      document.getElementById('liveMeckanoNote').textContent = arc.blocks.length + ' בלוקים נטענו';
+                    } else {
+                      document.getElementById('liveMeckanoStatus').textContent = '❌';
+                      document.getElementById('liveMeckanoStatus').style.color = '#ef4444';
+                      document.getElementById('liveMeckanoNote').textContent = 'לא הועלה';
+                    }
+                  }
+                  // שיקלולית
+                  if (conf && typeof PayslipStore !== 'undefined') {
+                    const pay = PayslipStore.load(conf.year, conf.month);
+                    if (pay && pay.reports) {
+                      const count = pay.employee_count || 0;
+                      document.getElementById('liveShiklulitStatus').textContent = '✅';
+                      document.getElementById('liveShiklulitStatus').style.color = '#10b981';
+                      document.getElementById('liveShiklulitNote').textContent = count + ' עובדים נטענו';
+                    } else {
+                      document.getElementById('liveShiklulitStatus').textContent = '❌';
+                      document.getElementById('liveShiklulitStatus').style.color = '#ef4444';
+                      document.getElementById('liveShiklulitNote').textContent = 'לא הועלה';
+                    }
+                  }
+                  // מילואים
+                  if (typeof ReservePeriodsStore !== 'undefined') {
+                    const periods = ReservePeriodsStore.loadAll();
+                    const open = periods.filter(p => p.status !== 'settled' && p.status !== 'rejected').length;
+                    document.getElementById('liveReserveCount').textContent = open;
+                    document.getElementById('liveReserveNote').textContent = periods.length + ' סה"כ • ' + open + ' פתוחות';
+                  }
+                } catch (e) { console.warn('Live status update error:', e); }
+              }
+              // טעינת ה-stores לאחר שכל הסקריפטים נטענו
+              window.addEventListener('load', () => {
+                setTimeout(updateLiveStatus, 100);
+              });
+              window.addEventListener('monthChanged', updateLiveStatus);
+            </script>
+            <script src="reserve/js/em-index-store.js"></script>
+            <script src="salary/js/meckano-archive-store.js"></script>
+            <script src="salary/js/payslip-store.js"></script>
+            <script src="reserve/js/reserve-periods-store.js"></script>
 
             <!-- Modules Grid -->
             <section class="modules-section">
