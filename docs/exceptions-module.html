@@ -794,22 +794,35 @@
 
         // חיפוש שם עובד ברשימה (תומך גם בהיפוך first/last)
         function matchEmployeeName(line, knownNames) {
-            const t = line.trim();
-            if (!t || t.length > 35 || t.length < 2) return null;
-            // התאמה ישירה
+            const t = line.trim().replace(/\s+/g, ' ');
+            if (!t || t.length > 50 || t.length < 2) return null;
+
+            // 1. התאמה ישירה לשם המלא
             for (const name of knownNames) {
                 if (t === name) return name;
-                // גם הפוך
-                const parts = name.split(/\s+/).filter(Boolean);
-                if (parts.length >= 2 && t === parts.reverse().join(' ')) return name;
             }
-            // התאמה רכה - שם בלבד אם יש "פרטי משפחה"
+            // 2. הפוך (פרטי+משפחה ↔ משפחה+פרטי)
+            for (const name of knownNames) {
+                const parts = name.split(/\s+/).filter(Boolean);
+                if (parts.length >= 2 && t === parts.slice().reverse().join(' ')) return name;
+            }
+            // 3. כל החלקים נמצאים — אורך זהה (תומך גם בסדר משולב)
+            const partsB = t.split(/\s+/).filter(Boolean);
             for (const name of knownNames) {
                 const partsA = name.split(/\s+/).filter(Boolean);
-                const partsB = t.split(/\s+/).filter(Boolean);
                 if (partsA.length === partsB.length && partsA.length >= 2) {
                     const setA = new Set(partsA);
                     if (partsB.every(p => setA.has(p))) return name;
+                }
+            }
+            // 4. השוואה גם דרך first_name + last_name של האינדקס (לכל השמות)
+            if (typeof EmIndexStore !== 'undefined' && partsB.length >= 2) {
+                const list = EmIndexStore.loadAll();
+                for (const e of (list || [])) {
+                    const fn = (e.first_name || '').trim();
+                    const ln = (e.last_name || '').trim();
+                    if (!fn || !ln) continue;
+                    if (t === fn + ' ' + ln || t === ln + ' ' + fn) return e.full_name || (fn + ' ' + ln);
                 }
             }
             return null;
@@ -825,11 +838,16 @@
                 employeesData[name] = { department: '', id: '' };
             });
 
-            // נורמליזציה: גם bullets (• ▪ ●) מתפקדים כמפרידי שורות, לא רק \n
+            // נורמליזציה: bullets, asterisks, ones-dot ו-em-dash הם גם מפרידי שורות
+            // (לא רק \n). זה קריטי לטקסט מ-Word שמגיע בשורה אחת ארוכה עם • כמפרידים.
             const normalized = rawText
-                .replace(/[•▪●]/g, '\n')   // • ▪ ●
-                .replace(/[*]/g, '\n');                    // * לפעמים גם
+                .replace(/[•‣◦⁃∙·●▪■‧]/g, '\n')  // bullets שונים
+                .replace(/\*/g, '\n');     // אסטריסקים
+
             const lines = normalized.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            console.log('[exceptions] בלוקים אחרי פיצול:', lines.length, '(דוגמא 3 שורות:', lines.slice(0,3), ')');
+            console.log('[exceptions] עובדים מוכרים באינדקס:', sampleEmployees.length,
+                '(דוגמא:', sampleEmployees.slice(0,3), ')');
             let currentDept = '';
             let currentEmployee = null;
             let pendingRequest = [];
@@ -861,6 +879,7 @@
                 // 2. שם עובד מהאינדקס
                 const matched = matchEmployeeName(line, sampleEmployees);
                 if (matched) {
+                    console.log('[exceptions] זוהה עובד:', matched, '(מהשורה:', line + ')');
                     flushPending();
                     currentEmployee = matched;
                     return;
@@ -868,6 +887,8 @@
                 // 3. אחרת - חלק מהבקשה הנוכחית
                 if (currentEmployee) {
                     pendingRequest.push(line);
+                } else {
+                    console.warn('[exceptions] שורה ללא עובד פעיל:', line.substring(0, 60));
                 }
             });
             flushPending();
