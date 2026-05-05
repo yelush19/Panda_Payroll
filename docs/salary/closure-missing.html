@@ -313,7 +313,10 @@
             }).join('') +
             '</tbody></table>' +
           '<div style="display:flex; justify-content:space-between; gap:10px; margin-top:18px;">' +
-            '<button id="adjClearAll" style="background:#fff; color:#b91c1c; border:1px solid #fca5a5; padding:8px 16px; border-radius:6px; cursor:pointer;">🗑 נקה הכל</button>' +
+            '<div>' +
+              '<button id="adjAutoFill" style="background:#a855f7; color:#fff; border:0; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;" title="חישוב אוטומטי: ימי חופש/מחלה/מילואים יוסיפו אוטומטית גם לשעות משולמות (×8.4) וירידו משעות חוסר. חל"ת/היעדרות יפחיתו מימים משולמים.">✨ חישוב אוטומטי</button>' +
+              '<button id="adjClearAll" style="background:#fff; color:#b91c1c; border:1px solid #fca5a5; padding:8px 16px; border-radius:6px; cursor:pointer; margin-right:8px;">🗑 נקה הכל</button>' +
+            '</div>' +
             '<div>' +
               '<button id="adjCancel" style="background:#e5e7eb; color:#374151; border:0; padding:8px 16px; border-radius:6px; cursor:pointer; margin-left:8px;">ביטול</button>' +
               '<button id="adjSave" style="background:#0e7490; color:#fff; border:0; padding:8px 20px; border-radius:6px; cursor:pointer; font-weight:600;">💾 שמור</button>' +
@@ -324,6 +327,64 @@
 
       overlay.querySelector('#adjCancel').addEventListener('click', () => overlay.remove());
       overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+      // ✨ Auto-fill: cascade ימי חופש/מחלה/מילואים → שעות משולמות + שעות חוסר
+      overlay.querySelector('#adjAutoFill').addEventListener('click', () => {
+        const HOURS_PER_DAY = 8.4;
+        function num(field) {
+          const inp = overlay.querySelector('[data-field="' + field + '"]');
+          return inp ? (parseFloat(inp.value) || 0) : 0;
+        }
+        function setVal(field, val) {
+          const inp = overlay.querySelector('[data-field="' + field + '"]');
+          if (inp) inp.value = val === 0 ? '' : val;
+        }
+        function setReason(field, reason) {
+          const r = overlay.querySelector('[data-reason="' + field + '"]');
+          if (r && !r.value) r.value = reason;
+        }
+
+        // ימים שמוסיפים שעות משולמות (חופש/מחלה/מילואים/תאונת עבודה משלמים)
+        const paidDays = num('vacation_charged') + num('sick') + num('miluim') + num('work_accident');
+        // ימים שמפחיתים מימים משולמים (חל"ת/היעדרות)
+        const unpaidDays = num('chalat') + num('absence');
+        // ימים משולמים נטו: דורש +
+        const daysPaidDelta = paidDays - unpaidDays;
+        if (daysPaidDelta !== 0) {
+          const cur = num('days_paid');
+          setVal('days_paid', round1(cur + daysPaidDelta));
+          setReason('days_paid', 'חישוב אוטומטי לפי deltas של ימים');
+        }
+
+        // שעות משולמות = (ימי חופש/מחלה/מילואים/ת.עבודה) * 8.4 - (חל"ת/היעדרות) * 8.4
+        const hoursPaidDelta = (paidDays - unpaidDays) * HOURS_PER_DAY;
+        if (hoursPaidDelta !== 0) {
+          const cur = num('hours_paid');
+          setVal('hours_paid', round2(cur + hoursPaidDelta));
+          setReason('hours_paid', 'חישוב אוטומטי: ' + (paidDays - unpaidDays) + ' ימים × 8.4');
+        }
+
+        // שעות חוסר: ימי חופש/מחלה/מילואים מקטינים את החוסר (ה"חוסר" שלהם מדומה כי הם אירוע מכסה)
+        // חל"ת/היעדרות אמורים להוסיף לחוסר אבל בפועל זה תלוי בעובד.
+        if (paidDays > 0) {
+          const cur = num('hours_missing');
+          setVal('hours_missing', round2(cur - paidDays * HOURS_PER_DAY));
+          setReason('hours_missing', 'חישוב אוטומטי: -' + paidDays + ' ימים × 8.4 (אירוע מכסה)');
+        }
+
+        flashAutoFill(overlay);
+      });
+
+      function round1(n) { return Math.round(n * 10) / 10; }
+      function round2(n) { return Math.round(n * 100) / 100; }
+      function flashAutoFill(overlay) {
+        overlay.querySelectorAll('input[data-field]').forEach(inp => {
+          if (inp.value && parseFloat(inp.value) !== 0) {
+            inp.style.background = '#dbeafe';
+            setTimeout(() => inp.style.background = '', 1200);
+          }
+        });
+      }
 
       overlay.querySelector('#adjClearAll').addEventListener('click', () => {
         if (!confirm('למחוק את כל התיקונים לעובד ' + empName + ' לחודש ' + period + '?')) return;
