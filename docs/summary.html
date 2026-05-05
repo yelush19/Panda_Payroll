@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📊 דוח סיכום כולל</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', 'Heebo', Arial, sans-serif; background: #e9eef3; color: #2b486a; direction: rtl; margin: 0; padding: 20px; min-height: 100vh; }
+    .container { max-width: 1300px; margin: 0 auto; }
+    .header { background: linear-gradient(90deg, #0e7490 0%, #6366f1 100%); color: #fff; border-radius: 14px; padding: 22px 28px; margin-bottom: 22px; }
+    .header h1 { margin: 0 0 6px 0; font-size: 1.6rem; }
+    .header .sub { opacity: 0.92; font-size: 0.92rem; }
+
+    .card { background: #fff; border-radius: 12px; padding: 22px 26px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .card h2 { margin: 0 0 14px 0; color: #0e7490; font-size: 1.15rem; }
+    .period-row { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+    .period-row select { padding: 7px 11px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; }
+    .btn-primary { background: #0e7490; color: #fff; border: 0; padding: 10px 22px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.95rem; }
+    .btn-primary:hover { background: #155e75; }
+
+    .check-row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-radius: 8px; margin-bottom: 8px; background: #f9fafb; transition: all 0.15s; }
+    .check-row:hover { background: #f3f4f6; transform: translateX(-2px); }
+    .check-row.ok       { background: #d1fae5; border-right: 4px solid #10b981; }
+    .check-row.warn     { background: #fef3c7; border-right: 4px solid #f59e0b; }
+    .check-row.bad      { background: #fee2e2; border-right: 4px solid #ef4444; }
+    .check-row.missing  { background: #f3f4f6; border-right: 4px solid #9ca3af; }
+    .check-row .ico { font-size: 1.6rem; min-width: 40px; }
+    .check-row .info { flex: 1; }
+    .check-row .info b { display: block; font-size: 1rem; color: #2b486a; }
+    .check-row .info small { color: #6b7280; font-size: 0.86rem; }
+    .check-row .count { font-weight: 700; padding: 4px 12px; border-radius: 14px; background: #fff; font-size: 0.95rem; }
+    .check-row .open-btn { background: #fff; color: #0e7490; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.86rem; border: 1px solid #06b6d4; }
+    .check-row .open-btn:hover { background: #06b6d4; color: #fff; }
+
+    .progress { display: flex; gap: 4px; margin-bottom: 18px; height: 12px; }
+    .progress .seg { flex: 1; border-radius: 4px; background: #e5e7eb; transition: background 0.3s; }
+    .progress .seg.ok   { background: #10b981; }
+    .progress .seg.warn { background: #f59e0b; }
+    .progress .seg.bad  { background: #ef4444; }
+
+    .empty-state { padding: 40px 20px; text-align: center; color: #6b7280; }
+
+    .next-action { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 10px; padding: 16px 20px; margin-top: 16px; }
+    .next-action h3 { margin: 0 0 6px 0; color: #78350f; }
+    .next-action a { background: #f59e0b; color: #fff; padding: 8px 18px; border-radius: 6px; text-decoration: none; font-weight: 700; display: inline-block; margin-top: 6px; }
+    .next-action a:hover { background: #d97706; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 דוח סיכום כולל</h1>
+      <div class="sub">סקירה אחת של כל הבדיקות לחודש בודד — מצב נתונים, פערים, משימות פתוחות.</div>
+    </div>
+
+    <div class="card">
+      <div class="period-row">
+        <strong>חודש:</strong>
+        <select id="monthSelect"></select>
+        <select id="yearSelect"></select>
+        <button class="btn-primary" id="runBtn">🚀 הפק סיכום</button>
+        <span style="color:#6b7280; font-size:0.86rem; margin-right:auto;">הפקה אוטומטית של כל הבדיקות</span>
+      </div>
+      <div class="progress" id="progress" style="display:none;">
+        <div class="seg" data-key="meck"></div>
+        <div class="seg" data-key="pay"></div>
+        <div class="seg" data-key="closure"></div>
+        <div class="seg" data-key="recon"></div>
+        <div class="seg" data-key="exc"></div>
+        <div class="seg" data-key="reserve"></div>
+      </div>
+      <div id="resultsArea"><div class="empty-state">לחצי "🚀 הפק סיכום" כדי להתחיל.</div></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="shared/js/supabase-config.js"></script>
+  <script src="shared/js/supabase-client.js"></script>
+  <script src="shared/js/auth-bar.js"></script>
+  <script src="shared/js/home-button.js"></script>
+  <script src="shared/js/next-steps.js"></script>
+  <script src="shared/js/data_bus.js"></script>
+  <script src="shared/js/month_config.js"></script>
+  <script src="reserve/js/em-index-store.js"></script>
+  <script src="reserve/js/reserve-periods-store.js"></script>
+  <script src="shared/js/manual-adjustments-store.js"></script>
+  <script src="salary/js/employee-rules.js"></script>
+  <script src="salary/js/meckano-archive-store.js"></script>
+  <script src="salary/js/closure-missing-engine.js"></script>
+  <script src="salary/js/payslip-store.js"></script>
+  <script src="salary/js/days-summary-engine.js"></script>
+  <script src="salary/js/reconciliation-engine.js"></script>
+  <script>
+    'use strict';
+
+    const monthSelect = document.getElementById('monthSelect');
+    const yearSelect  = document.getElementById('yearSelect');
+    for (let m = 1; m <= 12; m++) {
+      const o = document.createElement('option'); o.value = m; o.textContent = m;
+      monthSelect.appendChild(o);
+    }
+    const cy = new Date().getFullYear();
+    for (let y = cy + 1; y >= cy - 3; y--) {
+      const o = document.createElement('option'); o.value = y; o.textContent = y;
+      yearSelect.appendChild(o);
+    }
+    const conf = (typeof MonthConfig !== 'undefined') ? MonthConfig.loadSelectedMonth() : null;
+    if (conf) { monthSelect.value = conf.month; yearSelect.value = conf.year; }
+    else { const lm = new Date(); lm.setMonth(lm.getMonth() - 1); monthSelect.value = lm.getMonth() + 1; yearSelect.value = lm.getFullYear(); }
+
+    document.getElementById('runBtn').addEventListener('click', generateSummary);
+
+    function setSeg(key, status) {
+      const el = document.querySelector('.progress .seg[data-key="' + key + '"]');
+      if (el) el.classList.add(status);
+    }
+    function row(cls, ico, title, subtitle, count, link) {
+      let html = '<div class="check-row ' + cls + '">';
+      html += '<div class="ico">' + ico + '</div>';
+      html += '<div class="info"><b>' + title + '</b>';
+      if (subtitle) html += '<small>' + subtitle + '</small>';
+      html += '</div>';
+      if (count != null) html += '<div class="count">' + count + '</div>';
+      if (link) html += '<a class="open-btn" href="' + link + '">פתח →</a>';
+      html += '</div>';
+      return html;
+    }
+
+    function generateSummary() {
+      const y = parseInt(yearSelect.value, 10);
+      const m = parseInt(monthSelect.value, 10);
+      document.getElementById('progress').style.display = 'flex';
+      document.querySelectorAll('.progress .seg').forEach(s => s.className = 'seg');
+
+      let html = '';
+      let totalIssues = 0;
+
+      // 1. Meckano
+      let meckLoaded = false, meckBlocks = 0;
+      if (typeof MeckanoArchiveStore !== 'undefined') {
+        const arc = MeckanoArchiveStore.loadArchive(y, m);
+        if (arc && arc.blocks) { meckLoaded = true; meckBlocks = arc.blocks.length; }
+      }
+      setSeg('meck', meckLoaded ? 'ok' : 'bad');
+      html += row(meckLoaded ? 'ok' : 'bad',
+        meckLoaded ? '✅' : '❌',
+        'קליטת Meckano',
+        meckLoaded ? meckBlocks + ' עובדים נטענו' : 'לא נטען לחודש זה',
+        meckLoaded ? meckBlocks : null,
+        meckLoaded ? null : '/salary/upload.html');
+
+      // 2. Shiklulit
+      let payLoaded = false, payCount = 0;
+      if (typeof PayslipStore !== 'undefined') {
+        const pay = PayslipStore.load(y, m);
+        if (pay) { payLoaded = true; payCount = pay.employee_count || 0; }
+      }
+      setSeg('pay', payLoaded ? 'ok' : 'missing');
+      html += row(payLoaded ? 'ok' : 'missing',
+        payLoaded ? '✅' : '⚪',
+        'תלושי שיקלולית',
+        payLoaded ? payCount + ' עובדים נטענו' : 'יקלטו אחרי שתעלי בשיקלולית',
+        payLoaded ? payCount : null,
+        '/salary/payslip-upload.html');
+
+      // 3. Closure missing
+      let closureCount = 0;
+      if (meckLoaded) {
+        try {
+          const arc = MeckanoArchiveStore.loadArchive(y, m);
+          const employees = (typeof EmIndexStore !== 'undefined') ? EmIndexStore.loadAll() : [];
+          const r = ClosureMissingEngine.build(arc.blocks, employees, y, m);
+          closureCount = r.total_employees_with_issues || 0;
+          totalIssues += closureCount;
+          setSeg('closure', closureCount === 0 ? 'ok' : (closureCount > 5 ? 'bad' : 'warn'));
+          html += row(closureCount === 0 ? 'ok' : 'warn',
+            closureCount === 0 ? '✅' : '⚠️',
+            'חוסר סגירה',
+            closureCount === 0 ? 'אין עובדים עם פערים' : closureCount + ' עובדים, ' + (r.total_days_missing || 0) + ' ימים',
+            closureCount,
+            '/salary/closure-missing.html');
+        } catch (e) { console.warn('closure:', e); }
+      }
+
+      // 4. Reconciliation Meckano↔Shiklulit
+      let reconIssues = 0;
+      if (meckLoaded && payLoaded && typeof ReconciliationEngine !== 'undefined') {
+        try {
+          const rec = ReconciliationEngine.build(y, m);
+          reconIssues = (rec.summary.warn || 0) + (rec.summary.mismatch || 0);
+          totalIssues += reconIssues;
+          setSeg('recon', reconIssues === 0 ? 'ok' : (reconIssues > 5 ? 'bad' : 'warn'));
+          html += row(reconIssues === 0 ? 'ok' : 'warn',
+            reconIssues === 0 ? '✅' : '🔄',
+            'התאמה Meckano↔שיקלולית',
+            (rec.summary.match || 0) + ' תואמים, ' + reconIssues + ' פערים',
+            reconIssues,
+            '/salary/reconciliation.html');
+        } catch (e) { console.warn('recon:', e); }
+      } else if (meckLoaded) {
+        setSeg('recon', 'missing');
+        html += row('missing', '⚪', 'התאמה Meckano↔שיקלולית', 'דורש קליטת תלושי שיקלולית', null, '/salary/payslip-upload.html');
+      }
+
+      // 5. Exceptions
+      try {
+        const dataBus = (typeof DataBus !== 'undefined') ? DataBus : null;
+        const periodKey = String(y) + '-' + String(m).padStart(2, '0');
+        let pending = 0, processed = 0, total = 0;
+        if (dataBus && dataBus.loadExceptionsData) {
+          const saved = dataBus.loadExceptionsData(periodKey);
+          if (saved && saved.exceptions) {
+            const arr = Object.values(saved.exceptions).filter(e => e.hasRequest);
+            total = arr.length;
+            processed = arr.filter(e => e.processed).length;
+            pending = total - processed;
+          }
+        }
+        totalIssues += pending;
+        setSeg('exc', pending === 0 ? 'ok' : 'warn');
+        html += row(pending === 0 ? 'ok' : 'warn',
+          pending === 0 ? '✅' : '📋',
+          'דוח חריגים',
+          total === 0 ? 'אין דוח חריגים נטען' : (processed + '/' + total + ' טופלו'),
+          pending,
+          '/exceptions-module.html');
+      } catch (e) { console.warn('exc:', e); }
+
+      // 6. Reserve
+      if (typeof ReservePeriodsStore !== 'undefined') {
+        const periods = ReservePeriodsStore.loadAll();
+        const inMonth = periods.filter(p => p.start_date && p.start_date.startsWith(y + '-' + String(m).padStart(2,'0')));
+        const open = inMonth.filter(p => p.status !== 'settled' && p.status !== 'rejected').length;
+        totalIssues += open;
+        setSeg('reserve', open === 0 ? 'ok' : 'warn');
+        html += row(open === 0 ? 'ok' : 'warn',
+          open === 0 ? '✅' : '🎖️',
+          'מילואים פתוחים',
+          inMonth.length + ' תקופות בחודש זה, ' + open + ' פתוחות',
+          open,
+          '/reserve/dashboard.html');
+      }
+
+      // Final next step
+      if (!meckLoaded) {
+        html += '<div class="next-action"><h3>🎯 הצעד הבא</h3>העלי קובץ Meckano חודשי כדי להתחיל.<br><a href="/salary/upload.html">📤 לקליטת Meckano</a></div>';
+      } else if (!payLoaded) {
+        html += '<div class="next-action"><h3>🎯 הצעד הבא — שלב הכנה</h3>הפק קובץ Excel לקליטה ידנית בשיקלולית — חוסך הקלדה.<br><a href="/salary/shiklulit-export.html">📤 ייצוא לשיקלולית</a></div>';
+      } else if (totalIssues === 0) {
+        html += '<div class="next-action" style="background:linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-color:#10b981;"><h3 style="color:#065f46;">🎉 הכל תקין!</h3>אין משימות פתוחות לחודש זה.</div>';
+      } else {
+        html += '<div class="next-action"><h3>🎯 משימות פתוחות</h3>סך הכל ' + totalIssues + ' פריטים דורשים תשומת לב. עברי על השורות בצהוב/אדום מלמעלה ופתחי את הדוח המתאים.</div>';
+      }
+
+      document.getElementById('resultsArea').innerHTML = html;
+    }
+  </script>
+</body>
+</html>
