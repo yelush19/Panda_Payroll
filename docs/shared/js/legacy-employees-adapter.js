@@ -98,6 +98,17 @@ window.LegacyAdapter = (function() {
     };
   }
 
+  // קודי רכיבים ב-שיקלולית עבור הכנסות זקופות (employer contributions imputed)
+  // וב-רכיבי שכר. מבוסס על הדוחות מ-4/2026.
+  const SHIK_IMPUTED = {
+    pension_value:    6,   // שווי קיצבה (פנסיה מעסיק)
+    compensation_value: 10, // שווי פיצויים
+    advanced_study_value: 4, // שווי קרן השתלמות (קה"ש מעסיק)
+    car_value:        1,   // שווי שימוש ברכב
+    phone_value:      9,   // שווי טלפון נייד
+    meals_value:      22,  // שווי ארוחות
+  };
+
   // בונה את אובייקט employeesData מלא לפי האינדקס + הארכיון של חודש מסוים.
   // period: 'YYYY-MM' או null (= חודש אחרון בארכיון).
   function buildLegacyEmployees(period) {
@@ -125,11 +136,51 @@ window.LegacyAdapter = (function() {
       period = actualPeriod;
     }
 
+    // טען נתוני שיקלולית אם זמינים — לאיתור פנסיה/פיצויים/קה"ש בפועל
+    let payslip = null;
+    if (typeof PayslipStore !== 'undefined' && period) {
+      const [py, pm] = period.split('-').map(Number);
+      payslip = PayslipStore.load(py, pm);
+    }
+    const incReport  = payslip && payslip.reports && payslip.reports.imputed_income ? payslip.reports.imputed_income : null;
+    const compReport = payslip && payslip.reports && payslip.reports.components ? payslip.reports.components : null;
+
+    function getImputed(empNo, code) {
+      if (!incReport || !incReport.employees) return null;
+      const e = incReport.employees[empNo] || incReport.employees[String(empNo)];
+      if (!e || !e.components) return null;
+      const c = e.components[code];
+      return c && c.total != null ? c.total : null;
+    }
+    function getComponent(empNo, code) {
+      if (!compReport || !compReport.employees) return null;
+      const e = compReport.employees[empNo] || compReport.employees[String(empNo)];
+      if (!e || !e.components) return null;
+      const c = e.components[code];
+      return c && c.total != null ? c.total : null;
+    }
+
     const result = {};
     employees.forEach(emp => {
       const block = blocks[String(emp.employee_no)];
       const obj = adaptEmployee(emp, block);
       obj._period = period;
+
+      // משיכה אוטומטית של ערכי הפנסיה/פיצויים/קה"ש מתלוש שיקלולית
+      const empNo = parseInt(emp.employee_no, 10);
+      const pensionFromShik = getImputed(empNo, SHIK_IMPUTED.pension_value);
+      const compFromShik    = getImputed(empNo, SHIK_IMPUTED.compensation_value);
+      const studyFromShik   = getImputed(empNo, SHIK_IMPUTED.advanced_study_value);
+      if (pensionFromShik != null) obj.pensionEmployer = Math.round(pensionFromShik);
+      if (compFromShik    != null) obj.compensationEmployer = Math.round(compFromShik);
+      if (studyFromShik   != null) obj.advancedStudyEmployer = Math.round(studyFromShik);
+
+      // שכר יסוד מתלוש (קוד 1) — אם אין באינדקס, נשתמש בזה
+      if (!obj.baseSalary) {
+        const baseFromShik = getComponent(empNo, 1);
+        if (baseFromShik != null) obj.baseSalary = baseFromShik;
+      }
+
       // המפתח: מספר עובד (מטופל כ-string)
       result[String(emp.employee_no)] = obj;
     });
