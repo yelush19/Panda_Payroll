@@ -67,7 +67,7 @@ window.MeckanoReportParser = (function() {
     vacation_eve:      ['חופש בע.חג', 'חופש בעחג'],
     vacation_chm:      ['חופש בחוה"מ', 'חופש בחומ'],
     vacation_charged:  ['חופשה לחיוב'],
-    sick:              ['מחלה'],
+    sick:              ['מחלה', 'ימי מחלה', 'מחלה בתשלום', 'מחלה ע.חג'],
     miluim:            ['מילואים'],
     work_accident:     ['תאונת עבודה'],
     chalat:            ['חל"ת', 'חלת'],
@@ -151,6 +151,39 @@ window.MeckanoReportParser = (function() {
           extractSummaryRow(row, summary, events);
         }
       }
+
+      // Fallback: אם events.sick = 0 / null אבל יש ימים עם event="מחלה",
+      // נספור אותם מהדיווח היומי. זה תופס מקרים שמקאנו לא מספק שורת סיכום
+      // למחלה (כמו דוד לוי).
+      if (!events.sick || events.sick === 0) {
+        const dailySick = days.filter(d => {
+          const e = String(d.event || '').trim();
+          return e === 'מחלה' || e === 'מחלה בתשלום' || e.indexOf('מחלה') === 0;
+        }).length;
+        if (dailySick > 0) {
+          events.sick = dailySick;
+          events._sick_from_daily = true;
+        }
+      }
+      // אותו fallback לחופש קיים, מילואים, חל"ת, היעדרות (במקרה שאין שורת סיכום)
+      const eventFallbacks = [
+        ['vacation_existing', ['חופש']],
+        ['miluim',            ['מילואים']],
+        ['chalat',            ['חל"ת', 'חלת']],
+        ['absence',           ['היעדרות']],
+      ];
+      eventFallbacks.forEach(([field, labels]) => {
+        if (!events[field] || events[field] === 0) {
+          const count = days.filter(d => {
+            const e = String(d.event || '').trim();
+            return labels.some(l => e === l);
+          }).length;
+          if (count > 0) {
+            events[field] = count;
+            events['_' + field + '_from_daily'] = true;
+          }
+        }
+      });
 
       blocks.push({
         employee_name:   meta.name,
