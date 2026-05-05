@@ -31,13 +31,21 @@ window.WorksheetEngine = (function() {
     { key: 'miluim',        label: 'ימי מילואים',  group: 'days' },
 
     // קבוצת שעות (ירוק)
+    { key: 'hours_attendance', label: 'שעות נוכחות', group: 'hours' },
+    { key: 'hours_standard',   label: 'שעות תקן',    group: 'hours' },
     { key: 'hours_paid',    label: 'סה"כ שעות (משולמות)', group: 'hours' },
+    { key: 'break_time',    label: 'הפסקה',         group: 'hours' },
     { key: 'hours_100',     label: 'שעות 100%',           group: 'hours' },
     { key: 'hours_125',     label: 'שעות 125%',           group: 'hours' },
     { key: 'hours_150',     label: 'שעות 150%',           group: 'hours' },
     { key: 'miluim_work_hours', label: 'שעות עבודה במילואים', group: 'hours' },
     { key: 'global_overtime_hours', label: 'תוספת גלובלית', group: 'hours' },
     { key: 'global_overtime_used',  label: 'ניצול תוספת',   group: 'hours' },
+
+    // קבוצת חוסר שעות (כתום) — חישוב לפי "הטעויות" של Meckano
+    { key: 'hours_missing',     label: 'שעות חוסר',         group: 'deficit' },
+    { key: 'fake_deficit',      label: 'הפחתה מדומה (ע.חג)', group: 'deficit' },
+    { key: 'hours_missing_net', label: 'סה"כ חוסר מעודכן',  group: 'deficit' },
 
     // קבוצת קיזוזים (אדום)
     { key: 'sick_kizuz',    label: 'מחלה לקיזוז',  group: 'deduct' },
@@ -120,13 +128,21 @@ window.WorksheetEngine = (function() {
       sick:               events.sick               || 0,
       miluim:             events.miluim             || 0,
 
+      hours_attendance:   summary.hours_present || summary.hours_total || 0,
+      hours_standard:     summary.hours_standard || 0,
       hours_paid:         summary.hours_paid || 0,
+      break_time:         summary.break_total || 0,
       hours_100:          otAdj.effective_100,
       hours_125:          otAdj.effective_125,
       hours_150:          otAdj.effective_150,
       miluim_work_hours:  summary.miluim_work_hours || 0,
       global_overtime_hours: globalThreshold || 0,
       global_overtime_used:  otAdj.absorbed_by_bonus,
+
+      // חוסר שעות עם תיקון "הפחתה מדומה" של ע.חג/חוה"מ
+      hours_missing:      summary.hours_missing || 0,
+      fake_deficit:       summary.fake_deficit || 0,
+      hours_missing_net:  summary.hours_missing_net || 0,
 
       sick_kizuz:         sickKizuz,
       chalat:             chalatComputed,
