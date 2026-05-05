@@ -181,7 +181,9 @@
         days_count:    row.issues.length,
         dates:         row.issues.map(i => i.day_label).join(', '),
         missing_kind:  [...new Set(row.issues.map(i => i.missing))].join(' / '),
-        status:        'דרוש מילוי',
+        status:        row.explained_by_summary ? '⚠ אולי מוסבר בסיכום' : 'דרוש מילוי',
+        explain_note:  row.explain_note || '',
+        explained:     !!row.explained_by_summary,
       }));
 
       let html = '';
@@ -203,7 +205,11 @@
             if (c.key === 'employee_name') return '<td><strong>' + escapeHtml(row.employee_name) + '</strong></td>';
             if (c.key === 'days_count')    return '<td class="count">' + row.days_count + '</td>';
             if (c.key === 'dates')         return '<td class="dates">' + escapeHtml(row.dates) + '</td>';
-            if (c.key === 'status')        return '<td class="status"><span class="badge-status">' + row.status + '</span></td>';
+            if (c.key === 'status')        {
+              const cls = row.explained ? 'background:#fef3c7;color:#92400e;' : '';
+              const tip = row.explain_note ? ' title="' + escapeHtml(row.explain_note) + '"' : '';
+              return '<td class="status"' + tip + '><span class="badge-status" style="' + cls + '">' + row.status + '</span></td>';
+            }
             if (c.key === 'employee_type') {
               return '<td><select class="type-sel" data-no="' + row.employee_no + '" style="padding:3px 8px;border:1px solid #d1d5db;border-radius:5px;font-size:0.84rem;">' +
                 EMP_TYPES.map(t => '<option value="' + t + '"' + (row.employee_type === t ? ' selected' : '') + '>' + t + '</option>').join('') +

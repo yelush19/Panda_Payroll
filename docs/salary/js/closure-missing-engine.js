@@ -184,18 +184,11 @@ window.ClosureMissingEngine = (function() {
       const daysPresent = (block.summary && block.summary.days_present) || 0;
 
       // "תקציב הסבר" - ימי חל"ת + היעדרות שמופיעים בסיכום החודשי גם אם לא
-      // מתויגים פר-יום. אם מספר הימים החסרים <= תקציב, אנחנו מניחים שהם
-      // הוסברו ע"י הסיכום ולא מתריעים. (תפס מקרים כמו לוי דביש שיש לו
-      // events.absence=2 והדיווח היומי ריק.)
+      // מתויגים פר-יום. אם מספר הימים החסרים <= תקציב, אנחנו מסמנים אותם
+      // ב-status מיוחד "ייתכן שמוסבר בסיכום" — אבל עדיין מציגים, כי המשתמשת
+      // צריכה לאמת.
       const explainBudget = (events.chalat || 0) + (events.absence || 0);
-      if (r.issues.length > 0 && r.issues.length <= explainBudget) {
-        excluded.push({
-          employee_no: block.employee_no,
-          employee_name: empName,
-          reason: 'ימים חסרים מוסברים בסיכום (חל"ת=' + (events.chalat||0) + ', היעדרות=' + (events.absence||0) + ')',
-        });
-        return;
-      }
+      const isExplainedBySummary = r.issues.length > 0 && r.issues.length <= explainBudget;
 
       // 6. אין סוג עובד הוגדר באינדקס + days_present=0 → דורש בדיקה (לא לסגור אוטומטית)
       if (!empType && daysPresent === 0) {
@@ -219,7 +212,13 @@ window.ClosureMissingEngine = (function() {
         return;
       }
 
-      if (r.issues.length > 0) rows.push(r);
+      if (r.issues.length > 0) {
+        if (isExplainedBySummary) {
+          r.explained_by_summary = true;
+          r.explain_note = 'ייתכן שמוסבר בסיכום (חל"ת=' + (events.chalat||0) + ', היעדרות=' + (events.absence||0) + ')';
+        }
+        rows.push(r);
+      }
     });
 
     rows.sort((a, b) => b.issues.length - a.issues.length);
