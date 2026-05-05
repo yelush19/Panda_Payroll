@@ -117,6 +117,12 @@ window.WorksheetEngine = (function() {
       : { total_kizuz: 0, streaks: [] };
     const sickKizuz = sickResult.total_kizuz;
 
+    // הפחתה מדומה נוספת — ימי ע.חג/חוה"מ עם ניצול חופש שיש בהם חוסר תקן
+    // (החוסר מדומה — לא צריך לקזז)
+    const extraFake = (typeof EmployeeRules !== 'undefined' && EmployeeRules.computeExtraFakeDeficitFromDays)
+      ? EmployeeRules.computeExtraFakeDeficitFromDays(days)
+      : 0;
+
     // צפוי = max_work_days - חל"ת - היעדרות - מחלה לקיזוז
     // (תאונת עבודה לכל החודש = max_work_days, ללא ניכויים)
     let expected;
@@ -149,10 +155,10 @@ window.WorksheetEngine = (function() {
       global_overtime_hours: globalThreshold || 0,
       global_overtime_used:  otAdj.absorbed_by_bonus,
 
-      // חוסר שעות עם תיקון "הפחתה מדומה" של ע.חג/חוה"מ
+      // חוסר שעות עם תיקון "הפחתה מדומה" של ע.חג/חוה"מ + תיקון ל-ע.חג/חוה"מ עם חופש
       hours_missing:      summary.hours_missing || 0,
-      fake_deficit:       summary.fake_deficit || 0,
-      hours_missing_net:  summary.hours_missing_net || 0,
+      fake_deficit:       round2(((summary.fake_deficit || 0) - extraFake) || 0),
+      hours_missing_net:  round2(((summary.hours_missing || 0) - Math.abs((summary.fake_deficit || 0)) - extraFake) || 0),
 
       sick_kizuz:         sickKizuz,
       chalat:             chalatComputed,
