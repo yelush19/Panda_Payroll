@@ -518,21 +518,63 @@
             "אחר":           [],
         };
 
-        // לקיחת קוד עובד מהאינדקס לפי שם
+        // לקיחת קוד עובד מהאינדקס לפי שם — אסטרטגיות חיפוש מרובות
         function findEmployeeNoByName(fullName) {
             if (typeof EmIndexStore === 'undefined') return null;
             const list = EmIndexStore.loadAll();
-            if (!list || !list.length) return null;
-            const target = String(fullName).trim();
-            // התאמה מדויקת ראשונה, ואז גם בסדר הפוך (פרטי+משפחה)
-            const exact = list.find(e => (e.full_name || '').trim() === target);
-            if (exact && exact.employee_no) return parseInt(exact.employee_no, 10);
-            const parts = target.split(/\s+/);
-            if (parts.length >= 2) {
-                const reversed = parts.reverse().join(' ');
-                const r = list.find(e => (e.full_name || '').trim() === reversed);
-                if (r && r.employee_no) return parseInt(r.employee_no, 10);
+            if (!list || !list.length) {
+                console.warn('findEmployeeNoByName: EmIndexStore ריק — האינדקס לא נטען. גשי לאינדקס עובדים והעלי Em_Index.');
+                return null;
             }
+            const target = String(fullName).trim().replace(/\s+/g, ' ');
+            const parts = target.split(' ').filter(Boolean);
+
+            // 1. התאמה מדויקת של full_name
+            let m = list.find(e => (e.full_name || '').trim().replace(/\s+/g, ' ') === target);
+            if (m && m.employee_no) return parseInt(m.employee_no, 10);
+
+            // 2. בסדר הפוך (פרטי+משפחה ↔ משפחה+פרטי)
+            if (parts.length >= 2) {
+                const reversed = parts.slice().reverse().join(' ');
+                m = list.find(e => (e.full_name || '').trim().replace(/\s+/g, ' ') === reversed);
+                if (m && m.employee_no) return parseInt(m.employee_no, 10);
+            }
+
+            // 3. first_name + last_name בכל סדר
+            if (parts.length >= 2) {
+                m = list.find(e => {
+                    const fn = (e.first_name || '').trim();
+                    const ln = (e.last_name || '').trim();
+                    if (!fn || !ln) return false;
+                    return (fn + ' ' + ln) === target || (ln + ' ' + fn) === target;
+                });
+                if (m && m.employee_no) return parseInt(m.employee_no, 10);
+            }
+
+            // 4. כל חלקי השם נמצאים בעובד (גם אם יש שם אמצעי / סדר שונה)
+            if (parts.length >= 2) {
+                m = list.find(e => {
+                    const fn = (e.first_name || '').trim();
+                    const ln = (e.last_name || '').trim();
+                    return parts.every(p => p === fn || p === ln ||
+                        (e.full_name || '').includes(p));
+                });
+                if (m && m.employee_no) return parseInt(m.employee_no, 10);
+            }
+
+            // 5. התאמה חלקית: כל חלקי השם מופיעים ב-full_name של העובד
+            if (parts.length >= 2) {
+                m = list.find(e => {
+                    const full = (e.full_name || '').replace(/\s+/g, ' ');
+                    return parts.every(p => full.indexOf(p) !== -1);
+                });
+                if (m && m.employee_no) return parseInt(m.employee_no, 10);
+            }
+
+            // לוג לדיאגנוזה
+            console.warn('findEmployeeNoByName: לא נמצא "' + target + '" באינדקס (' + list.length + ' עובדים).');
+            console.warn('דוגמאות מהאינדקס:', list.slice(0, 5).map(e =>
+                ({ no: e.employee_no, full: e.full_name, first: e.first_name, last: e.last_name })));
             return null;
         }
 
@@ -783,7 +825,11 @@
                 employeesData[name] = { department: '', id: '' };
             });
 
-            const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            // נורמליזציה: גם bullets (• ▪ ●) מתפקדים כמפרידי שורות, לא רק \n
+            const normalized = rawText
+                .replace(/[•▪●]/g, '\n')   // • ▪ ●
+                .replace(/[*]/g, '\n');                    // * לפעמים גם
+            const lines = normalized.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
             let currentDept = '';
             let currentEmployee = null;
             let pendingRequest = [];
