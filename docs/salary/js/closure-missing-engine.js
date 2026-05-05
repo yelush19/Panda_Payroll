@@ -58,7 +58,15 @@ window.ClosureMissingEngine = (function() {
   function whatIsMissing(d) {
     const hasEntry = !!String(d.entry || '').trim();
     const hasExit  = !!String(d.exit  || '').trim();
-    if (!hasEntry && !hasExit) return 'שניהם (כניסה ויציאה)';
+    const sug = String(d.day_type || '').trim();
+    const isEveHoliday = sug === 'ערב חג';
+    const isCholHaMoed = sug === 'חוה"מ' || sug === 'חול המועד';
+
+    if (!hasEntry && !hasExit) {
+      if (isEveHoliday) return 'ערב חג ללא דיווח — יש לחייב 0.5 חופש + תיוג ערב חג';
+      if (isCholHaMoed) return 'חוה"מ ללא דיווח — יש לחייב חופש או לתייג חוה"מ';
+      return 'שניהם (כניסה ויציאה)';
+    }
     if (!hasEntry) return 'כניסה בלבד';
     if (!hasExit)  return 'יציאה בלבד';
     return null; // לא חסר
