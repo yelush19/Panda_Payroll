@@ -125,6 +125,10 @@
         <select id="monthSelect"></select>
         <select id="yearSelect"></select>
         <button class="btn btn-primary" id="runBtn">🔄 הפק דוח</button>
+        <label style="display:flex; align-items:center; gap:6px; font-size:0.9rem; color:#6b7280; margin-right:12px;">
+          <input type="checkbox" id="includeInactive">
+          כלול עובדים שעזבו
+        </label>
         <span id="periodInfo" style="color:#6b7280;font-size:0.88rem;"></span>
       </div>
 
@@ -204,7 +208,8 @@
       const y = parseInt(yearSelect.value, 10);
       const m = parseInt(monthSelect.value, 10);
       try {
-        currentReport = ReconciliationEngine.build(y, m);
+        const includeInactive = document.getElementById('includeInactive').checked;
+        currentReport = ReconciliationEngine.build(y, m, { include_inactive: includeInactive });
         renderReport();
       } catch (e) {
         document.getElementById('reportArea').innerHTML =
