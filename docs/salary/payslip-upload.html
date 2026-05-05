@@ -185,6 +185,7 @@
   <script src="../shared/js/prevent-default-drop.js"></script>
   <script src="js/shiklulit-parser.js"></script>
   <script src="js/payslip-store.js"></script>
+  <script src="../shared/js/shiklulit-to-hr-sync.js"></script>
   <script>
     'use strict';
 
@@ -448,13 +449,22 @@
         const meta = PayslipStore.saveAndSync(year, month, payload);
         const sbNote = PayslipStore.isSupabaseAvailable() ? ' • מסונכרן ל-Supabase ☁️' : '';
 
+        // 🆕 סנכרון אוטומטי לאינדקס המרכזי: יתרות חופש/מחלה/הבראה + שכר בסיס
+        let hrSyncNote = '';
+        if (typeof ShiklulitToHrSync !== 'undefined') {
+          try {
+            const r = ShiklulitToHrSync.syncFromShiklulit(year, month);
+            if (r.ok) hrSyncNote = ' • עודכנו ' + r.updated + ' עובדים באינדקס HR ✓';
+          } catch (e) { console.warn('hr-sync failed:', e); }
+        }
+
         // Success message + clear "what's next" CTAs
         const area = document.getElementById('alertArea');
         area.innerHTML =
           '<div class="alert alert-success" style="line-height:1.7;">' +
           '<div style="font-size:1.1rem; font-weight:700; margin-bottom:8px;">' +
             '✅ נשמר בהצלחה: ' + meta.employee_count + ' עובדים לחודש ' + meta.period +
-            ' (' + (meta.size_bytes / 1024).toFixed(1) + ' KB)' + sbNote +
+            ' (' + (meta.size_bytes / 1024).toFixed(1) + ' KB)' + sbNote + hrSyncNote +
           '</div>' +
           '<div style="margin-top:14px; padding-top:14px; border-top:1px solid #6ee7b7;">' +
             '<strong style="display:block; margin-bottom:8px;">🎯 מה הלאה? בחרי בדיקה:</strong>' +
