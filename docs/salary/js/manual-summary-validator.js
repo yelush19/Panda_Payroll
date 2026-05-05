@@ -88,6 +88,24 @@ window.ManualSummaryValidator = (function() {
         }
       }
 
+      // סינון קבלנים מהוולידציה — הם לא נכללים בדוחות בכל מקרה,
+      // אז אין טעם להציג אי-התאמות לגביהם.
+      // זיהוי: 1) שם הכותרת מכיל "קבלן" 2) ב-EmIndex employee_type=קבלן
+      const isContractorByName = nameRaw.indexOf('קבלן') !== -1;
+      let isContractorByType = false;
+      if (typeof EmIndexStore !== 'undefined') {
+        try {
+          const list = EmIndexStore.loadAll() || [];
+          const emp = list.find(e => String(e.employee_no) === empNoRaw);
+          if (emp && (emp.employee_type === 'קבלן' || emp.employee_type === 'פרויקט')) {
+            isContractorByType = true;
+          }
+        } catch (e) {}
+      }
+      if (isContractorByName || isContractorByType) {
+        continue; // דלג, לא מוסיפים ל-results
+      }
+
       if (!block) {
         missingInArchive++;
         results.push({

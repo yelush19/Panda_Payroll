@@ -847,7 +847,10 @@
                 alert('מודול לא נמצא!');
                 return;
             }
-            window.location.href = file;
+            // Use absolute path (starting with /) to avoid relative-path resolution issues
+            // with Vercel cleanUrls. From any page, /hr/absences.html will work; relative
+            // 'hr/absences.html' would fail if current URL ends without trailing slash.
+            window.location.href = '/' + file;
         }
 
         // Add animation on load
