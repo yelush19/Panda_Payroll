@@ -37,8 +37,18 @@ window.DaysSummaryEngine = (function() {
     const empType = (employee && employee.employee_type) || 'גלובלי';
     const rules   = (typeof EmployeeRules !== 'undefined') ? EmployeeRules.getRules(empType) : null;
 
-    const summary = block.summary || {};
-    const events  = block.events  || {};
+    let summary = block.summary || {};
+    let events  = block.events  || {};
+
+    // החלת תיקונים ידניים (אם קיימים) — לטיפול במצבים כמו "עובד שהשלים יום בדיעבד"
+    if (typeof ManualAdjustmentsStore !== 'undefined' && typeof EmployeeRules !== 'undefined' && EmployeeRules.applyAdjustmentsToEvents) {
+      const period = ManualAdjustmentsStore.periodKey(periodYear, periodMonth);
+      const adj = ManualAdjustmentsStore.aggregateForEmployee(block.employee_no, period);
+      if (Object.keys(adj).length > 0) {
+        events = EmployeeRules.applyAdjustmentsToEvents(events, adj);
+        summary = EmployeeRules.applyAdjustmentsToSummary(summary, adj);
+      }
+    }
 
     // מצב תאונת עבודה מהאינדקס (אם הוגדר special_status)
     const accidentStatus = (typeof EmployeeRules !== 'undefined' && employee)

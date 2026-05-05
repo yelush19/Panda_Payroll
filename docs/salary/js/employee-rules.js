@@ -451,6 +451,58 @@ window.EmployeeRules = (function() {
     return { exclude: false };
   }
 
+  // computeExtraFakeDeficitFromDays:
+  // סורק ימי החודש ומוצא ימי ע.חג (וגם חוה"מ) שיש בהם ניצול חופש >= 0.5
+  // ושעות חוסר > 0. השעות האלה מדומות — מוסיפות ל-fake_deficit הכולל.
+  //
+  // הלוגיקה: בע.חג היום סטנדרטי 6 שעות (במקום 8.4). ניצול חופש 0.5 = 4.2 שעות.
+  // אבל בפועל אין צורך בכלל לעבוד כי הניצול אמור לכסות. כל "שעות חוסר" באותה
+  // שורה הן ארטיפקט של איך מקאנו מחשב — לא חוסר אמיתי.
+  function computeExtraFakeDeficitFromDays(days) {
+    if (!Array.isArray(days)) return 0;
+    let extra = 0;
+    days.forEach(d => {
+      const dayType = (d.day_type || '').trim();
+      const event   = (d.event || '').trim();
+      const isEveHoliday = dayType.indexOf('ערב חג') !== -1 ||
+                           dayType.indexOf('עחג') !== -1 ||
+                           event.indexOf('ערב חג') !== -1 ||
+                           event.indexOf('ע.חג') !== -1;
+      const isCholHaMoed = dayType.indexOf('חוה"מ') !== -1 ||
+                           dayType.indexOf('חול המועד') !== -1 ||
+                           event.indexOf('חוה"מ') !== -1 ||
+                           event.indexOf('חול המועד') !== -1;
+      const hasVacation = event.indexOf('חופש') !== -1;
+      const missing = parseFloat(d.hours_missing) || 0;
+      if ((isEveHoliday || isCholHaMoed) && hasVacation && missing > 0) {
+        extra += missing;
+      }
+    });
+    return extra;
+  }
+
+  // החלת תיקונים ידניים על events של בלוק Meckano.
+  // adjustments = { vacation_charged: +2, sick_kizuz: -1, ... } מ-ManualAdjustmentsStore.aggregateForEmployee
+  // מחזיר אובייקט events חדש עם ה-deltas.
+  function applyAdjustmentsToEvents(events, adjustments) {
+    if (!adjustments || Object.keys(adjustments).length === 0) return events;
+    const out = { ...events };
+    Object.keys(adjustments).forEach(field => {
+      out[field] = (out[field] || 0) + adjustments[field];
+    });
+    return out;
+  }
+
+  // החלת תיקון על summary (לדוגמה: days_paid, hours_paid)
+  function applyAdjustmentsToSummary(summary, adjustments) {
+    if (!adjustments || Object.keys(adjustments).length === 0) return summary;
+    const out = { ...summary };
+    ['days_paid', 'hours_paid', 'days_present'].forEach(field => {
+      if (adjustments[field]) out[field] = (out[field] || 0) + adjustments[field];
+    });
+    return out;
+  }
+
   return {
     getRules, shouldIncludeInReport, listTypes,
     calculateWorkAccidentStatus,
@@ -464,6 +516,9 @@ window.EmployeeRules = (function() {
     applyGlobalBonusThreshold,
     shouldExcludeFromClosureCheck,
     effectiveMaxWorkDays,
+    applyAdjustmentsToEvents,
+    applyAdjustmentsToSummary,
+    computeExtraFakeDeficitFromDays,
     HOURLY_OVERTIME_WEEKLY_THRESHOLD_HOURS,
     HOURLY_HOLIDAY_PAY_TENURE_MONTHS,
     WORK_ACCIDENT_NII_THRESHOLD_DAYS,
