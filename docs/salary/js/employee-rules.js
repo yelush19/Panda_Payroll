@@ -493,11 +493,13 @@ window.EmployeeRules = (function() {
     return out;
   }
 
-  // החלת תיקון על summary (לדוגמה: days_paid, hours_paid)
+  // החלת תיקון על summary (לדוגמה: days_paid, hours_paid, hours_missing)
   function applyAdjustmentsToSummary(summary, adjustments) {
     if (!adjustments || Object.keys(adjustments).length === 0) return summary;
     const out = { ...summary };
-    ['days_paid', 'hours_paid', 'days_present'].forEach(field => {
+    ['days_paid', 'hours_paid', 'days_present',
+     'hours_missing', 'fake_deficit', 'hours_missing_net',
+     'hours_present', 'hours_standard'].forEach(field => {
       if (adjustments[field]) out[field] = (out[field] || 0) + adjustments[field];
     });
     return out;

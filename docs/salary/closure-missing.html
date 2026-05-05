@@ -248,14 +248,19 @@
 
     // ===== Manual Adjustments Modal =====
     const ADJ_FIELDS = [
-      { key: 'days_paid',       label: 'ימים משולמים' },
-      { key: 'vacation_charged', label: 'חופשה לחיוב' },
-      { key: 'sick',            label: 'ימי מחלה' },
-      { key: 'sick_kizuz',      label: 'מחלה לקיזוז' },
-      { key: 'miluim',          label: 'ימי מילואים' },
-      { key: 'chalat',          label: 'חל"ת' },
-      { key: 'absence',         label: 'היעדרות' },
-      { key: 'work_accident',   label: 'תאונת עבודה' },
+      // ימים
+      { key: 'days_paid',       label: 'ימים משולמים', group: 'days' },
+      { key: 'vacation_charged', label: 'חופשה לחיוב', group: 'days' },
+      { key: 'sick',            label: 'ימי מחלה',     group: 'days' },
+      { key: 'sick_kizuz',      label: 'מחלה לקיזוז',  group: 'days' },
+      { key: 'miluim',          label: 'ימי מילואים',  group: 'days' },
+      { key: 'chalat',          label: 'חל"ת',         group: 'days' },
+      { key: 'absence',         label: 'היעדרות',      group: 'days' },
+      { key: 'work_accident',   label: 'תאונת עבודה',  group: 'days' },
+      // שעות (לתיקון שגיאות מקאנו / החלטות נקודתיות)
+      { key: 'hours_paid',      label: 'שעות משולמות', group: 'hours' },
+      { key: 'hours_missing',   label: 'שעות חוסר',    group: 'hours' },
+      { key: 'fake_deficit',    label: 'הפחתה מדומה',  group: 'hours' },
     ];
 
     function getCurrentPeriod() {
