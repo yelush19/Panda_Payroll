@@ -31,10 +31,9 @@ window.ClosureMissingEngine = (function() {
   // עשוי לא לכלול תיוג 'מילואים' פר-יום. נחריג אותו לחלוטין מהדוח.
   const MILUIM_EXTENDED_THRESHOLD_DAYS = 15;
 
-  // חוסר סגירה רלוונטי רק ל"יום חול" - ערב חג / חוה"מ ללא ניקוב נספרים
-  // אוטומטית כחופש לחיוב ע"י Meckano (לפי הפעולה הידנית של יילנה).
-  // סופ"ש וחג - לא רלוונטיים בכלל.
-  const CLOSURE_RELEVANT_DAY_TYPES = ['יום חול'];
+  // חוסר סגירה רלוונטי לכל יום שעובד חייב לדווח: יום חול, ערב חג (יום עבודה
+  // קצר אבל חובה), וחוה"מ (במקרים מסוימים). לא רלוונטי: סופ"ש וחג מלא.
+  const CLOSURE_RELEVANT_DAY_TYPES = ['יום חול', 'ערב חג', 'חוה"מ', 'חול המועד'];
 
   function isCoveringEvent(eventStr) {
     if (!eventStr) return false;
@@ -59,7 +58,15 @@ window.ClosureMissingEngine = (function() {
   function whatIsMissing(d) {
     const hasEntry = !!String(d.entry || '').trim();
     const hasExit  = !!String(d.exit  || '').trim();
-    if (!hasEntry && !hasExit) return 'שניהם (כניסה ויציאה)';
+    const sug = String(d.day_type || '').trim();
+    const isEveHoliday = sug === 'ערב חג';
+    const isCholHaMoed = sug === 'חוה"מ' || sug === 'חול המועד';
+
+    if (!hasEntry && !hasExit) {
+      if (isEveHoliday) return 'ערב חג ללא דיווח — יש לחייב 0.5 חופש + תיוג ערב חג';
+      if (isCholHaMoed) return 'חוה"מ ללא דיווח — יש לחייב חופש או לתייג חוה"מ';
+      return 'שניהם (כניסה ויציאה)';
+    }
     if (!hasEntry) return 'כניסה בלבד';
     if (!hasExit)  return 'יציאה בלבד';
     return null; // לא חסר
@@ -184,18 +191,11 @@ window.ClosureMissingEngine = (function() {
       const daysPresent = (block.summary && block.summary.days_present) || 0;
 
       // "תקציב הסבר" - ימי חל"ת + היעדרות שמופיעים בסיכום החודשי גם אם לא
-      // מתויגים פר-יום. אם מספר הימים החסרים <= תקציב, אנחנו מניחים שהם
-      // הוסברו ע"י הסיכום ולא מתריעים. (תפס מקרים כמו לוי דביש שיש לו
-      // events.absence=2 והדיווח היומי ריק.)
+      // מתויגים פר-יום. אם מספר הימים החסרים <= תקציב, אנחנו מסמנים אותם
+      // ב-status מיוחד "ייתכן שמוסבר בסיכום" — אבל עדיין מציגים, כי המשתמשת
+      // צריכה לאמת.
       const explainBudget = (events.chalat || 0) + (events.absence || 0);
-      if (r.issues.length > 0 && r.issues.length <= explainBudget) {
-        excluded.push({
-          employee_no: block.employee_no,
-          employee_name: empName,
-          reason: 'ימים חסרים מוסברים בסיכום (חל"ת=' + (events.chalat||0) + ', היעדרות=' + (events.absence||0) + ')',
-        });
-        return;
-      }
+      const isExplainedBySummary = r.issues.length > 0 && r.issues.length <= explainBudget;
 
       // 6. אין סוג עובד הוגדר באינדקס + days_present=0 → דורש בדיקה (לא לסגור אוטומטית)
       if (!empType && daysPresent === 0) {
@@ -219,7 +219,13 @@ window.ClosureMissingEngine = (function() {
         return;
       }
 
-      if (r.issues.length > 0) rows.push(r);
+      if (r.issues.length > 0) {
+        if (isExplainedBySummary) {
+          r.explained_by_summary = true;
+          r.explain_note = 'ייתכן שמוסבר בסיכום (חל"ת=' + (events.chalat||0) + ', היעדרות=' + (events.absence||0) + ')';
+        }
+        rows.push(r);
+      }
     });
 
     rows.sort((a, b) => b.issues.length - a.issues.length);

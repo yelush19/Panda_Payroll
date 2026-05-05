@@ -123,6 +123,9 @@ window.WorksheetEngine = (function() {
       ? EmployeeRules.computeExtraFakeDeficitFromDays(days)
       : 0;
 
+    // עובדים שלא צריכים סגירה (קבלן/שעתי/מנכ"ל) — שעות חוסר לא רלוונטי להם
+    const skipHoursMissing = rules && rules.check_closure_gap === false;
+
     // צפוי = max_work_days - חל"ת - היעדרות - מחלה לקיזוז
     // (תאונת עבודה לכל החודש = max_work_days, ללא ניכויים)
     let expected;
@@ -156,9 +159,10 @@ window.WorksheetEngine = (function() {
       global_overtime_used:  otAdj.absorbed_by_bonus,
 
       // חוסר שעות עם תיקון "הפחתה מדומה" של ע.חג/חוה"מ + תיקון ל-ע.חג/חוה"מ עם חופש
-      hours_missing:      summary.hours_missing || 0,
-      fake_deficit:       round2(((summary.fake_deficit || 0) - extraFake) || 0),
-      hours_missing_net:  round2(((summary.hours_missing || 0) - Math.abs((summary.fake_deficit || 0)) - extraFake) || 0),
+      // קבלנים/שעתיים/מנכ"לים — לא רלוונטי להם, אז משאירים ריק
+      hours_missing:      skipHoursMissing ? null : (summary.hours_missing || 0),
+      fake_deficit:       skipHoursMissing ? null : round2(((summary.fake_deficit || 0) - extraFake) || 0),
+      hours_missing_net:  skipHoursMissing ? null : round2(((summary.hours_missing || 0) - Math.abs((summary.fake_deficit || 0)) - extraFake) || 0),
 
       sick_kizuz:         sickKizuz,
       chalat:             chalatComputed,
