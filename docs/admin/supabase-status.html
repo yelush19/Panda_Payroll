@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>☁️ סטטוס Supabase</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', 'Heebo', Arial, sans-serif; background: #e9eef3; color: #2b486a; direction: rtl; margin: 0; padding: 20px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .header { background: linear-gradient(90deg, #0ea5e9 0%, #0284c7 100%); color: #fff; border-radius: 14px; padding: 22px 28px; margin-bottom: 22px; }
+    .header h1 { margin: 0 0 6px 0; font-size: 1.6rem; }
+    .card { background: #fff; border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .card h2 { margin: 0 0 14px 0; color: #0284c7; font-size: 1.1rem; }
+    .row { display: grid; grid-template-columns: 220px 1fr 100px; gap: 12px; align-items: center; padding: 10px 12px; border-bottom: 1px solid #f3f4f6; }
+    .row:last-child { border-bottom: 0; }
+    .row .label { font-weight: 600; color: #374151; }
+    .row .value { color: #2b486a; font-size: 0.95rem; }
+    .badge { display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 0.82rem; font-weight: 700; text-align: center; }
+    .b-ok { background: #d1fae5; color: #065f46; }
+    .b-bad { background: #fee2e2; color: #991b1b; }
+    .b-warn { background: #fef3c7; color: #92400e; }
+    .btn { padding: 8px 16px; border: 0; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; background: #0284c7; color: #fff; margin-top: 12px; margin-left: 6px; }
+    .btn:hover { background: #0369a1; }
+    .btn-secondary { background: #e5e7eb; color: #374151; }
+    pre { background: #f3f4f6; padding: 10px 14px; border-radius: 6px; font-size: 0.85rem; overflow-x: auto; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>☁️ סטטוס Supabase — בדיקת חיבור וסנכרון</h1>
+      <div style="opacity:0.92; font-size:0.92rem;">בדיקה אם ההגדרות תקינות, יש חיבור, יש session, והנתונים מסונכרנים.</div>
+    </div>
+
+    <div class="card">
+      <h2>1. חיבור בסיסי</h2>
+      <div id="basicCheck"></div>
+    </div>
+
+    <div class="card">
+      <h2>2. נתונים מקומיים מול שרת</h2>
+      <div id="dataCheck"><em style="color:#6b7280;">טוען...</em></div>
+      <div style="margin-top:14px;">
+        <button class="btn" id="syncAllBtn">🔄 דחוף את כל הנתונים המקומיים לשרת</button>
+        <button class="btn btn-secondary" id="refreshBtn">🔄 רענון בדיקה</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>3. פעולות מתקדמות</h2>
+      <button class="btn btn-secondary" id="testWriteBtn">🧪 בדיקת כתיבה (insert+delete)</button>
+      <div id="advancedResult" style="margin-top:12px;"></div>
+    </div>
+
+    <div class="card" id="logCard">
+      <h2>📜 לוג בדיקה</h2>
+      <pre id="log"></pre>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../shared/js/supabase-config.js"></script>
+  <script src="../shared/js/supabase-client.js"></script>
+  <script src="../shared/js/auth-bar.js"></script>
+  <script src="../shared/js/home-button.js"></script>
+  <script src="../reserve/js/em-index-store.js"></script>
+  <script src="../salary/js/meckano-archive-store.js"></script>
+  <script src="../salary/js/payslip-store.js"></script>
+  <script src="../reserve/js/reserve-periods-store.js"></script>
+  <script>
+    'use strict';
+
+    function log(msg) {
+      const pre = document.getElementById('log');
+      pre.textContent += '[' + new Date().toLocaleTimeString('he-IL') + '] ' + msg + '\n';
+    }
+
+    function row(label, value, badge, badgeClass) {
+      return '<div class="row"><div class="label">' + label + '</div>' +
+        '<div class="value">' + value + '</div>' +
+        '<div><span class="badge ' + (badgeClass || 'b-warn') + '">' + (badge || '?') + '</span></div></div>';
+    }
+
+    async function runBasicChecks() {
+      const div = document.getElementById('basicCheck');
+      let html = '';
+
+      // 1. SUPABASE_CONFIG defined
+      const cfgOk = typeof SUPABASE_CONFIG !== 'undefined' && SUPABASE_CONFIG.URL && SUPABASE_CONFIG.ANON_KEY;
+      html += row('הגדרות (config)', cfgOk ? SUPABASE_CONFIG.URL : 'חסרות',
+        cfgOk ? 'תקין' : 'חסר', cfgOk ? 'b-ok' : 'b-bad');
+
+      // 2. SB client created
+      const clientOk = typeof SB !== 'undefined' && SB && SB.client;
+      html += row('Client', clientOk ? 'נטען' : 'לא נטען',
+        clientOk ? 'תקין' : 'חסר', clientOk ? 'b-ok' : 'b-bad');
+
+      // 3. Session exists
+      let sessionInfo = 'לא מחובר';
+      let sessionOk = false;
+      if (clientOk) {
+        try {
+          const session = await SB.getSession();
+          if (session) {
+            sessionOk = true;
+            sessionInfo = session.user ? session.user.email : 'מחובר';
+          }
+        } catch (e) { sessionInfo = 'שגיאה: ' + e.message; }
+      }
+      html += row('Session (התחברות)', sessionInfo,
+        sessionOk ? 'מחובר' : 'לא מחובר', sessionOk ? 'b-ok' : 'b-warn');
+
+      // 4. Network ping
+      let pingOk = false;
+      let pingInfo = 'לא נבדק';
+      if (clientOk && sessionOk) {
+        try {
+          const t0 = Date.now();
+          const { error } = await SB.client.from('employees_master').select('employee_no').limit(1);
+          const t = Date.now() - t0;
+          if (!error) { pingOk = true; pingInfo = 'תגובה: ' + t + 'ms'; }
+          else pingInfo = 'שגיאה: ' + error.message;
+        } catch (e) { pingInfo = 'שגיאה: ' + e.message; }
+      }
+      html += row('Ping לשרת', pingInfo,
+        pingOk ? 'תקין' : 'נכשל', pingOk ? 'b-ok' : 'b-bad');
+
+      div.innerHTML = html;
+
+      log('Basic check: cfg=' + cfgOk + ' client=' + clientOk + ' session=' + sessionOk + ' ping=' + pingOk);
+      return { cfgOk, clientOk, sessionOk, pingOk };
+    }
+
+    async function checkData() {
+      const div = document.getElementById('dataCheck');
+      let html = '';
+
+      // Local counts
+      const empLocal = (typeof EmIndexStore !== 'undefined') ? (EmIndexStore.loadAll() || []).length : 0;
+      const meckLocal = (typeof MeckanoArchiveStore !== 'undefined') ? MeckanoArchiveStore.loadIndex().length : 0;
+      const payLocal = (typeof PayslipStore !== 'undefined') ? PayslipStore.loadIndex().length : 0;
+      const resLocal = (typeof ReservePeriodsStore !== 'undefined') ? ReservePeriodsStore.loadAll().length : 0;
+
+      // Remote counts (via direct queries)
+      let empRemote = '?', meckRemote = '?', payRemote = '?', resRemote = '?';
+      let canQuery = false;
+      if (typeof SB !== 'undefined' && SB && SB.client) {
+        const session = await SB.getSession();
+        if (session) {
+          canQuery = true;
+          try {
+            const r1 = await SB.client.from('employees_master').select('employee_no', { count: 'exact', head: true });
+            empRemote = r1.error ? '❌ ' + r1.error.message : (r1.count || 0);
+          } catch (e) { empRemote = '❌ ' + e.message; }
+          try {
+            const r2 = await SB.client.from('meckano_archives').select('period', { count: 'exact', head: true });
+            meckRemote = r2.error ? '❌ ' + r2.error.message : (r2.count || 0);
+          } catch (e) { meckRemote = '❌ ' + e.message; }
+          try {
+            const r3 = await SB.client.from('payslip_archives').select('period', { count: 'exact', head: true });
+            payRemote = r3.error ? '❌ ' + r3.error.message : (r3.count || 0);
+          } catch (e) { payRemote = '❌ ' + e.message; }
+          try {
+            const r4 = await SB.client.from('reserve_periods').select('id', { count: 'exact', head: true });
+            resRemote = r4.error ? '❌ ' + r4.error.message : (r4.count || 0);
+          } catch (e) { resRemote = '❌ ' + e.message; }
+        }
+      }
+
+      function compareRow(name, local, remote) {
+        if (!canQuery) return row(name, 'מקומי: ' + local + ' • שרת: ?', 'אין session', 'b-warn');
+        if (typeof remote === 'string' && remote.startsWith('❌')) {
+          return row(name, 'מקומי: ' + local + ' • ' + remote, 'שגיאה', 'b-bad');
+        }
+        const match = local === remote;
+        const badge = local === 0 && remote === 0 ? 'ריק' : (match ? 'תואם' : 'פער');
+        const cls = local === 0 && remote === 0 ? 'b-warn' : (match ? 'b-ok' : 'b-bad');
+        return row(name, 'מקומי: ' + local + ' • שרת: ' + remote, badge, cls);
+      }
+
+      html += compareRow('employees_master (אינדקס עובדים)', empLocal, empRemote);
+      html += compareRow('meckano_archives (חודשי Meckano)', meckLocal, meckRemote);
+      html += compareRow('payslip_archives (חודשי תלושים)', payLocal, payRemote);
+      html += compareRow('reserve_periods (תקופות מילואים)', resLocal, resRemote);
+
+      div.innerHTML = html;
+      log('Data check: emp=' + empLocal + '/' + empRemote +
+        ' meck=' + meckLocal + '/' + meckRemote +
+        ' pay=' + payLocal + '/' + payRemote +
+        ' res=' + resLocal + '/' + resRemote);
+    }
+
+    async function syncAll() {
+      const btn = document.getElementById('syncAllBtn');
+      btn.disabled = true;
+      btn.textContent = '🔄 דוחף... (זה יכול לקחת רגע)';
+      log('=== SYNC ALL: starting ===');
+      try {
+        // Employees
+        if (typeof EmIndexStore !== 'undefined' && EmIndexStore.pushAllToSupabase) {
+          const r = await EmIndexStore.pushAllToSupabase();
+          log('emp push: ' + JSON.stringify(r));
+        }
+        // Meckano archives
+        if (typeof MeckanoArchiveStore !== 'undefined' && MeckanoArchiveStore.pushArchiveToSupabase) {
+          const idx = MeckanoArchiveStore.loadIndex();
+          for (const m of idx) {
+            const r = await MeckanoArchiveStore.pushArchiveToSupabase(m.year, m.month);
+            log('meck push ' + m.period + ': ' + JSON.stringify(r));
+          }
+        }
+        // Payslip archives
+        if (typeof PayslipStore !== 'undefined' && PayslipStore.pushArchiveToSupabase) {
+          const idx = PayslipStore.loadIndex();
+          for (const m of idx) {
+            const r = await PayslipStore.pushArchiveToSupabase(m.year, m.month);
+            log('pay push ' + m.period + ': ' + JSON.stringify(r));
+          }
+        }
+        // Reserve periods
+        if (typeof ReservePeriodsStore !== 'undefined' && ReservePeriodsStore.pushAllToSupabase) {
+          const r = await ReservePeriodsStore.pushAllToSupabase();
+          log('res push: ' + JSON.stringify(r));
+        }
+        log('=== SYNC ALL: complete ===');
+      } catch (e) {
+        log('SYNC ERROR: ' + e.message);
+      }
+      btn.disabled = false;
+      btn.textContent = '🔄 דחוף את כל הנתונים המקומיים לשרת';
+      await checkData();
+    }
+
+    async function testWrite() {
+      const div = document.getElementById('advancedResult');
+      div.innerHTML = '<em>בודק...</em>';
+      log('=== test write: insert + delete ===');
+      if (!SB || !SB.client) { div.innerHTML = '<span class="badge b-bad">אין client</span>'; return; }
+      const session = await SB.getSession();
+      if (!session) { div.innerHTML = '<span class="badge b-bad">אין session</span>'; return; }
+
+      // Try insert+delete on reserve_periods (fastest table to test)
+      const testRow = {
+        employee_no: 'TEST_' + Date.now(),
+        start_date: '2099-12-31',
+        end_date: '2099-12-31',
+        status: 'draft',
+        notes: '_supabase_test_DO_NOT_USE_',
+      };
+      try {
+        const ins = await SB.client.from('reserve_periods').insert(testRow).select();
+        if (ins.error) { div.innerHTML = '<span class="badge b-bad">INSERT נכשל: ' + ins.error.message + '</span>'; log('insert error: ' + ins.error.message); return; }
+        log('insert OK, id=' + (ins.data && ins.data[0] && ins.data[0].id));
+        const del = await SB.client.from('reserve_periods').delete().eq('employee_no', testRow.employee_no);
+        if (del.error) { div.innerHTML = '<span class="badge b-warn">INSERT הצליח אבל DELETE נכשל: ' + del.error.message + '</span>'; return; }
+        log('delete OK');
+        div.innerHTML = '<span class="badge b-ok">✅ INSERT + DELETE הצליחו — הכתיבה לסופהבייס תקינה</span>';
+      } catch (e) {
+        div.innerHTML = '<span class="badge b-bad">שגיאה: ' + e.message + '</span>';
+        log('exception: ' + e.message);
+      }
+    }
+
+    async function runAll() {
+      log('=== Running all checks ===');
+      const basic = await runBasicChecks();
+      if (basic.clientOk) await checkData();
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', runAll);
+    document.getElementById('syncAllBtn').addEventListener('click', syncAll);
+    document.getElementById('testWriteBtn').addEventListener('click', testWrite);
+
+    runAll();
+  </script>
+</body>
+</html>

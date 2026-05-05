@@ -260,11 +260,34 @@
       });
 
       const saveDate = archived.saved_at ? new Date(archived.saved_at).toLocaleString('he-IL') : '';
-      showAlert('📂 נטענו אוטומטית נתונים שמורים לחודש ' +
-        month + '/' + year + ' — ' + empCount + ' עובדים' +
-        (saveDate ? ' (נשמר: ' + saveDate + ')' : '') +
-        '. <strong>ניתן להעלות קבצים חדשים להחלפה</strong>, או להמשיך ישירות לבדיקה.',
-        'success');
+      // Build success message with inline CTAs
+      const sbStatus = (archived.synced_to_supabase || (PayslipStore.isSupabaseAvailable && PayslipStore.isSupabaseAvailable())) ? '☁️ מסונכרן' : '💾 לוקלי בלבד';
+      document.getElementById('alertArea').innerHTML =
+        '<div class="alert alert-success" style="line-height:1.7;">' +
+        '<div>' +
+          '📂 <strong>נטענו אוטומטית נתונים שמורים לחודש ' + month + '/' + year + '</strong> — ' +
+          empCount + ' עובדים' +
+          (saveDate ? ' (נשמר: ' + saveDate + ' • ' + sbStatus + ')' : '') +
+        '</div>' +
+        '<div style="margin-top:14px; padding-top:14px; border-top:1px solid #6ee7b7;">' +
+          '<strong style="display:block; margin-bottom:10px;">🎯 מה הלאה? בחרי בדיקה:</strong>' +
+          '<div style="display:flex; gap:10px; flex-wrap:wrap;">' +
+            '<a href="reconciliation.html" style="background:#0e7490; color:#fff; padding:10px 18px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">' +
+              '🔄 התאמת Meckano מול תלוש' +
+            '</a>' +
+            '<a href="../exceptions-module.html" style="background:#6366f1; color:#fff; padding:10px 18px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">' +
+              '✅ אימות חריגים' +
+            '</a>' +
+            '<a href="../hr/absences.html" style="background:#f59e0b; color:#fff; padding:10px 18px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">' +
+              '🌴 דשבורד היעדרויות' +
+            '</a>' +
+            '<a href="../pension_module.html" style="background:#16a34a; color:#fff; padding:10px 18px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">' +
+              '🏦 בדיקת פנסיות' +
+            '</a>' +
+          '</div>' +
+          '<small style="display:block; margin-top:10px; color:#374151;">או — העלי קבצים חדשים מעל להחלפה.</small>' +
+        '</div>' +
+        '</div>';
 
       updateSaveButton();
       renderPreview();
