@@ -452,14 +452,29 @@ window.EmployeeRules = (function() {
   }
 
   // computeExtraFakeDeficitFromDays:
-  // סורק ימי החודש ומוצא ימי ע.חג (וגם חוה"מ) שיש בהם ניצול חופש >= 0.5
-  // ושעות חוסר > 0. השעות האלה מדומות — מוסיפות ל-fake_deficit הכולל.
+  // סורק ימי החודש ומוצא ימים עם חוסר שעות "מדומה" — חוסר שלא צריך לקזז
+  // מהשכר. שני סוגי מקרים:
   //
-  // הלוגיקה: בע.חג היום סטנדרטי 6 שעות (במקום 8.4). ניצול חופש 0.5 = 4.2 שעות.
-  // אבל בפועל אין צורך בכלל לעבוד כי הניצול אמור לכסות. כל "שעות חוסר" באותה
-  // שורה הן ארטיפקט של איך מקאנו מחשב — לא חוסר אמיתי.
+  // 1. ערב חג / חוה"מ עם ניצול חופש 0.5+ — היום סטנדרטי קצר יותר אבל הניצול
+  //    אמור לכסות. כל "חוסר תקן" באותה שורה הוא ארטיפקט של מקאנו.
+  //
+  // 2. כל יום עם אירוע מכסה (חופש/היעדרות/מחלה/מילואים/חל"ת/תאונת עבודה) +
+  //    חוסר שעות > 0 — האירוע אמור לכסות את כל היום, ולכן השעות החסרות
+  //    מדומות. למשל: יום עם "חופש" + עבד 4 שעות + חוסר 4.4 — ה-4.4 מדומות
+  //    כי החופש מכסה את החצי השני.
   function computeExtraFakeDeficitFromDays(days) {
     if (!Array.isArray(days)) return 0;
+
+    const COVERING_EVENT_KEYWORDS = [
+      'חופש', 'חופשה', 'היעדרות', 'מחלה', 'מילואים',
+      'חל"ת', 'תאונת עבודה', 'אבל'
+    ];
+    function hasCoveringEvent(eventStr) {
+      const e = (eventStr || '').trim();
+      if (!e) return false;
+      return COVERING_EVENT_KEYWORDS.some(kw => e.indexOf(kw) !== -1);
+    }
+
     let extra = 0;
     days.forEach(d => {
       const dayType = (d.day_type || '').trim();
@@ -472,9 +487,16 @@ window.EmployeeRules = (function() {
                            dayType.indexOf('חול המועד') !== -1 ||
                            event.indexOf('חוה"מ') !== -1 ||
                            event.indexOf('חול המועד') !== -1;
-      const hasVacation = event.indexOf('חופש') !== -1;
       const missing = parseFloat(d.hours_missing) || 0;
-      if ((isEveHoliday || isCholHaMoed) && hasVacation && missing > 0) {
+      if (missing <= 0) return;
+
+      // מקרה 1: ע.חג / חוה"מ + ניצול חופש
+      if ((isEveHoliday || isCholHaMoed) && event.indexOf('חופש') !== -1) {
+        extra += missing;
+        return;
+      }
+      // מקרה 2: כל יום עם אירוע מכסה — החוסר מדומה
+      if (hasCoveringEvent(event)) {
         extra += missing;
       }
     });
