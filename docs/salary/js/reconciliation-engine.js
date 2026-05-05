@@ -98,9 +98,36 @@ window.ReconciliationEngine = (function() {
 
     const rows = [];
 
+    // Build period boundaries for "active employee" check
+    const periodStart = new Date(year, month - 1, 1);
+    const periodEnd   = new Date(year, month, 0); // last day of month
+
     Array.from(allEmpNos).sort((a, b) => a - b).forEach(empNo => {
       const employee = empByNo[String(empNo)] || null;
       const block = meckanoBlocks.find(b => parseInt(b.employee_no, 10) === empNo) || null;
+
+      // ===== סינון עובדים לא פעילים בחודש זה =====
+      // עובד שעזב לפני תחילת החודש (end_date < periodStart) או התחיל אחרי סוף החודש
+      // (start_date > periodEnd) — נסמן ונדלג, אלא אם יש לו פעילות במקאנו (אז זה שגוי).
+      let inactiveReason = null;
+      if (employee) {
+        if (employee.end_date) {
+          const ed = new Date(employee.end_date);
+          if (!isNaN(ed) && ed < periodStart) {
+            inactiveReason = 'עזב ב-' + employee.end_date;
+          }
+        }
+        if (employee.start_date) {
+          const sd = new Date(employee.start_date);
+          if (!isNaN(sd) && sd > periodEnd) {
+            inactiveReason = 'יתחיל ב-' + employee.start_date;
+          }
+        }
+      }
+      // אם העובד לא פעיל ואין לו בלוק במקאנו — נדלג (לא להציג בדוח התאמה)
+      if (inactiveReason && !block && !options.include_inactive) {
+        return;
+      }
 
       // ===== חישוב Meckano (אם יש בלוק) =====
       let meck = null;
@@ -249,6 +276,7 @@ window.ReconciliationEngine = (function() {
         compares: compares,
         flags: flags,
         status: overallStatus,
+        inactive: inactiveReason,
       });
     });
 

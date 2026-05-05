@@ -27,6 +27,46 @@
   }
 
   function inject() {
+    // Back button (left of home button) — only if there's a history to go back to
+    if (window.history.length > 1) {
+      const back = document.createElement('button');
+      back.id = 'back-floating-btn';
+      back.title = 'חזרה למסך הקודם';
+      back.innerHTML = '<span style="font-size:1.2rem;">←</span><span>חזור</span>';
+      back.style.cssText = [
+        'position:fixed',
+        'bottom:24px',
+        'right:200px',
+        'z-index:9999',
+        'background:#fff',
+        'color:#374151',
+        'padding:11px 18px',
+        'border-radius:30px',
+        'box-shadow:0 6px 20px rgba(0,0,0,0.15)',
+        'font-weight:700',
+        'font-size:0.92rem',
+        'display:flex',
+        'align-items:center',
+        'gap:8px',
+        'border:2px solid #d1d5db',
+        'cursor:pointer',
+        'font-family:inherit',
+        'transition:all 0.15s',
+      ].join(';');
+      back.addEventListener('click', () => window.history.back());
+      back.addEventListener('mouseenter', () => {
+        back.style.background = '#374151';
+        back.style.color = '#fff';
+        back.style.transform = 'translateY(-2px)';
+      });
+      back.addEventListener('mouseleave', () => {
+        back.style.background = '#fff';
+        back.style.color = '#374151';
+        back.style.transform = 'translateY(0)';
+      });
+      document.body.appendChild(back);
+    }
+
     const btn = document.createElement('a');
     btn.href = getHomeHref();
     btn.id = 'home-floating-btn';
