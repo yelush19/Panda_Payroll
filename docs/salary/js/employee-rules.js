@@ -451,6 +451,28 @@ window.EmployeeRules = (function() {
     return { exclude: false };
   }
 
+  // החלת תיקונים ידניים על events של בלוק Meckano.
+  // adjustments = { vacation_charged: +2, sick_kizuz: -1, ... } מ-ManualAdjustmentsStore.aggregateForEmployee
+  // מחזיר אובייקט events חדש עם ה-deltas.
+  function applyAdjustmentsToEvents(events, adjustments) {
+    if (!adjustments || Object.keys(adjustments).length === 0) return events;
+    const out = { ...events };
+    Object.keys(adjustments).forEach(field => {
+      out[field] = (out[field] || 0) + adjustments[field];
+    });
+    return out;
+  }
+
+  // החלת תיקון על summary (לדוגמה: days_paid, hours_paid)
+  function applyAdjustmentsToSummary(summary, adjustments) {
+    if (!adjustments || Object.keys(adjustments).length === 0) return summary;
+    const out = { ...summary };
+    ['days_paid', 'hours_paid', 'days_present'].forEach(field => {
+      if (adjustments[field]) out[field] = (out[field] || 0) + adjustments[field];
+    });
+    return out;
+  }
+
   return {
     getRules, shouldIncludeInReport, listTypes,
     calculateWorkAccidentStatus,
@@ -464,6 +486,8 @@ window.EmployeeRules = (function() {
     applyGlobalBonusThreshold,
     shouldExcludeFromClosureCheck,
     effectiveMaxWorkDays,
+    applyAdjustmentsToEvents,
+    applyAdjustmentsToSummary,
     HOURLY_OVERTIME_WEEKLY_THRESHOLD_HOURS,
     HOURLY_HOLIDAY_PAY_TENURE_MONTHS,
     WORK_ACCIDENT_NII_THRESHOLD_DAYS,

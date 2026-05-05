@@ -167,7 +167,17 @@ window.ClosureMissingEngine = (function() {
 
       // הערה ידנית בכותרות הבלוק - דורש בדיקה (יילנה כתבה משהו ב-Meckano)
       const hasAnnotation = block.unknown_columns && block.unknown_columns.length > 0;
-      const events = block.events || {};
+      let events = block.events || {};
+
+      // החלת תיקונים ידניים מ-ManualAdjustmentsStore
+      let manualAdjustments = {};
+      if (typeof ManualAdjustmentsStore !== 'undefined' && typeof EmployeeRules !== 'undefined' && EmployeeRules.applyAdjustmentsToEvents) {
+        const period = ManualAdjustmentsStore.periodKey(periodYear, periodMonth);
+        manualAdjustments = ManualAdjustmentsStore.aggregateForEmployee(block.employee_no, period);
+        if (Object.keys(manualAdjustments).length > 0) {
+          events = EmployeeRules.applyAdjustmentsToEvents(events, manualAdjustments);
+        }
+      }
 
       // הפקת הדוח לעובד
       const r = buildEmployeeReport(block, emp, periodYear, periodMonth);

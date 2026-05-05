@@ -98,6 +98,7 @@
   <script src="../shared/js/prevent-default-drop.js"></script>
   <script src="../shared/js/month_config.js"></script>
   <script src="../reserve/js/em-index-store.js"></script>
+  <script src="../shared/js/manual-adjustments-store.js"></script>
   <script src="js/employee-rules.js"></script>
   <script src="js/meckano-archive-store.js"></script>
   <script src="js/closure-missing-engine.js"></script>
@@ -143,6 +144,7 @@
       { key: 'dates',         label: 'פירוט תאריכים' },
       { key: 'missing_kind',  label: 'מה חסר' },
       { key: 'status',        label: 'סטטוס' },
+      { key: 'actions',       label: 'פעולות' },
     ];
 
     function renderReport() {
@@ -194,6 +196,7 @@
             if (c.key === 'days_count')    return '<td class="count">' + row.days_count + '</td>';
             if (c.key === 'dates')         return '<td class="dates">' + escapeHtml(row.dates) + '</td>';
             if (c.key === 'status')        return '<td class="status"><span class="badge-status">' + row.status + '</span></td>';
+            if (c.key === 'actions')       return '<td><button class="adj-btn" data-no="' + row.employee_no + '" data-name="' + escapeHtml(row.employee_name.split(' (')[0]) + '" style="background:#0e7490;color:#fff;border:0;padding:5px 12px;border-radius:5px;cursor:pointer;font-size:0.84rem;">✏️ השלם</button></td>';
             return '<td>' + escapeHtml(row[c.key]) + '</td>';
           }).join('') + '</tr>';
         });
@@ -209,6 +212,114 @@
 
       $('#reportArea').innerHTML = html;
       if (_tableHelper) _tableHelper.attachSortHandlers($('#reportArea thead'), renderReport);
+
+      // Wire adjustment buttons
+      $('#reportArea').querySelectorAll('.adj-btn').forEach(btn => {
+        btn.addEventListener('click', () => openAdjustmentModal(btn.dataset.no, btn.dataset.name));
+      });
+    }
+
+    // ===== Manual Adjustments Modal =====
+    const ADJ_FIELDS = [
+      { key: 'days_paid',       label: 'ימים משולמים' },
+      { key: 'vacation_charged', label: 'חופשה לחיוב' },
+      { key: 'sick',            label: 'ימי מחלה' },
+      { key: 'sick_kizuz',      label: 'מחלה לקיזוז' },
+      { key: 'miluim',          label: 'ימי מילואים' },
+      { key: 'chalat',          label: 'חל"ת' },
+      { key: 'absence',         label: 'היעדרות' },
+      { key: 'work_accident',   label: 'תאונת עבודה' },
+    ];
+
+    function getCurrentPeriod() {
+      const config = (typeof MonthConfig !== 'undefined') ? MonthConfig.loadSelectedMonth() : null;
+      if (!config) return null;
+      return ManualAdjustmentsStore.periodKey(config.year, config.month);
+    }
+
+    function openAdjustmentModal(empNo, empName) {
+      const period = getCurrentPeriod();
+      if (!period) { alert('יש לבחור חודש קודם'); return; }
+      if (typeof ManualAdjustmentsStore === 'undefined') { alert('ManualAdjustmentsStore לא נטען'); return; }
+      const existing = ManualAdjustmentsStore.aggregateForEmployee(empNo, period);
+
+      const overlay = document.createElement('div');
+      overlay.id = 'adjOverlay';
+      overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; display:flex; align-items:center; justify-content:center;';
+      overlay.innerHTML =
+        '<div style="background:#fff; border-radius:14px; padding:24px 28px; max-width:600px; width:90%; max-height:90vh; overflow-y:auto; box-shadow:0 6px 30px rgba(0,0,0,0.25);">' +
+          '<h2 style="margin:0 0 6px 0; color:#0e7490;">✏️ השלמת ימים — ' + escapeHtml(empName) + '</h2>' +
+          '<p style="color:#6b7280; font-size:0.88rem; margin:0 0 18px 0;">' +
+            'הזיני delta — חיובי להוספה, שלילי להפחתה. דוגמה: עובד שהשלים יום שלא דווח במקאנו → "ימים משולמים: +1".<br>' +
+            'התיקון משפיע על דוח חוסר סגירה, סיכום ימים ו-Worksheet — לא צריך להעלות מקאנו מחדש.' +
+          '</p>' +
+          '<div style="font-size:0.86rem; color:#374151; margin-bottom:14px;">חודש: <strong>' + period + '</strong> | מס\' עובד: <strong>' + empNo + '</strong></div>' +
+          '<table style="width:100%; border-collapse:collapse; font-size:0.92rem;">' +
+            '<thead><tr><th style="text-align:right; padding:8px; background:#f3f4f6;">שדה</th>' +
+              '<th style="padding:8px; background:#f3f4f6;">Δ ערך</th>' +
+              '<th style="text-align:right; padding:8px; background:#f3f4f6;">סיבה (חובה)</th></tr></thead>' +
+            '<tbody>' +
+            ADJ_FIELDS.map(f => {
+              const cur = existing[f.key] || '';
+              const reasonItems = ManualAdjustmentsStore.listForEmployeePeriod(empNo, period).filter(a => a.field === f.key);
+              const reason = reasonItems.length ? reasonItems[0].reason : '';
+              return '<tr>' +
+                '<td style="padding:6px 8px; border-bottom:1px solid #f3f4f6;">' + f.label + '</td>' +
+                '<td style="padding:6px; border-bottom:1px solid #f3f4f6;">' +
+                  '<input type="number" step="0.5" data-field="' + f.key + '" value="' + cur + '" placeholder="0" style="width:90px;padding:5px 8px;border:1px solid #d1d5db;border-radius:5px;text-align:center;">' +
+                '</td>' +
+                '<td style="padding:6px; border-bottom:1px solid #f3f4f6;">' +
+                  '<input type="text" data-reason="' + f.key + '" value="' + escapeHtml(reason) + '" placeholder="לדוגמה: השלים יום בדיעבד" style="width:100%;padding:5px 8px;border:1px solid #d1d5db;border-radius:5px;">' +
+                '</td>' +
+                '</tr>';
+            }).join('') +
+            '</tbody></table>' +
+          '<div style="display:flex; justify-content:space-between; gap:10px; margin-top:18px;">' +
+            '<button id="adjClearAll" style="background:#fff; color:#b91c1c; border:1px solid #fca5a5; padding:8px 16px; border-radius:6px; cursor:pointer;">🗑 נקה הכל</button>' +
+            '<div>' +
+              '<button id="adjCancel" style="background:#e5e7eb; color:#374151; border:0; padding:8px 16px; border-radius:6px; cursor:pointer; margin-left:8px;">ביטול</button>' +
+              '<button id="adjSave" style="background:#0e7490; color:#fff; border:0; padding:8px 20px; border-radius:6px; cursor:pointer; font-weight:600;">💾 שמור</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+
+      overlay.querySelector('#adjCancel').addEventListener('click', () => overlay.remove());
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+      overlay.querySelector('#adjClearAll').addEventListener('click', () => {
+        if (!confirm('למחוק את כל התיקונים לעובד ' + empName + ' לחודש ' + period + '?')) return;
+        ManualAdjustmentsStore.removeAllForEmployeePeriod(empNo, period);
+        overlay.remove();
+        generate(); // re-run to reflect changes
+      });
+
+      overlay.querySelector('#adjSave').addEventListener('click', () => {
+        let saved = 0;
+        ADJ_FIELDS.forEach(f => {
+          const valEl = overlay.querySelector('[data-field="' + f.key + '"]');
+          const reasonEl = overlay.querySelector('[data-reason="' + f.key + '"]');
+          const val = valEl.value === '' ? null : parseFloat(valEl.value);
+          if (val == null || val === 0) {
+            // אם היה ערך והפכת ל-0 → מחיקה
+            ManualAdjustmentsStore.remove(empNo, period, f.key);
+          } else {
+            const reason = (reasonEl.value || '').trim();
+            if (!reason) { alert('יש להזין סיבה לשדה: ' + f.label); valEl.focus(); return; }
+            ManualAdjustmentsStore.upsert(empNo, period, f.key, val, reason);
+            saved++;
+          }
+        });
+        overlay.remove();
+        generate();
+      });
+    }
+
+    // טעינה ראשונית מ-Supabase
+    if (typeof ManualAdjustmentsStore !== 'undefined' && ManualAdjustmentsStore.syncFromSupabase) {
+      ManualAdjustmentsStore.syncFromSupabase().then(r => {
+        if (r.ok) console.log('manual adjustments synced from SB:', r.count);
+      });
     }
 
     function exportXlsx() {
