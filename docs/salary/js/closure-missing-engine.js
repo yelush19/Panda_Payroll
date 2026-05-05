@@ -31,10 +31,9 @@ window.ClosureMissingEngine = (function() {
   // עשוי לא לכלול תיוג 'מילואים' פר-יום. נחריג אותו לחלוטין מהדוח.
   const MILUIM_EXTENDED_THRESHOLD_DAYS = 15;
 
-  // חוסר סגירה רלוונטי רק ל"יום חול" - ערב חג / חוה"מ ללא ניקוב נספרים
-  // אוטומטית כחופש לחיוב ע"י Meckano (לפי הפעולה הידנית של יילנה).
-  // סופ"ש וחג - לא רלוונטיים בכלל.
-  const CLOSURE_RELEVANT_DAY_TYPES = ['יום חול'];
+  // חוסר סגירה רלוונטי לכל יום שעובד חייב לדווח: יום חול, ערב חג (יום עבודה
+  // קצר אבל חובה), וחוה"מ (במקרים מסוימים). לא רלוונטי: סופ"ש וחג מלא.
+  const CLOSURE_RELEVANT_DAY_TYPES = ['יום חול', 'ערב חג', 'חוה"מ', 'חול המועד'];
 
   function isCoveringEvent(eventStr) {
     if (!eventStr) return false;
