@@ -219,6 +219,60 @@
     }
     function clearAlert() { document.getElementById('alertArea').innerHTML = ''; }
 
+    // ===== Load from archive when month changes =====
+    // אם יש נתונים שמורים לחודש הנבחר — לטעון אותם כברירת מחדל
+    // ולהציג בלוקים ירוקים "כבר נטען". ההעלאה תהיה רק להחלפה.
+    function loadFromArchiveForCurrentMonth() {
+      const year = parseInt(yearSelect.value, 10);
+      const month = parseInt(monthSelect.value, 10);
+      if (typeof PayslipStore === 'undefined') return;
+      const archived = PayslipStore.load(year, month);
+
+      // Reset state
+      Object.keys(parsed).forEach(k => parsed[k] = null);
+      Object.keys(fileNames).forEach(k => delete fileNames[k]);
+      document.querySelectorAll('.upload-tile').forEach(tile => {
+        tile.classList.remove('has-file');
+        tile.querySelector('.tile-status').innerHTML = '<span class="badge badge-empty">לא הועלה</span>';
+        const inp = tile.querySelector('input[type=file]');
+        if (inp) inp.value = '';
+      });
+
+      if (!archived || !archived.reports) {
+        document.getElementById('previewCard').style.display = 'none';
+        updateSaveButton();
+        return;
+      }
+
+      // יש ארכיון — נטען את ה-reports ל-parsed כך שהדף יראה אותם כ"מעודכן"
+      const reports = archived.reports;
+      const empCount = archived.employee_count || 0;
+      ['components', 'imputed_income', 'voluntary_deductions', 'absences'].forEach(k => {
+        if (reports[k]) {
+          parsed[k] = reports[k];
+          const empN = Object.keys(reports[k].employees || {}).length;
+          const compN = reports[k].components_dict ? Object.keys(reports[k].components_dict).length : 0;
+          setTileStatus(k,
+            '<span class="badge badge-ok">✓ נטען מהארכיון</span><br>' +
+            '<small>' + empN + ' עובדים' + (compN ? ', ' + compN + ' רכיבים' : '') + '</small>',
+            'ok');
+        }
+      });
+
+      const saveDate = archived.saved_at ? new Date(archived.saved_at).toLocaleString('he-IL') : '';
+      showAlert('📂 נטענו אוטומטית נתונים שמורים לחודש ' +
+        month + '/' + year + ' — ' + empCount + ' עובדים' +
+        (saveDate ? ' (נשמר: ' + saveDate + ')' : '') +
+        '. <strong>ניתן להעלות קבצים חדשים להחלפה</strong>, או להמשיך ישירות לבדיקה.',
+        'success');
+
+      updateSaveButton();
+      renderPreview();
+    }
+
+    monthSelect.addEventListener('change', loadFromArchiveForCurrentMonth);
+    yearSelect.addEventListener('change', loadFromArchiveForCurrentMonth);
+
     // ===== File handling =====
     function setTileStatus(kind, statusHTML, css) {
       const tile = document.querySelector('.upload-tile[data-kind="' + kind + '"]');
@@ -446,23 +500,35 @@
           '<td>' + checkmark(m.has_deductions) + '</td>' +
           '<td>' + checkmark(m.has_absences) + '</td>' +
           '<td>' + (m.size_bytes / 1024).toFixed(1) + ' KB</td>' +
-          '<td><button class="btn btn-danger" data-period="' + m.period +
-            '" data-year="' + m.year + '" data-month="' + m.month + '">מחק</button></td>' +
+          '<td><button class="btn btn-secondary" data-action="load" data-year="' + m.year + '" data-month="' + m.month +
+            '" style="margin-left:4px; padding:4px 10px; font-size:0.82rem;">טען לטופס</button>' +
+          '<button class="btn btn-danger" data-action="delete" data-period="' + m.period +
+            '" data-year="' + m.year + '" data-month="' + m.month + '" style="padding:4px 10px; font-size:0.82rem;">מחק</button></td>' +
           '</tr>';
       });
       html += '</tbody></table>';
       area.innerHTML = html;
 
-      area.querySelectorAll('button[data-period]').forEach(btn => {
+      area.querySelectorAll('button[data-action="delete"]').forEach(btn => {
         btn.addEventListener('click', () => {
           if (!confirm('למחוק את חודש ' + btn.dataset.period + '?')) return;
           PayslipStore.remove(parseInt(btn.dataset.year, 10), parseInt(btn.dataset.month, 10));
           renderArchive();
+          loadFromArchiveForCurrentMonth();
+        });
+      });
+      area.querySelectorAll('button[data-action="load"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          monthSelect.value = btn.dataset.month;
+          yearSelect.value = btn.dataset.year;
+          loadFromArchiveForCurrentMonth();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         });
       });
     }
 
     renderArchive();
+    loadFromArchiveForCurrentMonth();  // טעינה ראשונית של החודש הנבחר
 
     // סנכרון אינדקס מ-Supabase ברקע (אם מחובר)
     if (typeof PayslipStore.syncIndexFromSupabase === 'function') {
@@ -470,6 +536,14 @@
         if (r.ok && r.added > 0) {
           console.log('Payslip SB sync: ' + r.added + ' חודשים חדשים מהשרת');
           renderArchive();
+        }
+        // משיכה גם של הארכיון של החודש הנוכחי מ-Supabase אם לא קיים מקומית
+        const y = parseInt(yearSelect.value, 10);
+        const m = parseInt(monthSelect.value, 10);
+        if (!PayslipStore.load(y, m) && typeof PayslipStore.fetchArchiveFromSupabase === 'function') {
+          PayslipStore.fetchArchiveFromSupabase(y, m).then(fr => {
+            if (fr.ok) loadFromArchiveForCurrentMonth();
+          });
         }
       });
     }
