@@ -79,23 +79,25 @@
               <th rowspan="2" style="width:60px;">מס'</th>
               <th rowspan="2" class="left" style="width:160px;">שם עובד</th>
               <th rowspan="2" style="width:80px;">סוג</th>
-              <th colspan="3" class="col-vac">חופש (ימים)</th>
-              <th colspan="3" class="col-sick">מחלה (ימים)</th>
-              <th colspan="3" class="col-rec">הבראה (₪/ימים)</th>
-              <th colspan="2" class="col-mil">מילואים</th>
+              <th colspan="4" class="col-vac">חופש (ימים)</th>
+              <th colspan="4" class="col-sick">מחלה (ימים)</th>
+              <th colspan="3" class="col-rec">הבראה (₪/ימים) — שיקלולית בלבד</th>
+              <th colspan="2" class="col-mil">מילואים (ימים)</th>
             </tr>
             <tr>
               <th class="col-vac">יתרה פתיחה</th>
-              <th class="col-vac">ניצול בחודש</th>
+              <th class="col-vac" title="חופש לחיוב מ-Meckano">Meck ניצול</th>
+              <th class="col-vac" title="ניצול שנכנס לתלוש">Shik ניצול</th>
               <th class="col-vac">יתרה סוגרת</th>
               <th class="col-sick">יתרה פתיחה</th>
-              <th class="col-sick">ניצול בחודש</th>
+              <th class="col-sick" title="ימי מחלה לקיזוז (1/0.5/0.5/0)">Meck ניצול</th>
+              <th class="col-sick" title="ניצול שנכנס לתלוש">Shik ניצול</th>
               <th class="col-sick">יתרה סוגרת</th>
               <th class="col-rec">יתרה פתיחה</th>
               <th class="col-rec">ניצול בחודש</th>
               <th class="col-rec">יתרה סוגרת</th>
-              <th class="col-mil">Meckano (ימים)</th>
-              <th class="col-mil">שיקלולית</th>
+              <th class="col-mil">Meck</th>
+              <th class="col-mil">Shik</th>
             </tr>
           </thead>
           <tbody id="absBody"></tbody>
@@ -105,7 +107,9 @@
       <div class="legend">
         <span style="background:#fffbeb;">💡 צהוב</span> = ניצול בחודש &gt; 0
         &nbsp;&nbsp;
-        <span style="background:#fee2e2; color:#991b1b;">⚠ אדום</span> = יתרה שלילית או חוסר תאימות בין Meckano לשיקלולית
+        <span style="background:#fee2e2; color:#991b1b;">⚠ אדום</span> = יתרה שלילית או פער בין Meckano לשיקלולית (חופש/מחלה/מילואים)
+        &nbsp;&nbsp;
+        <small>הבראה — אין מקבילה ב-Meckano (משולמת שנתית, לא לפי נוכחות).</small>
       </div>
     </div>
   </div>
@@ -118,6 +122,7 @@
   <script src="../shared/js/next-steps.js"></script>
   <script src="../shared/js/month_config.js"></script>
   <script src="../reserve/js/em-index-store.js"></script>
+  <script src="../salary/js/employee-rules.js"></script>
   <script src="../salary/js/meckano-archive-store.js"></script>
   <script src="../salary/js/payslip-store.js"></script>
   <script>
@@ -186,14 +191,25 @@
         const sickOpen = absEmp ? openBal(sickM, absEmp.sick.prior) : (emp ? emp.sick_balance_days : null);
         const recOpen = absEmp ? openBal(recM, absEmp.recreation.prior) : (emp ? emp.recovery_balance_amount : null);
 
-        const meckMiluim = block && block.events ? (block.events.miluim || 0) : 0;
+        const events = (block && block.events) || {};
+        const meckMiluim = events.miluim || 0;
+        // חופש מ-Meckano: events.vacation_charged
+        const meckVac = events.vacation_charged || 0;
+        // מחלה לקיזוז מ-Meckano (חוק רצף 1/0.5/0.5/0+)
+        let meckSick = 0;
+        if (block && typeof EmployeeRules !== 'undefined' && EmployeeRules.calculateSickKizuz) {
+          const sk = EmployeeRules.calculateSickKizuz(block.days || []);
+          meckSick = sk.total_kizuz || 0;
+        } else {
+          meckSick = events.sick || 0;
+        }
 
         rows.push({
           employee_no: empNo,
           full_name: (emp && emp.full_name) || (block && block.employee_name) || '',
           employee_type: (emp && emp.employee_type) || '',
-          vac_open:  vacOpen, vac_used:  vacM ? vacM.used : null,  vac_close:  vacM ? vacM.balance : (absEmp ? absEmp.vacation.prior : null),
-          sick_open: sickOpen, sick_used: sickM ? sickM.used : null, sick_close: sickM ? sickM.balance : (absEmp ? absEmp.sick.prior : null),
+          vac_open:  vacOpen, meck_vac: meckVac, vac_used: vacM ? vacM.used : null,  vac_close:  vacM ? vacM.balance : (absEmp ? absEmp.vacation.prior : null),
+          sick_open: sickOpen, meck_sick: meckSick, sick_used: sickM ? sickM.used : null, sick_close: sickM ? sickM.balance : (absEmp ? absEmp.sick.prior : null),
           rec_open:  recOpen, rec_used:  recM ? recM.used : null, rec_close:  recM ? recM.balance : (absEmp ? absEmp.recreation.prior : null),
           meck_miluim: meckMiluim,
           shik_miluim: milM,
@@ -246,37 +262,48 @@
       const body = document.getElementById('absBody');
 
       let html = '';
+      // השוואת שני ערכים — מסמן אדום אם שניהם קיימים והם לא תואמים, או צהוב אם אחד מהם > 0
+      function cmpClass(a, b, tol) {
+        tol = tol == null ? 0.5 : tol;
+        const ax = a == null ? 0 : a, bx = b == null ? 0 : b;
+        if (Math.abs(ax - bx) > tol) return 'alert'; // פער → אדום
+        if (ax > 0 || bx > 0) return 'warn';         // ניצול → צהוב
+        return '';
+      }
       filtered.forEach(r => {
-        // Cell classes for visual cues
-        const vacUsedCls = r.vac_used > 0 ? 'warn' : '';
-        const sickUsedCls = r.sick_used > 0 ? 'warn' : '';
         const recUsedCls = r.rec_used > 0 ? 'warn' : '';
-        const milMeckCls = r.meck_miluim > 0 ? 'warn' : '';
-        const milShikCls = r.shik_miluim > 0 ? 'warn' : '';
         const vacCloseCls = (r.vac_close != null && r.vac_close < 0) ? 'alert' : '';
         const sickCloseCls = (r.sick_close != null && r.sick_close < 0) ? 'alert' : '';
-        // Mismatch: Meckano has miluim but שיקלולית doesn't (or vice versa)
-        const milMismatch = ((r.meck_miluim > 0) !== (r.shik_miluim > 0));
+
+        const vacCmpCls  = cmpClass(r.meck_vac, r.vac_used);
+        const sickCmpCls = cmpClass(r.meck_sick, r.sick_used);
+        const milCmpCls  = cmpClass(r.meck_miluim, r.shik_miluim);
 
         html += '<tr>';
         html += '<td>' + r.employee_no + '</td>';
         html += '<td class="left">' + r.full_name + '</td>';
         html += '<td><small>' + (r.employee_type || '—') + '</small></td>';
+        // חופש: פתיחה / Meck / Shik / סגירה
         html += '<td>' + fmtCell(r.vac_open) + '</td>';
-        html += '<td class="' + vacUsedCls + '">' + fmtCell(r.vac_used) + '</td>';
+        html += '<td class="' + vacCmpCls + '" title="חופש לחיוב מ-Meckano">' + fmtCell(r.meck_vac) + '</td>';
+        html += '<td class="' + vacCmpCls + '" title="ניצול שנכנס לתלוש שיקלולית">' + fmtCell(r.vac_used) + '</td>';
         html += '<td class="' + vacCloseCls + '">' + fmtCell(r.vac_close) + '</td>';
+        // מחלה: פתיחה / Meck / Shik / סגירה
         html += '<td>' + fmtCell(r.sick_open) + '</td>';
-        html += '<td class="' + sickUsedCls + '">' + fmtCell(r.sick_used) + '</td>';
+        html += '<td class="' + sickCmpCls + '" title="ימי מחלה לקיזוז (חוק רצף)">' + fmtCell(r.meck_sick) + '</td>';
+        html += '<td class="' + sickCmpCls + '" title="ניצול שנכנס לתלוש">' + fmtCell(r.sick_used) + '</td>';
         html += '<td class="' + sickCloseCls + '">' + fmtCell(r.sick_close) + '</td>';
+        // הבראה: פתיחה / ניצול / סגירה (שיקלולית בלבד)
         html += '<td>' + fmtCell(r.rec_open) + '</td>';
         html += '<td class="' + recUsedCls + '">' + fmtCell(r.rec_used) + '</td>';
         html += '<td>' + fmtCell(r.rec_close) + '</td>';
-        html += '<td class="' + milMeckCls + (milMismatch ? ' alert' : '') + '">' + fmtCell(r.meck_miluim) + '</td>';
-        html += '<td class="' + milShikCls + (milMismatch ? ' alert' : '') + '">' + fmtCell(r.shik_miluim) + '</td>';
+        // מילואים: Meck / Shik
+        html += '<td class="' + milCmpCls + '">' + fmtCell(r.meck_miluim) + '</td>';
+        html += '<td class="' + milCmpCls + '">' + fmtCell(r.shik_miluim) + '</td>';
         html += '</tr>';
       });
 
-      if (!filtered.length) html = '<tr><td colspan="14" style="padding:30px; color:#9ca3af;">אין נתונים לחודש זה / לסינון זה</td></tr>';
+      if (!filtered.length) html = '<tr><td colspan="16" style="padding:30px; color:#9ca3af;">אין נתונים לחודש זה / לסינון זה</td></tr>';
       body.innerHTML = html;
     }
 
