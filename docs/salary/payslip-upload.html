@@ -368,9 +368,37 @@
       try {
         const payload = PayslipStore.buildPayload(parsed);
         const meta = PayslipStore.saveAndSync(year, month, payload);
-        const sbNote = PayslipStore.isSupabaseAvailable() ? ' • מסונכרן ל-Supabase ברקע ☁️' : '';
-        showAlert('✅ נשמר בהצלחה: ' + meta.employee_count + ' עובדים לחודש ' + meta.period +
-          ' (' + (meta.size_bytes / 1024).toFixed(1) + ' KB)' + sbNote, 'success');
+        const sbNote = PayslipStore.isSupabaseAvailable() ? ' • מסונכרן ל-Supabase ☁️' : '';
+
+        // Success message + clear "what's next" CTAs
+        const area = document.getElementById('alertArea');
+        area.innerHTML =
+          '<div class="alert alert-success" style="line-height:1.7;">' +
+          '<div style="font-size:1.1rem; font-weight:700; margin-bottom:8px;">' +
+            '✅ נשמר בהצלחה: ' + meta.employee_count + ' עובדים לחודש ' + meta.period +
+            ' (' + (meta.size_bytes / 1024).toFixed(1) + ' KB)' + sbNote +
+          '</div>' +
+          '<div style="margin-top:14px; padding-top:14px; border-top:1px solid #6ee7b7;">' +
+            '<strong style="display:block; margin-bottom:8px;">🎯 מה הלאה? בחרי בדיקה:</strong>' +
+            '<div style="display:flex; gap:10px; flex-wrap:wrap;">' +
+              '<a href="reconciliation.html" style="background:#0e7490; color:#fff; padding:10px 18px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">' +
+                '🔄 התאמת Meckano מול תלוש' +
+                '<small style="opacity:0.85; font-weight:400;">(פערי חופש/מילואים/היעדרות)</small>' +
+              '</a>' +
+              '<a href="../exceptions-module.html" style="background:#6366f1; color:#fff; padding:10px 18px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">' +
+                '✅ אימות חריגים מול תלוש' +
+                '<small style="opacity:0.85; font-weight:400;">("בוצע" → רכיבי שיקלולית)</small>' +
+              '</a>' +
+              '<a href="../hr/absences.html" style="background:#f59e0b; color:#fff; padding:10px 18px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">' +
+                '🌴 דשבורד היעדרויות' +
+              '</a>' +
+              '<a href="../pension_module.html" style="background:#16a34a; color:#fff; padding:10px 18px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:8px;">' +
+                '🏦 בדיקת פנסיות' +
+              '</a>' +
+            '</div>' +
+          '</div>' +
+          '</div>';
+
         renderArchive();
       } catch (e) {
         showAlert('שגיאת שמירה: ' + e.message, 'error');
