@@ -86,9 +86,11 @@
       const div = document.getElementById('basicCheck');
       let html = '';
 
-      // 1. SUPABASE_CONFIG defined
-      const cfgOk = typeof SUPABASE_CONFIG !== 'undefined' && SUPABASE_CONFIG.URL && SUPABASE_CONFIG.ANON_KEY;
-      html += row('הגדרות (config)', cfgOk ? SUPABASE_CONFIG.URL : 'חסרות',
+      // 1. SupabaseConfig defined
+      const cfgObj = (typeof SupabaseConfig !== 'undefined') ? SupabaseConfig
+                   : (typeof SUPABASE_CONFIG !== 'undefined') ? SUPABASE_CONFIG : null;
+      const cfgOk = cfgObj && cfgObj.URL && cfgObj.ANON_KEY;
+      html += row('הגדרות (config)', cfgOk ? cfgObj.URL : 'חסרות',
         cfgOk ? 'תקין' : 'חסר', cfgOk ? 'b-ok' : 'b-bad');
 
       // 2. SB client created
