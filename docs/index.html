@@ -740,33 +740,6 @@
                         </div>
                     </div>
 
-                    <!-- ===== Group 3: LEGACY (kept for reference until new menu is verified) ===== -->
-                    <div class="workflow-group" style="grid-column: 1 / -1; border-top-color: #9ca3af; opacity: 0.85;">
-                        <div class="wg-header">
-                            <span class="wg-icon">🗂️</span>
-                            <div>
-                                <div class="wg-title" style="color:#6b7280;">דפים ישנים — לבדיקה לפני מחיקה</div>
-                                <div class="wg-sub">סומנו זמנית. אחרי שמוודאות שהתפריט החדש עובד נחליט מה למחוק.</div>
-                            </div>
-                        </div>
-                        <div class="wg-items" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px;">
-                            <a class="wg-item" onclick="openModule('comparison')" title="הוחלף ע&quot;י reconciliation.html">
-                                <span class="i">🗃️</span><div><b>השוואת מקאנו-תלושים <small style="color:#dc2626;">(כפול)</small></b><small>הוחלף ע"י "התאמה Meckano↔שיקלולית"</small></div><span class="arr">←</span>
-                            </a>
-                            <a class="wg-item" onclick="openModule('new-employees')" title="הוחלף ע&quot;י HR-2 modal">
-                                <span class="i">🗃️</span><div><b>קליטת עובדים חדשים <small style="color:#dc2626;">(כפול)</small></b><small>הוחלף ע"י מודאל באינדקס עובדים</small></div><span class="arr">←</span>
-                            </a>
-                            <a class="wg-item" onclick="openModule('upload')" title="הוחלף ע&quot;י salary/upload.html">
-                                <span class="i">🗃️</span><div><b>upload_module ישן <small style="color:#dc2626;">(כפול)</small></b><small>הוחלף ע"י "קליטת Meckano"</small></div><span class="arr">←</span>
-                            </a>
-                            <a class="wg-item" onclick="openModule('summary')" title="לא ידוע">
-                                <span class="i">❓</span><div><b>summary_report <small style="color:#9ca3af;">(לא ידוע)</small></b><small>צריך לבדוק אם בשימוש</small></div><span class="arr">←</span>
-                            </a>
-                            <a class="wg-item" onclick="window.location.href='smart-navigation.html'" title="לא ידוע">
-                                <span class="i">❓</span><div><b>smart-navigation <small style="color:#9ca3af;">(לא ידוע)</small></b><small>"לוח בקרה חכם" — צריך לבדוק</small></div><span class="arr">←</span>
-                            </a>
-                        </div>
-                    </div>
                 </div>
             </section>
 
@@ -779,21 +752,21 @@
                         <span>🔄</span>
                         המר קובץ מקאנו
                     </a>
-                    <a href="upload_module.html" class="btn btn-primary">
-                        <span>▶️</span>
-                        התחל בדיקה חדשה
+                    <a href="salary/upload.html" class="btn btn-primary">
+                        <span>📤</span>
+                        קליטת Meckano
                     </a>
                     <a href="basic-checks.html" class="btn btn-secondary">
                         <span>📋</span>
                         בדיקות בסיסיות
                     </a>
-                    <a href="comparison_table.html" class="btn btn-secondary">
-                        <span>&#128269;</span>
-                        השוואת נתונים
+                    <a href="salary/reconciliation.html" class="btn btn-secondary">
+                        <span>🔄</span>
+                        התאמה Meckano↔שיקלולית
                     </a>
-                    <a href="summary_report.html" class="btn btn-secondary">
-                        <span>&#128202;</span>
-                        דוח סיכום
+                    <a href="summary.html" class="btn btn-secondary">
+                        <span>📊</span>
+                        דוח סיכום כולל
                     </a>
                 </div>
             </section>
@@ -825,10 +798,8 @@
                 'salary-used-vacation':   'salary/used-vacation.html',
                 'reserve':              'reserve/employees.html',
                 'reserve-dashboard':    'reserve/dashboard.html',
-                'mecano-converter': '../mecanochecker/index.html',
                 'basic-checks':     'basic-checks.html',
                 'pension':          'pension_module.html',
-                'new-employees':    'new_employees_module.html',
                 'exceptions':       'exceptions-module.html',
                 'payslip-upload':   'salary/payslip-upload.html',
                 'reconciliation':   'salary/reconciliation.html',
@@ -837,9 +808,7 @@
                 'hr-salary-components': 'hr/salary-components.html',
                 'hr-absences':      'hr/absences.html',
                 'joint-ceos':       'hr/joint-ceos.html',
-                'comparison':       'comparison_table.html',
-                'upload':           'upload_module.html',
-                'summary':          'summary_report.html'
+                'summary':          'summary.html'
             };
 
             const file = moduleFiles[moduleName];
@@ -847,7 +816,10 @@
                 alert('מודול לא נמצא!');
                 return;
             }
-            window.location.href = file;
+            // Use absolute path (starting with /) to avoid relative-path resolution issues
+            // with Vercel cleanUrls. From any page, /hr/absences.html will work; relative
+            // 'hr/absences.html' would fail if current URL ends without trailing slash.
+            window.location.href = '/' + file;
         }
 
         // Add animation on load
