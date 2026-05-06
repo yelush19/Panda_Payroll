@@ -869,13 +869,11 @@
     }
 
     function seedFromArchive(arc) {
-      // 1) טעינת מקורות נוספים — שיקלולית (אם קיים לאותו חודש)
-      const period = arc.period || (arc.blocks && arc.blocks[0] ? null : null);
+      // 1) טעינת מקורות נוספים — שיקלולית (אם קיים)
       let payslip = null;
       if (typeof PayslipStore !== 'undefined') {
         const idx = PayslipStore.loadIndex();
         if (idx && idx.length > 0) {
-          // שיקלולית של החודש המאוחר ביותר (לא חייב להתאים ל-Meckano)
           const latest = idx[0];
           payslip = PayslipStore.load(latest.year, latest.month);
         }
@@ -884,15 +882,65 @@
       const incEmps  = (payslip && payslip.reports && payslip.reports.imputed_income && payslip.reports.imputed_income.employees) || {};
       const absEmps  = (payslip && payslip.reports && payslip.reports.absences && payslip.reports.absences.employees) || {};
 
-      // 2) Merge מכל המקורות
+      // ⚠ חשוב: מספר עובד במקאנו ≠ מספר עובד בשיקלולית.
+      // ההתאמה היא לפי שם (כולל סדר הפוך, ת.ז.), לא לפי מספר.
+      function normName(s) {
+        return String(s || '').trim().replace(/\s+/g, ' ');
+      }
+      function buildShiklulitNameMap(empsObj) {
+        const map = {};
+        Object.keys(empsObj).forEach(noStr => {
+          const e = empsObj[noStr];
+          const fn = normName(e.first_name);
+          const ln = normName(e.last_name);
+          const id = String(e.national_id || '').trim();
+          if (fn && ln) {
+            map[fn + ' ' + ln] = e;
+            map[ln + ' ' + fn] = e;
+          }
+          if (id) map['__id_' + id] = e;
+        });
+        return map;
+      }
+      const compByName = buildShiklulitNameMap(compEmps);
+      const incByName  = buildShiklulitNameMap(incEmps);
+      const absByName  = buildShiklulitNameMap(absEmps);
+
+      function findInShik(meckanoName, mapByName) {
+        const n = normName(meckanoName);
+        if (mapByName[n]) return mapByName[n];
+        // הפוך
+        const parts = n.split(' ').filter(Boolean);
+        if (parts.length >= 2) {
+          const reversed = parts.slice().reverse().join(' ');
+          if (mapByName[reversed]) return mapByName[reversed];
+        }
+        // התאמה חלקית: לפחות 2 חלקים שווים בשני הצדדים
+        if (parts.length >= 2) {
+          const setMeck = new Set(parts);
+          for (const key of Object.keys(mapByName)) {
+            if (key.startsWith('__id_')) continue;
+            const keyParts = key.split(' ').filter(Boolean);
+            if (keyParts.length === parts.length && keyParts.every(p => setMeck.has(p))) {
+              return mapByName[key];
+            }
+          }
+        }
+        return null;
+      }
+
+      // 2) Merge — Meckano keyed primarily, שיקלולית מצורף לפי שם
+      const matchedShikIds = new Set();
       const employees = arc.blocks.map(b => {
         const empNo = parseInt(b.employee_no, 10);
         const name = String(b.employee_name || '').trim();
 
-        // ניסיון ראשון: לקחת first/last מתוך שיקלולית (מדויק)
-        const compEmp = compEmps[empNo] || compEmps[String(empNo)];
-        const absEmp  = absEmps[empNo]  || absEmps[String(empNo)];
-        const incEmp  = incEmps[empNo]  || incEmps[String(empNo)];
+        // התאמה לפי שם — לא לפי מספר!
+        const compEmp = findInShik(name, compByName);
+        const absEmp  = findInShik(name, absByName);
+        const incEmp  = findInShik(name, incByName);
+        if (compEmp) matchedShikIds.add(compEmp.employee_no);
+        if (absEmp)  matchedShikIds.add(absEmp.employee_no);
 
         let first = '', last = '', nationalId = '';
         if (compEmp) {
@@ -938,7 +986,8 @@
         }
 
         return {
-          employee_no: empNo,
+          employee_no: empNo,                    // מקאנו = המפתח הראשי
+          shiklulit_employee_no: compEmp ? compEmp.employee_no : (absEmp ? absEmp.employee_no : null),
           first_name:  first,
           last_name:   last,
           full_name:   ((first + ' ' + last).trim()) || name,
@@ -957,29 +1006,36 @@
         };
       });
 
-      // 3) הוספת עובדים שיש להם נתונים בשיקלולית אבל לא ב-Meckano (מנכ"לים משותפים)
-      const seenNos = new Set(employees.map(e => e.employee_no));
-      Object.keys(absEmps).forEach(noStr => {
-        const empNo = parseInt(noStr, 10);
-        if (seenNos.has(empNo)) return;
-        const absEmp = absEmps[empNo];
-        const compEmp = compEmps[empNo];
+      // 3) עובדים בשיקלולית שלא נמצאה להם התאמה ב-Meckano (לפי שם)
+      // מנכ"לים משותפים, או עובדים אחרים שלא במקאנו.
+      // נשתמש ב-shiklulit's employee_no עם prefix 'S' כדי להימנע מהתנגשות.
+      Object.keys(absEmps).forEach(shikNoStr => {
+        const shikNo = parseInt(shikNoStr, 10);
+        if (matchedShikIds.has(shikNo)) return;
+        const absEmp = absEmps[shikNoStr];
+        const compEmp = compEmps[shikNoStr];
         const first = (compEmp && compEmp.first_name) || (absEmp && absEmp.first_name) || '';
         const last  = (compEmp && compEmp.last_name)  || (absEmp && absEmp.last_name)  || '';
         const nationalId = (compEmp && compEmp.national_id) || (absEmp && absEmp.national_id) || '';
         let baseSalary = null;
         if (compEmp && compEmp.components && compEmp.components[1]) baseSalary = compEmp.components[1].total;
+        // מספר עובד במקאנו לעובד שאין במקאנו: 9000+shikNo (שלא יתנגש)
+        const fakeMeckanoNo = 9000 + shikNo;
         employees.push({
-          employee_no: empNo,
+          employee_no: fakeMeckanoNo,
+          shiklulit_employee_no: shikNo,
           first_name:  first,
           last_name:   last,
           full_name:   (first + ' ' + last).trim(),
           national_id: nationalId,
           department:  (absEmp && absEmp.department_name) || '',
-          employee_type: 'מנכ"ל משותף',  // כי לא במקאנו
+          employee_type: 'מנכ"ל משותף',
           start_date: '',
           end_date:   '',
           base_salary: baseSalary,
+          vacation_balance_days: absEmp && absEmp.vacation ? absEmp.vacation.prior : null,
+          sick_balance_days:     absEmp && absEmp.sick ? absEmp.sick.prior : null,
+          recovery_balance_amount: absEmp && absEmp.recreation ? absEmp.recreation.prior : null,
           source:     'shiklulit_only',
           imported_at: new Date().toISOString(),
         });
