@@ -569,7 +569,14 @@
 
     <div class="card" id="emptyCard">
       <div class="empty-state">
-        עדיין לא יובא קובץ. העלי קובץ Meckano חודשי כדי להתחיל.
+        <div style="font-size:1.1rem; margin-bottom:14px;">עדיין לא יובא קובץ Em_Index.</div>
+        <div id="archiveSeedRow" style="display:none; background:#dbeafe; border:1px solid #93c5fd; border-radius:10px; padding:14px 18px; margin:14px auto; max-width:600px;">
+          <div style="color:#1e40af; font-weight:600; margin-bottom:10px;">💡 יש ארכיון Meckano זמין — אפשר לבנות אינדקס מהיר ממנו</div>
+          <div id="archiveSeedInfo" style="color:#1e40af; font-size:0.9rem; margin-bottom:12px;"></div>
+          <button id="seedFromArchiveBtn" class="btn" style="background:#0e7490; color:#fff;">📥 בנה אינדקס מארכיון Meckano</button>
+          <div style="font-size:0.82rem; color:#374151; margin-top:8px;">יוצר רשומות בסיסיות (מס' עובד, שם מלא, מחלקה). פרטים נוספים — תוכלי לערוך אחר כך או לייבא Em_Index המלא להחלפה.</div>
+        </div>
+        <div style="color:#6b7280; font-size:0.94rem;">או — העלי Em_Index חודשי בלחיצה על אזור הגרירה למעלה.</div>
       </div>
     </div>
 
@@ -641,6 +648,8 @@
       if (employees.length === 0) {
         card.style.display = 'none';
         empty.style.display = 'block';
+        // אם יש ארכיון Meckano — להציע למלא ממנו
+        showArchiveSeedOption();
         return;
       }
       empty.style.display = 'none';
@@ -837,6 +846,60 @@
       showAlert('success', '✅ נטענו סיפי תוספת גלובלית ל-' + updates.length + ' עובדים.');
     }
     $('#loadKnownThresholds').addEventListener('click', loadKnownThresholds);
+
+    // ===== Seed from Meckano Archive =====
+    // אם האינדקס ריק אבל יש ארכיון Meckano — מאפשרים למלא רשומות בסיסיות מהבלוקים.
+    function showArchiveSeedOption() {
+      if (typeof MeckanoArchiveStore === 'undefined') return;
+      const idx = MeckanoArchiveStore.loadIndex();
+      if (!idx || idx.length === 0) return;
+      const latest = idx[0];
+      const arc = MeckanoArchiveStore.loadByPeriod(latest.period);
+      if (!arc || !arc.blocks || !arc.blocks.length) return;
+
+      const seedRow = document.getElementById('archiveSeedRow');
+      const info = document.getElementById('archiveSeedInfo');
+      if (!seedRow || !info) return;
+      info.textContent = 'ארכיון אחרון: ' + latest.period + ' • ' + arc.blocks.length + ' עובדים';
+      seedRow.style.display = 'block';
+
+      const btn = document.getElementById('seedFromArchiveBtn');
+      btn.onclick = () => seedFromArchive(arc);
+    }
+
+    function seedFromArchive(arc) {
+      const employees = arc.blocks.map(b => {
+        const name = String(b.employee_name || '').trim();
+        const parts = name.split(/\s+/).filter(Boolean);
+        // Meckano עם פורמט "שם משפחה שם פרטי" → first=פרטי, last=משפחה
+        // ננסה להניח: אם 2 חלקים, last=ראשון, first=שני (משפחה+פרטי)
+        let first = '', last = '';
+        if (parts.length >= 2) { last = parts[0]; first = parts.slice(1).join(' '); }
+        else { first = name; }
+        return {
+          employee_no: b.employee_no,
+          first_name:  first,
+          last_name:   last,
+          full_name:   name,
+          national_id: '',
+          department:  b.department || '',
+          employee_type: 'גלובלי',
+          start_date: '',
+          end_date:   '',
+          source:     'meckano_archive_seed',
+          imported_at: new Date().toISOString(),
+        };
+      });
+      EmIndexStore.saveAll(employees, {
+        sourceFile: 'Meckano archive seed',
+        count: employees.length
+      });
+      renderMeta();
+      renderTable();
+      showAlert('success',
+        '✅ נוצר אינדקס בסיסי מ-' + employees.length + ' עובדים מארכיון Meckano. ' +
+        'את יכולה לערוך פרטים אישיים (סוג עובד, שכר, תאריכים) בטבלה למעלה.');
+    }
 
     // האזנה גנרית לכל הכפתורים עם data-bulk-field
     document.querySelectorAll('button[data-bulk-field]').forEach(btn => {
