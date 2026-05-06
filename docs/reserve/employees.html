@@ -608,6 +608,7 @@
   <script src="js/em-index-store.js"></script>
   <script src="js/em-index-importer.js"></script>
   <script src="../salary/js/meckano-archive-store.js"></script>
+  <script src="../salary/js/payslip-store.js"></script>
   <script>
     'use strict';
 
@@ -868,37 +869,189 @@
     }
 
     function seedFromArchive(arc) {
+      // 1) טעינת מקורות נוספים — שיקלולית (אם קיים)
+      let payslip = null;
+      if (typeof PayslipStore !== 'undefined') {
+        const idx = PayslipStore.loadIndex();
+        if (idx && idx.length > 0) {
+          const latest = idx[0];
+          payslip = PayslipStore.load(latest.year, latest.month);
+        }
+      }
+      const compEmps = (payslip && payslip.reports && payslip.reports.components && payslip.reports.components.employees) || {};
+      const incEmps  = (payslip && payslip.reports && payslip.reports.imputed_income && payslip.reports.imputed_income.employees) || {};
+      const absEmps  = (payslip && payslip.reports && payslip.reports.absences && payslip.reports.absences.employees) || {};
+
+      // ⚠ חשוב: מספר עובד במקאנו ≠ מספר עובד בשיקלולית.
+      // ההתאמה היא לפי שם (כולל סדר הפוך, ת.ז.), לא לפי מספר.
+      function normName(s) {
+        return String(s || '').trim().replace(/\s+/g, ' ');
+      }
+      function buildShiklulitNameMap(empsObj) {
+        const map = {};
+        Object.keys(empsObj).forEach(noStr => {
+          const e = empsObj[noStr];
+          const fn = normName(e.first_name);
+          const ln = normName(e.last_name);
+          const id = String(e.national_id || '').trim();
+          if (fn && ln) {
+            map[fn + ' ' + ln] = e;
+            map[ln + ' ' + fn] = e;
+          }
+          if (id) map['__id_' + id] = e;
+        });
+        return map;
+      }
+      const compByName = buildShiklulitNameMap(compEmps);
+      const incByName  = buildShiklulitNameMap(incEmps);
+      const absByName  = buildShiklulitNameMap(absEmps);
+
+      function findInShik(meckanoName, mapByName) {
+        const n = normName(meckanoName);
+        if (mapByName[n]) return mapByName[n];
+        // הפוך
+        const parts = n.split(' ').filter(Boolean);
+        if (parts.length >= 2) {
+          const reversed = parts.slice().reverse().join(' ');
+          if (mapByName[reversed]) return mapByName[reversed];
+        }
+        // התאמה חלקית: לפחות 2 חלקים שווים בשני הצדדים
+        if (parts.length >= 2) {
+          const setMeck = new Set(parts);
+          for (const key of Object.keys(mapByName)) {
+            if (key.startsWith('__id_')) continue;
+            const keyParts = key.split(' ').filter(Boolean);
+            if (keyParts.length === parts.length && keyParts.every(p => setMeck.has(p))) {
+              return mapByName[key];
+            }
+          }
+        }
+        return null;
+      }
+
+      // 2) Merge — Meckano keyed primarily, שיקלולית מצורף לפי שם
+      const matchedShikIds = new Set();
       const employees = arc.blocks.map(b => {
+        const empNo = parseInt(b.employee_no, 10);
         const name = String(b.employee_name || '').trim();
-        const parts = name.split(/\s+/).filter(Boolean);
-        // Meckano עם פורמט "שם משפחה שם פרטי" → first=פרטי, last=משפחה
-        // ננסה להניח: אם 2 חלקים, last=ראשון, first=שני (משפחה+פרטי)
-        let first = '', last = '';
-        if (parts.length >= 2) { last = parts[0]; first = parts.slice(1).join(' '); }
-        else { first = name; }
+
+        // התאמה לפי שם — לא לפי מספר!
+        const compEmp = findInShik(name, compByName);
+        const absEmp  = findInShik(name, absByName);
+        const incEmp  = findInShik(name, incByName);
+        if (compEmp) matchedShikIds.add(compEmp.employee_no);
+        if (absEmp)  matchedShikIds.add(absEmp.employee_no);
+
+        let first = '', last = '', nationalId = '';
+        if (compEmp) {
+          first = compEmp.first_name || '';
+          last  = compEmp.last_name  || '';
+          nationalId = compEmp.national_id || '';
+        } else if (absEmp) {
+          first = absEmp.first_name || '';
+          last  = absEmp.last_name  || '';
+          nationalId = absEmp.national_id || '';
+        }
+        // fallback מ-Meckano
+        if (!first && !last) {
+          const parts = name.split(/\s+/).filter(Boolean);
+          if (parts.length >= 2) { last = parts[0]; first = parts.slice(1).join(' '); }
+          else { first = name; }
+        }
+
+        // שכר בסיס משיקלולית (קוד 1 = שכר יסוד, total = הסכום שמשולם)
+        let baseSalary = null;
+        if (compEmp && compEmp.components && compEmp.components[1]) {
+          baseSalary = compEmp.components[1].total || null;
+        }
+
+        // יתרות מהדוח השנתי של היעדרויות (יתרת פתיחה השנתית)
+        let vacBalance = null, sickBalance = null, recBalance = null;
+        if (absEmp) {
+          if (absEmp.vacation && absEmp.vacation.prior != null) vacBalance = absEmp.vacation.prior;
+          if (absEmp.sick && absEmp.sick.prior != null) sickBalance = absEmp.sick.prior;
+          if (absEmp.recreation && absEmp.recreation.prior != null) recBalance = absEmp.recreation.prior;
+        }
+
+        // יש קה"ש בחוזה? (אם רואים "שווי קרן השתלמות" בזקופות)
+        let hasAdvancedStudy = false;
+        if (incEmp && incEmp.components && incEmp.components[4] && incEmp.components[4].total) {
+          hasAdvancedStudy = true;
+        }
+
+        // ניחוש סוג עובד: אם יש hours_125 או hours_150 → שעתי, אחרת גלובלי
+        let employeeType = 'גלובלי';
+        if (b.summary && (b.summary.hours_125 || b.summary.hours_150)) {
+          // יש מקרים של גלובליים עם ש"נ — מטפלים בנפרד; ברירת מחדל גלובלי
+        }
+
         return {
-          employee_no: b.employee_no,
+          employee_no: empNo,                    // מקאנו = המפתח הראשי
+          shiklulit_employee_no: compEmp ? compEmp.employee_no : (absEmp ? absEmp.employee_no : null),
           first_name:  first,
           last_name:   last,
-          full_name:   name,
-          national_id: '',
-          department:  b.department || '',
-          employee_type: 'גלובלי',
+          full_name:   ((first + ' ' + last).trim()) || name,
+          national_id: nationalId,
+          department:  b.department || (absEmp && absEmp.department_name) || '',
+          employee_type: employeeType,
           start_date: '',
           end_date:   '',
-          source:     'meckano_archive_seed',
+          base_salary: baseSalary,
+          has_advanced_study_in_contract: hasAdvancedStudy,
+          vacation_balance_days: vacBalance,
+          sick_balance_days:     sickBalance,
+          recovery_balance_amount: recBalance,
+          source:     'auto_merge_meckano_shiklulit',
           imported_at: new Date().toISOString(),
         };
       });
+
+      // 3) עובדים בשיקלולית שלא נמצאה להם התאמה ב-Meckano (לפי שם)
+      // מנכ"לים משותפים, או עובדים אחרים שלא במקאנו.
+      // נשתמש ב-shiklulit's employee_no עם prefix 'S' כדי להימנע מהתנגשות.
+      Object.keys(absEmps).forEach(shikNoStr => {
+        const shikNo = parseInt(shikNoStr, 10);
+        if (matchedShikIds.has(shikNo)) return;
+        const absEmp = absEmps[shikNoStr];
+        const compEmp = compEmps[shikNoStr];
+        const first = (compEmp && compEmp.first_name) || (absEmp && absEmp.first_name) || '';
+        const last  = (compEmp && compEmp.last_name)  || (absEmp && absEmp.last_name)  || '';
+        const nationalId = (compEmp && compEmp.national_id) || (absEmp && absEmp.national_id) || '';
+        let baseSalary = null;
+        if (compEmp && compEmp.components && compEmp.components[1]) baseSalary = compEmp.components[1].total;
+        // מספר עובד במקאנו לעובד שאין במקאנו: 9000+shikNo (שלא יתנגש)
+        const fakeMeckanoNo = 9000 + shikNo;
+        employees.push({
+          employee_no: fakeMeckanoNo,
+          shiklulit_employee_no: shikNo,
+          first_name:  first,
+          last_name:   last,
+          full_name:   (first + ' ' + last).trim(),
+          national_id: nationalId,
+          department:  (absEmp && absEmp.department_name) || '',
+          employee_type: 'מנכ"ל משותף',
+          start_date: '',
+          end_date:   '',
+          base_salary: baseSalary,
+          vacation_balance_days: absEmp && absEmp.vacation ? absEmp.vacation.prior : null,
+          sick_balance_days:     absEmp && absEmp.sick ? absEmp.sick.prior : null,
+          recovery_balance_amount: absEmp && absEmp.recreation ? absEmp.recreation.prior : null,
+          source:     'shiklulit_only',
+          imported_at: new Date().toISOString(),
+        });
+      });
+
       EmIndexStore.saveAll(employees, {
-        sourceFile: 'Meckano archive seed',
+        sourceFile: 'auto-merge: Meckano + Shiklulit',
         count: employees.length
       });
       renderMeta();
       renderTable();
+      const enriched = employees.filter(e => e.base_salary || e.national_id).length;
       showAlert('success',
-        '✅ נוצר אינדקס בסיסי מ-' + employees.length + ' עובדים מארכיון Meckano. ' +
-        'את יכולה לערוך פרטים אישיים (סוג עובד, שכר, תאריכים) בטבלה למעלה.');
+        '✅ נוצר אינדקס מ-' + employees.length + ' עובדים. ' +
+        enriched + ' עם נתונים מלאים מהתלוש (ת.ז., שכר, יתרות). ' +
+        'אם יש סוגי עובד מיוחדים (קבלן/שעתי) — שני בעמודה "סוג עובד".');
     }
 
     // האזנה גנרית לכל הכפתורים עם data-bulk-field
