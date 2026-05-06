@@ -608,6 +608,7 @@
   <script src="js/em-index-store.js"></script>
   <script src="js/em-index-importer.js"></script>
   <script src="../salary/js/meckano-archive-store.js"></script>
+  <script src="../salary/js/payslip-store.js"></script>
   <script>
     'use strict';
 
@@ -868,37 +869,133 @@
     }
 
     function seedFromArchive(arc) {
+      // 1) טעינת מקורות נוספים — שיקלולית (אם קיים לאותו חודש)
+      const period = arc.period || (arc.blocks && arc.blocks[0] ? null : null);
+      let payslip = null;
+      if (typeof PayslipStore !== 'undefined') {
+        const idx = PayslipStore.loadIndex();
+        if (idx && idx.length > 0) {
+          // שיקלולית של החודש המאוחר ביותר (לא חייב להתאים ל-Meckano)
+          const latest = idx[0];
+          payslip = PayslipStore.load(latest.year, latest.month);
+        }
+      }
+      const compEmps = (payslip && payslip.reports && payslip.reports.components && payslip.reports.components.employees) || {};
+      const incEmps  = (payslip && payslip.reports && payslip.reports.imputed_income && payslip.reports.imputed_income.employees) || {};
+      const absEmps  = (payslip && payslip.reports && payslip.reports.absences && payslip.reports.absences.employees) || {};
+
+      // 2) Merge מכל המקורות
       const employees = arc.blocks.map(b => {
+        const empNo = parseInt(b.employee_no, 10);
         const name = String(b.employee_name || '').trim();
-        const parts = name.split(/\s+/).filter(Boolean);
-        // Meckano עם פורמט "שם משפחה שם פרטי" → first=פרטי, last=משפחה
-        // ננסה להניח: אם 2 חלקים, last=ראשון, first=שני (משפחה+פרטי)
-        let first = '', last = '';
-        if (parts.length >= 2) { last = parts[0]; first = parts.slice(1).join(' '); }
-        else { first = name; }
+
+        // ניסיון ראשון: לקחת first/last מתוך שיקלולית (מדויק)
+        const compEmp = compEmps[empNo] || compEmps[String(empNo)];
+        const absEmp  = absEmps[empNo]  || absEmps[String(empNo)];
+        const incEmp  = incEmps[empNo]  || incEmps[String(empNo)];
+
+        let first = '', last = '', nationalId = '';
+        if (compEmp) {
+          first = compEmp.first_name || '';
+          last  = compEmp.last_name  || '';
+          nationalId = compEmp.national_id || '';
+        } else if (absEmp) {
+          first = absEmp.first_name || '';
+          last  = absEmp.last_name  || '';
+          nationalId = absEmp.national_id || '';
+        }
+        // fallback מ-Meckano
+        if (!first && !last) {
+          const parts = name.split(/\s+/).filter(Boolean);
+          if (parts.length >= 2) { last = parts[0]; first = parts.slice(1).join(' '); }
+          else { first = name; }
+        }
+
+        // שכר בסיס משיקלולית (קוד 1 = שכר יסוד, total = הסכום שמשולם)
+        let baseSalary = null;
+        if (compEmp && compEmp.components && compEmp.components[1]) {
+          baseSalary = compEmp.components[1].total || null;
+        }
+
+        // יתרות מהדוח השנתי של היעדרויות (יתרת פתיחה השנתית)
+        let vacBalance = null, sickBalance = null, recBalance = null;
+        if (absEmp) {
+          if (absEmp.vacation && absEmp.vacation.prior != null) vacBalance = absEmp.vacation.prior;
+          if (absEmp.sick && absEmp.sick.prior != null) sickBalance = absEmp.sick.prior;
+          if (absEmp.recreation && absEmp.recreation.prior != null) recBalance = absEmp.recreation.prior;
+        }
+
+        // יש קה"ש בחוזה? (אם רואים "שווי קרן השתלמות" בזקופות)
+        let hasAdvancedStudy = false;
+        if (incEmp && incEmp.components && incEmp.components[4] && incEmp.components[4].total) {
+          hasAdvancedStudy = true;
+        }
+
+        // ניחוש סוג עובד: אם יש hours_125 או hours_150 → שעתי, אחרת גלובלי
+        let employeeType = 'גלובלי';
+        if (b.summary && (b.summary.hours_125 || b.summary.hours_150)) {
+          // יש מקרים של גלובליים עם ש"נ — מטפלים בנפרד; ברירת מחדל גלובלי
+        }
+
         return {
-          employee_no: b.employee_no,
+          employee_no: empNo,
           first_name:  first,
           last_name:   last,
-          full_name:   name,
-          national_id: '',
-          department:  b.department || '',
-          employee_type: 'גלובלי',
+          full_name:   ((first + ' ' + last).trim()) || name,
+          national_id: nationalId,
+          department:  b.department || (absEmp && absEmp.department_name) || '',
+          employee_type: employeeType,
           start_date: '',
           end_date:   '',
-          source:     'meckano_archive_seed',
+          base_salary: baseSalary,
+          has_advanced_study_in_contract: hasAdvancedStudy,
+          vacation_balance_days: vacBalance,
+          sick_balance_days:     sickBalance,
+          recovery_balance_amount: recBalance,
+          source:     'auto_merge_meckano_shiklulit',
           imported_at: new Date().toISOString(),
         };
       });
+
+      // 3) הוספת עובדים שיש להם נתונים בשיקלולית אבל לא ב-Meckano (מנכ"לים משותפים)
+      const seenNos = new Set(employees.map(e => e.employee_no));
+      Object.keys(absEmps).forEach(noStr => {
+        const empNo = parseInt(noStr, 10);
+        if (seenNos.has(empNo)) return;
+        const absEmp = absEmps[empNo];
+        const compEmp = compEmps[empNo];
+        const first = (compEmp && compEmp.first_name) || (absEmp && absEmp.first_name) || '';
+        const last  = (compEmp && compEmp.last_name)  || (absEmp && absEmp.last_name)  || '';
+        const nationalId = (compEmp && compEmp.national_id) || (absEmp && absEmp.national_id) || '';
+        let baseSalary = null;
+        if (compEmp && compEmp.components && compEmp.components[1]) baseSalary = compEmp.components[1].total;
+        employees.push({
+          employee_no: empNo,
+          first_name:  first,
+          last_name:   last,
+          full_name:   (first + ' ' + last).trim(),
+          national_id: nationalId,
+          department:  (absEmp && absEmp.department_name) || '',
+          employee_type: 'מנכ"ל משותף',  // כי לא במקאנו
+          start_date: '',
+          end_date:   '',
+          base_salary: baseSalary,
+          source:     'shiklulit_only',
+          imported_at: new Date().toISOString(),
+        });
+      });
+
       EmIndexStore.saveAll(employees, {
-        sourceFile: 'Meckano archive seed',
+        sourceFile: 'auto-merge: Meckano + Shiklulit',
         count: employees.length
       });
       renderMeta();
       renderTable();
+      const enriched = employees.filter(e => e.base_salary || e.national_id).length;
       showAlert('success',
-        '✅ נוצר אינדקס בסיסי מ-' + employees.length + ' עובדים מארכיון Meckano. ' +
-        'את יכולה לערוך פרטים אישיים (סוג עובד, שכר, תאריכים) בטבלה למעלה.');
+        '✅ נוצר אינדקס מ-' + employees.length + ' עובדים. ' +
+        enriched + ' עם נתונים מלאים מהתלוש (ת.ז., שכר, יתרות). ' +
+        'אם יש סוגי עובד מיוחדים (קבלן/שעתי) — שני בעמודה "סוג עובד".');
     }
 
     // האזנה גנרית לכל הכפתורים עם data-bulk-field
